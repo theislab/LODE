@@ -21,9 +21,16 @@ model = get_unet(input_img, n_filters = 12)
 model.load_weights(save_model_path, by_name = True, skip_mismatch=True)
 
 for dicom_path in dicom_paths:
+
+    # get full dicom information
     dicom = DicomTable(dicom_path)
+
     if dicom.record_lookup is not None:
+
+        # retrieve all segmentations
         segmentations = Segmentations(dicom, model)
+
+        # calculate the retinal thickenss map
         grid = Map(dicom, segmentations.oct_segmentations)
 
         # save thickness map
