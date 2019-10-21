@@ -1,0 +1,534 @@
+import pandas as pd
+import os
+import numpy as np
+from sklearn.metrics import confusion_matrix
+import matplotlib.pyplot as plt
+import cv2
+import gc
+from scipy import ndimage
+import matplotlib.colors as colors
+
+
+path = "/home/olle/PycharmProjects/thickness_map_prediction/project_evaluation/normal_range_stats"
+sd_oct_label = "_label_Macular_Thickness_by_Age_and_Gender_in_Healthy_Eyes_Using_Spectral_Domain_Optical_\
+Coherence_Tomography.csv"
+sd_oct_prediction = "_prediction_Macular_Thickness_by_Age_and_Gender_in_Healthy_Eyes_Using\
+_Spectral_Domain_Optical_Coherence_Tomography.csv"
+
+label_path = "/home/olle/PycharmProjects/thickness_map_prediction/\
+project_evaluation/test_labels/"
+prediction_path = "/home/olle/PycharmProjects/thickness_map_prediction/\
+project_evaluation/test_predictions"
+image_path = "/home/olle/PycharmProjects/thickness_map_prediction/project_evaluation/test_images"
+
+def load_images(record_name):
+    label = np.load(os.path.join(label_path, record_name))
+    prediction = np.load(os.path.join(prediction_path, record_name))
+    image = cv2.imread(os.path.join(image_path, record_name.replace(".npy",".jpeg")))
+
+	
+    label_mu = pixel_to_mu_meter(label)
+    prediction_mu = pixel_to_mu_meter(prediction)
+    # resize prediciton
+    prediction_mu = resize_prediction(prediction_mu)
+
+    # remove three channel to stop normalization
+    label_lr = get_low_res_depth_grid(label_mu)[:, :, 0]
+    prediction_lr = get_low_res_depth_grid(prediction_mu)[:, :, 0]
+    return (label_mu, prediction_mu, label_lr, prediction_lr,image)
+
+def createCircularMask(h, w, center=None, radius=None):
+
+    if center is None: # use the middle of the image
+        center = [int(w/2), int(h/2)]
+    if radius is None: # use the smallest distance between the center and image walls
+        radius = min(center[0], center[1], w-center[0], h-center[1])
+
+    Y, X = np.ogrid[:h, :w]
+    dist_from_center = np.sqrt((X - center[0])**2 + (Y-center[1])**2)
+
+    mask = dist_from_center <= radius
+    return mask
+
+
+def get_zone(record_th_z, zone):
+    zone_value = record_th_z[record_th_z.Name == zone].AvgThickness.iloc[0]
+    # mean of all zone thickness
+    zone_avg = np.nanmean(np.array(record_th_z.AvgThickness, dtype=np.float32))
+
+    if zone_value is None:
+        zone_value = zone_avg
+
+    return (float(zone_value))
+
+
+def extract_values(record_th_z):
+    C0_value = get_zone(record_th_z, "C0")
+    S2_value = get_zone(record_th_z, "S2")
+    S1_value = get_zone(record_th_z, "S1")
+    N1_value = get_zone(record_th_z, "N1")
+    N2_value = get_zone(record_th_z, "N2")
+    I1_value = get_zone(record_th_z, "I1")
+    I2_value = get_zone(record_th_z, "I2")
+    T1_value = get_zone(record_th_z, "T1")
+    T2_value = get_zone(record_th_z, "T2")
+    return (C0_value, S2_value, S1_value, N1_value, N2_value, I1_value, I2_value, T1_value, T2_value)
+
+
+def set_low_res_depth_grid(C0_value, S2_value, S1_value, N1_value, N2_value, I1_value, I2_value, T1_value, T2_value,
+                           C0, S2, S1, N1, N2, I1, I2, T1, T2, img):
+    img[C0] = C0_value
+    img[S1] = S1_value
+    img[S2] = S2_value
+    img[I1] = I1_value
+    img[I2] = I2_value
+    img[T1] = T1_value
+    img[T2] = T2_value
+    img[N1] = N1_value
+    img[N2] = N2_value
+
+    return (img)
+
+def rescale_oct_height(depth_map):
+    scaling_factor = np.divide(496,160,dtype=np.float32)
+    rescaled_depth_map = depth_map * scaling_factor
+    return(rescaled_depth_map)
+
+def center_img(img):
+    coords = np.argwhere(img > 0)
+    x_min, y_min = coords.min(axis=0)[0:2]
+    x_max, y_max = coords.max(axis=0)[0:2]
+    cropped_img = img[x_min:x_max - 1, y_min:y_max - 1]
+    if len(cropped_img.shape) == 2:
+        square_cropped_img = cropped_img[0:min(cropped_img.shape),0:min(cropped_img.shape)]
+
+        centered_img = np.zeros((768, 768))
+
+        nb = centered_img.shape[0]
+        na = square_cropped_img.shape[0]
+        lower = (nb) // 2 - (na // 2)
+        upper = (nb // 2) + (na // 2)
+
+        difference = np.abs(lower - upper) - square_cropped_img.shape[0]
+        upper = upper - difference
+
+        centered_img[lower:upper, lower:upper] = square_cropped_img
+
+    if len(cropped_img.shape) == 3:
+        square_cropped_img = cropped_img[0:min(cropped_img.shape[0:2]), 0:min(cropped_img.shape[0:2]), :]
+        centered_img = np.zeros((768, 768,3)).astype(np.uint8)
+
+        nb = centered_img.shape[0]
+        na = square_cropped_img.shape[0]
+        lower = (nb) // 2 - (na // 2)
+        upper = (nb // 2) + (na // 2)
+
+        difference = np.abs(lower - upper) - square_cropped_img.shape[0]
+        upper = upper - difference
+
+        centered_img[lower:upper, lower:upper,:] = square_cropped_img
+
+    return(centered_img)
+
+
+def get_low_res_grid(img):
+    # scale of LOCALIZER
+    outer_ring_radius = int(6 / 0.0118) / 2
+    middle_ring_radius = int(3 / 0.0118) / 2
+    inner_ring_radius = int(1 / 0.0118) / 2
+
+    min_ = min(img.nonzero()[0]), min(img.nonzero()[1])
+    max_ = max(img.nonzero()[0]), max(img.nonzero()[1])
+    image_span = np.subtract(max_,min_)
+
+    measure_area = np.zeros(image_span)
+
+    nrows = 768
+    ncols = 768
+    cnt_row = image_span[1] / 2 + min_[1]
+    cnt_col = image_span[0] / 2 + min_[0]
+
+    max_diam = min(image_span)
+
+    # init empty LOCALIZER sized grid
+    img_mask = np.zeros((nrows, ncols), np.float32)
+
+    # create base boolean masks
+    inner_ring_mask = createCircularMask(nrows, ncols, center=(cnt_row, cnt_col), radius=inner_ring_radius)
+    middle_ring_mask = createCircularMask(nrows, ncols, center=(cnt_row, cnt_col), radius=middle_ring_radius)
+
+    #fit low res grid to measurement area
+    if outer_ring_radius*2 > max_diam:
+        outer_ring_radius = max_diam/2
+
+    outer_ring_mask = createCircularMask(nrows, ncols, center=(cnt_row, cnt_col), radius=outer_ring_radius)
+
+    inner_disk = inner_ring_mask
+    middle_disk = (middle_ring_mask.astype(int) - inner_ring_mask.astype(int)).astype(bool)
+    outer_disk = (outer_ring_mask.astype(int) - middle_ring_mask.astype(int)).astype(bool)
+
+    #create label specific diagonal masks
+    upper_triangel_right_mask = np.arange(0,img.shape[1])[:, None] <= np.arange(img.shape[1])
+    lower_triangel_left_mask = np.arange(0,img.shape[1])[:, None] > np.arange(img.shape[1])
+    upper_triangel_left_mask = lower_triangel_left_mask[::-1]
+    lower_triangel_right_mask = upper_triangel_right_mask[::-1]
+    ''''
+    #pad the shortened arrays
+    im_utr = np.zeros((768,768))
+    im_ltl = np.zeros((768,768))
+    im_utl = np.zeros((768,768))
+    im_ltr = np.zeros((768,768))
+
+    #pad the diagonal masks
+    im_utr[0:upper_triangel_right_mask.shape[0],:] = upper_triangel_right_mask
+    im_ltl[768-upper_triangel_right_mask.shape[0]:,:] = lower_triangel_left_mask
+    im_utl[0:upper_triangel_left_mask.shape[0], :] = upper_triangel_left_mask
+    im_ltr[768-lower_triangel_right_mask.shape[0]:, :] = lower_triangel_right_mask
+    #conversion
+    im_utr = im_utr.astype(np.bool)
+    im_ltl = im_ltl.astype(np.bool)
+    im_utl = im_utl.astype(np.bool)
+    im_ltr = im_ltr.astype(np.bool)
+    '''
+    # create 9 depth regions
+    C0 = inner_disk = inner_ring_mask
+    S2 = np.asarray(upper_triangel_left_mask & outer_disk & upper_triangel_right_mask)
+    S1 = np.asarray(upper_triangel_left_mask & middle_disk & upper_triangel_right_mask)
+    N1 = np.asarray(lower_triangel_right_mask & middle_disk & upper_triangel_right_mask)
+    N2 = np.asarray(lower_triangel_right_mask & outer_disk & upper_triangel_right_mask)
+    I1 = np.asarray(lower_triangel_right_mask & middle_disk & lower_triangel_left_mask)
+    I2 = np.asarray(lower_triangel_right_mask & outer_disk & lower_triangel_left_mask)
+    T1 = np.asarray(upper_triangel_left_mask & middle_disk & lower_triangel_left_mask)
+    T2 = np.asarray(upper_triangel_left_mask & outer_disk & lower_triangel_left_mask)
+    return(C0, S2, S1, N1, N2, I1, I2, T1, T2)
+
+def get_depth_grid_edges(area):
+    struct = ndimage.generate_binary_structure(2, 2)
+    erode = ndimage.binary_erosion(area, struct)
+    edges = area ^ erode
+    return np.stack((edges,)*3, axis=-1)
+
+def get_low_res_grid_shape(img):
+    C0, S2, S1, N1, N2, I1, I2, T1, T2 = get_low_res_grid(img)
+    grid = np.zeros((img.shape[0],img.shape[1],3), np.float32)
+    grid = grid + get_depth_grid_edges(C0)
+    grid = grid + get_depth_grid_edges(S1)
+    grid = grid + get_depth_grid_edges(S2)
+    grid = grid + get_depth_grid_edges(I1)
+    grid = grid + get_depth_grid_edges(I2)
+    grid = grid + get_depth_grid_edges(T1)
+    grid = grid + get_depth_grid_edges(T2)
+    grid = grid + get_depth_grid_edges(N1)
+    grid = grid + get_depth_grid_edges(N2)
+    return(grid)
+
+def get_low_res_depth_grid(img):
+    C0, S2, S1, N1, N2, I1, I2, T1, T2 = get_low_res_grid(img)
+    grid = np.zeros((img.shape[0],img.shape[1],3), np.float32)
+    grid[C0] = np.mean(img[C0])
+    grid[S1] = np.mean(img[S1])
+    grid[S2] = np.mean(img[S2])
+    grid[I1] = np.mean(img[I1])
+    grid[I2] = np.mean(img[I2])
+    grid[T1] = np.mean(img[T1])
+    grid[T2] = np.mean(img[T2])
+    grid[N1] = np.mean(img[N1])
+    grid[N2] = np.mean(img[N2])
+    return(grid)
+
+def pixel_to_mu_meter(img):
+    img_um = np.multiply(img,0.0039*1000)
+    return(img_um)
+def get_low_res_depth_grid_values(img):
+    C0, S1, S2, N1, N2, I1, I2, T1, T2 = get_low_res_grid(img)
+    #turn zero to nan
+    img[img < 10] = 0
+    img[img == 0] = np.nan
+    #get mean values
+    C0_value = np.nanmean(img[C0])
+    S1_value = np.nanmean(img[S1])
+    S2_value = np.nanmean(img[S2])
+    I1_value = np.nanmean(img[I1])
+    I2_value = np.nanmean(img[I2])
+    T1_value = np.nanmean(img[T1])
+    T2_value = np.nanmean(img[T2])
+    N1_value = np.nanmean(img[N1])
+    N2_value = np.nanmean(img[N2])
+
+    #concert back nan values to zero
+    img = np.nan_to_num(img)
+
+    low_grid_values = [C0_value, S1_value, S2_value, N1_value, N2_value, I1_value, I2_value, T1_value, T2_value]
+    return(low_grid_values)
+
+def get_low_res_depth_grid_maxvalues(img):
+    img = np.nan_to_num(img)
+    C0, S1, S2, N1, N2, I1, I2, T1, T2 = get_low_res_grid(img)
+    #get mean values
+    C0_value = np.nanmax(img[C0])
+    S1_value = np.nanmax(img[S1])
+    S2_value = np.nanmax(img[S2])
+    I1_value = np.nanmax(img[I1])
+    I2_value = np.nanmax(img[I2])
+    T1_value = np.nanmax(img[T1])
+    T2_value = np.nanmax(img[T2])
+    N1_value = np.nanmax(img[N1])
+    N2_value = np.nanmax(img[N2])
+
+    #concert back nan values to zero
+    img = np.nan_to_num(img)
+
+    low_grid_values = [C0_value, S1_value, S2_value, N1_value, N2_value, I1_value, I2_value, T1_value, T2_value]
+    return(low_grid_values)
+def get_text_coord(img):
+    C0, S1,S2, N1, N2, I1, I2, T1, T2 = get_low_res_grid(img)
+
+    S1_x_mc = np.median(np.where(S1 == True)[1])
+    S1_y_mc = np.median(np.where(S1 == True)[0])
+
+    S2_x_mc = np.median(np.where(S2 == True)[1])
+    S2_y_mc = np.median(np.where(S2 == True)[0])
+
+    N1_x_mc = np.median(np.where(N1 == True)[1])
+    N1_y_mc = np.median(np.where(N1 == True)[0])
+
+    N2_x_mc = np.median(np.where(N2 == True)[1])
+    N2_y_mc = np.median(np.where(N2 == True)[0])
+
+    I1_x_mc = np.median(np.where(I1 == True)[1])
+    I1_y_mc = np.median(np.where(I1 == True)[0])
+
+    I2_x_mc = np.median(np.where(I2 == True)[1])
+    I2_y_mc = np.median(np.where(I2 == True)[0])
+
+    T1_x_mc = np.median(np.where(T1 == True)[1])
+    T1_y_mc = np.median(np.where(T1 == True)[0])
+
+    T2_x_mc = np.median(np.where(T2 == True)[1])
+    T2_y_mc = np.median(np.where(T2 == True)[0])
+
+    C0_x_mc = S1_x_mc
+    C0_y_mc = N2_y_mc
+
+    coord_list = [C0_x_mc, C0_y_mc, S1_x_mc, S1_y_mc,S2_x_mc, S2_y_mc, \
+                  N1_x_mc, N1_y_mc, N2_x_mc, N2_y_mc, I1_x_mc, I1_y_mc, I2_x_mc, I2_y_mc, \
+                  T1_x_mc, T1_y_mc, T2_x_mc, T2_y_mc]
+    return (coord_list)
+def pixel_to_mu_meter(img):
+    img_um = np.multiply(img,0.0039*1000)
+    return(img_um)
+
+def resize_prediction(img):
+    prediction_resized = cv2.resize(img,(768,768))
+    return(prediction_resized)
+        
+def write_depthgrid_values(coord_list,value_list):
+    for i in range(0,int(len(coord_list)/2)):
+        plt.text(coord_list[i*2], coord_list[(i+1)*2-1], str(int(value_list[i])), ha='center', va='center',
+                 bbox=dict(facecolor='white'))
+
+
+def plot_pred_label_pair(record_name, save_path,save_plot):
+    name = record_name.replace(".npy","")
+    label_mu, prediction_mu, label_lr, prediction_lr,image = load_images(record_name)
+
+    
+    #get values for low res grid and coordinates
+    low_grid_values_label = get_low_res_depth_grid_values(label_mu)
+    low_grid_values_prediction = get_low_res_depth_grid_values(prediction_mu)
+    coord_list = get_text_coord(label_mu)
+    
+    plt.figure(figsize=(20, 20))
+    plt.subplot(3, 2,1)
+    plt.imshow(label_mu)
+    plt.title("label:{}".format(record_name))
+    plt.colorbar()
+    plt.subplot(3, 2, 2)
+    plt.imshow(prediction_mu)
+    plt.title("prediction")
+    plt.colorbar()
+    
+    plt.subplot(3, 2, 3)
+    plt.autoscale(True)
+    plt.imshow(label_lr)
+    plt.title("label low res:{}".format(record_name))
+    write_depthgrid_values(coord_list,low_grid_values_label)
+    plt.colorbar()
+    plt.subplot(3, 2, 4)
+    plt.autoscale(True)
+    plt.imshow(prediction_lr)
+    plt.title("prediction low res")
+    write_depthgrid_values(coord_list,low_grid_values_prediction)
+    plt.colorbar()
+    plt.subplot(3, 2, 5)
+    plt.autoscale(True)
+    plt.imshow(image)
+    plt.title("fundus")
+    if save_plot == True:
+    	plt.savefig(save_path + name)
+    plt.show()
+
+
+def plot_label_heatmap_pair(record_path, save_path,save_name,laterality,prediction):
+    name = record_path.split("/")[-1].replace(".npy", "")
+    if prediction:
+        label_mu = cv2.resize(np.load(record_path)[0,:,:,0],(768,768))*500.
+    else:
+        label_mu = cv2.resize(np.load(record_path), (768, 768))
+
+    label_mu[label_mu < 25] = 0
+    label_mu = center_img(label_mu)
+
+    label_lr = get_low_res_depth_grid(label_mu)[:, :, 0]
+
+    # get values for low res grid and coordinates
+    label_mu = np.nan_to_num(label_mu)
+    low_grid_values_label = get_low_res_depth_grid_values(label_mu)
+
+    #overlay nine area grid
+    label_mu = np.nan_to_num(label_mu)
+    label = np.copy(label_mu)
+    low_res_grid = get_low_res_grid_shape(label_mu)
+    label[low_res_grid.astype(np.bool)[:, :, 0]] = 0
+
+    coord_list = get_text_coord(label_mu)
+
+    plt.figure(figsize=(20, 20))
+    plt.subplot(1, 2, 1)
+
+    label_mu = np.ma.masked_where(label_mu < 130, label_mu)
+    cmap = plt.cm.jet#viridis
+    cmap.set_bad(color='black')
+
+    plt.imshow(label_mu,cmap=cmap,vmin=200, vmax=600,norm=colors.PowerNorm(gamma=1./2.))
+    plt.title("high res:{}, laterality: {}".format(save_name,laterality))
+    plt.colorbar(fraction=0.046, pad=0.04)
+
+    plt.subplot(1, 2, 2)
+    #plt.autoscale(True)
+
+    label = np.ma.masked_where(label < 130, label)
+    cmap = plt.cm.jet#viridis
+    cmap.set_bad(color='black')
+
+    plt.imshow(label,cmap=cmap,vmin=200, vmax=600,norm=colors.PowerNorm(gamma=1./2.))
+    plt.title("low res:{}".format(save_name))
+    write_depthgrid_values(coord_list, low_grid_values_label)
+    plt.colorbar(fraction=0.046, pad=0.04)
+    plt.savefig(os.path.join(save_path, str(save_name)))
+    plt.close()
+
+def plot_fundus_label_prediction(record_path, image_path, save_path,save_name,prediction):
+    im_name = record_path.split("/")[-1].replace(".npy", ".png")
+    if prediction:
+        label_mu = cv2.resize(np.load(record_path)[0,:,:,0],(768,768))*500.
+    else:
+        label_mu = cv2.resize(np.load(record_path), (768, 768))
+
+    #center image
+    label_mu[label_mu < 25] = 0
+    label_mu = center_img(label_mu)
+
+    #load image and set margin to zero and center
+    fundus_image = cv2.resize(cv2.imread(os.path.join(image_path,im_name)),(768,768))
+    fundus_image[label_mu == 0] = 0
+    fundus_image = center_img(fundus_image)
+
+    # get values for low res grid and coordinates
+    label_mu = np.nan_to_num(label_mu)
+    low_grid_values_label = get_low_res_depth_grid_values(label_mu)
+
+    #overlay nine area grid
+    label_mu = np.nan_to_num(label_mu)
+    label = np.copy(label_mu)
+    low_res_grid = get_low_res_grid_shape(label_mu)
+    label[low_res_grid.astype(np.bool)[:, :, 0]] = 0
+
+
+    coord_list = get_text_coord(label_mu)
+    plt.figure(figsize=(20, 20))
+    plt.subplot(1, 3, 1)
+    plt.imshow(fundus_image)
+    plt.title("fundus")
+    plt.subplot(1, 3, 2)
+    label_mu = np.ma.masked_where(label_mu < 100, label_mu)
+    cmap = plt.cm.jet
+    cmap.set_bad(color='black')
+    plt.imshow(label_mu,cmap=cmap,vmin=200, vmax=600,norm=colors.PowerNorm(gamma=1./2.))
+    plt.title("high res:{}".format(save_name))
+    plt.colorbar(fraction=0.046, pad=0.04)
+    plt.subplot(1, 3, 3)
+    label = np.ma.masked_where(label < 100, label)
+    cmap = plt.cm.jet
+    cmap.set_bad(color='black')
+
+    plt.imshow(label,cmap=cmap,vmin=200, vmax=600,norm=colors.PowerNorm(gamma=1./2.))
+    plt.title("low res:{}".format(save_name))
+    write_depthgrid_values(coord_list, low_grid_values_label)
+    plt.colorbar(fraction=0.046, pad=0.04)
+
+    plt.savefig(os.path.join(save_path, str(save_name)))
+    plt.close()
+
+def plot_confusion_matrix(cls_pred, cls_true, num_classes,save_path):
+    '''
+    :param cls_pred: numpy array with class prediction
+    :param cls_true: numpy array with class labels
+    :param num_classes: constant depicting number of classes
+    :return: this function saves a plot of the confusion matrix in the working dir
+    '''
+    # This is called from print_test_accuracy() below.
+
+    # cls_pred is an array of the predicted class-number for
+    # all images in the test-set.
+
+    # Get the confusion matrix using sklearn.
+    cm = confusion_matrix(y_true=cls_true,
+                          y_pred=cls_pred).astype(np.float32)
+
+    cm_normalized = np.divide(cm, np.sum(cm, axis=1)).round(2)
+
+    # Print the confusion matrix as text.
+    print(cm_normalized)
+
+    # Plot the confusion matrix as an image.
+    plt.matshow(cm_normalized,cmap=plt.cm.Greys)
+
+    # Make various adjustments to the plot.
+    plt.colorbar()
+    tick_marks = np.arange(num_classes)
+    plt.xticks(tick_marks, ('Non pathological', 'Pathological'))
+    plt.yticks(tick_marks, ('Non pathological', 'Pathological'),rotation="vertical", verticalalignment="center")
+    plt.xlabel('Prediction')
+    plt.ylabel('True')
+
+    plt.text(0,0,cm_normalized[0,0],color='white')
+    plt.text(0, 1, cm_normalized[0, 1],color='black')
+    plt.text(1, 0, cm_normalized[1, 0],color='black')
+    plt.text(1, 1, cm_normalized[1, 1],color='white')
+
+    # Ensure the plot is shown correctly with multiple plots
+    # in a single Notebook cell.
+    plt.savefig(save_path + "/" +'_confusion_matrix_normalized.jpeg')
+    plt.close()
+    # Plot the confusion matrix as an image.
+    plt.matshow(cm,cmap=plt.cm.Greys)
+
+    # Make various adjustments to the plot.
+    plt.colorbar()
+    tick_marks = np.arange(num_classes)
+    plt.xticks(tick_marks, ('Non pathological', 'Pathological'))
+    plt.yticks(tick_marks, ('Non pathological', 'Pathological'),rotation="vertical", verticalalignment="center")
+    plt.xlabel('Prediction')
+    plt.ylabel('True')
+
+    plt.text(0,0,cm[0,0],color='white')
+    plt.text(0, 1, cm[0, 1],color='black')
+    plt.text(1, 0, cm[1, 0],color='black')
+    plt.text(1, 1, cm[1, 1],color='white')
+
+    # Ensure the plot is shown correctly with multiple plots
+    # in a single Notebook cell.
+    plt.savefig(os.path.join(save_path,"_confusion_matrix"))
+	
+
