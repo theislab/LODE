@@ -1,6 +1,7 @@
 from keras import Input
 import os
 import numpy as np
+import cv2
 from model import get_unet
 from segmentations import Segmentations
 from dicom_table import DicomTable
@@ -8,8 +9,8 @@ import glob
 from thickness_map import Map
 import matplotlib.pyplot as plt
 
-example_dir = "./data/oct"
-dicom_paths = glob.glob( example_dir + "/*/*/*.dcm" )
+example_dir = "/media/olle/Seagate/thickness_map_prediction/calculation_thickness_maps/data/thickness_map_examples"
+dicom_paths = glob.glob(example_dir + "/*/*.dcm")
 
 params = {}
 params["save_path"] = "./output/"
@@ -30,8 +31,20 @@ for dicom_path in dicom_paths:
         # retrieve all segmentations
         segmentations = Segmentations(dicom, model)
 
+        # set path in dicom dir to save octs
+        seg_save_path = "/".join(dicom_path.split( "/" )[:-1])
+        segmentations.save_segmentations(os.path.join(seg_save_path, "segmentations"))
+        segmentations.save_octs(os.path.join(seg_save_path, "octs"))
+
         # calculate the retinal thickenss map
-        grid = Map(dicom, segmentations.oct_segmentations)
+        map_ = Map(dicom, segmentations.oct_segmentations, dicom_path)
+
+        # initialize calculation of thickness map
+        map_.depth_grid()
+
+        # plot thickness map
+        map_.plot_thickness_map(os.path.join(seg_save_path,"thickness_map.png"))
 
         # save thickness map
-        np.save(os.path.join(params["save_map_path"],dicom.record_id + ".npy"), grid)
+        np.save(os.path.join(params["save_map_path"],
+                             dicom.record_id + ".npy"), cv2.resize(map_.thickness_map,(128, 128)))

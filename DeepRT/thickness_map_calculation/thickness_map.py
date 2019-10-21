@@ -1,12 +1,91 @@
 import numpy as np
 import pandas as pd
+import matplotlib.pyplot as plt
+import os
 import cv2
 
 
 class Map():
-    def __init__(self, dicom, segmentations):
+    def __init__(self, dicom, segmentations, dicom_path):
+        self.dicom_path = dicom_path
         self.dicom = dicom
         self.segmentations = segmentations
+        self.thickness_map = None
+
+    def crop_image(self, img, tol=0):
+        # img is 2D image data
+        # tol  is tolerance
+
+        # if 3 dim fundus appears
+        if len( img.shape ) > 2:
+            mask = img[:, :, 0] > tol
+        else:
+            mask = img > tol
+        return img[np.ix_( mask.any( 1 ), mask.any( 0 ) )]
+
+    def heidelberg_colormap(self):
+        from matplotlib.colors import LinearSegmentedColormap
+        plt.figsize = (40, 40)
+
+        plt.close( 'all' )
+
+        cdict = {
+
+            'blue': ((0.0, 0.0, 0.0),  # black
+                     (0.1, 1.0, 1.0),  # purple
+                     (0.2, 1.0, 1.0),  # blue
+                     (0.3, 0.0, 0.0),  # green
+                     (0.4, 0.0, 0.0),  # yellow
+                     (0.55, 0.0, 0.0),  # red
+                     (0.65, 1.0, 1.0),  # white
+                     (1.0, 1.0, 1.0)),  # white
+
+            'green': ((0.0, 0.0, 0.0),  # black
+                      (0.1, 0.0, 0.0),  # purple
+                      (0.2, 0.0, 0.0),  # blue
+                      (0.3, 1.0, 1.0),  # green
+                      (0.4, 1.0, 1.0),  # yellow
+                      (0.55, 0.0, 0.0),  # red
+                      (0.65, 1.0, 1.0),  # white
+                      (1.0, 1.0, 1.0)),
+
+            'red': ((0.0, 0.0, 0.0),  # black
+                    (0.1, 1.0, 1.0),  # purple
+                    (0.2, 0.0, 0.0),  # blue
+                    (0.3, 0.0, 0.0),  # green
+                    (0.4, 1.0, 1.0),  # yellow
+                    (0.55, 1.0, 1.0),  # red
+                    (0.65, 1.0, 1.0),  # white
+                    (1.0, 1.0, 1.0)),
+        }
+
+        cm_heidelberg = LinearSegmentedColormap( 'bgr', cdict )
+
+        return (cm_heidelberg)
+
+    def plot_thickness_map(self, save_path):
+        '''
+        :param save_path:
+        :return:
+        '''
+        cm_heidelberg = self.heidelberg_colormap()
+
+        plt.figure( figsize = (5, 5) )
+
+        # crop black margin
+        thickness_map = self.crop_image(self.thickness_map, tol = 0)
+
+        thickness_map = np.ma.masked_where(thickness_map < 100,
+                                           thickness_map)
+
+        thickness_map[thickness_map > 500.0] = 1000
+        cmap = cm_heidelberg
+        cmap.set_bad( color = 'black' )
+        plt.imshow(thickness_map, cmap = cmap, vmin = 100, vmax = 750)
+        plt.axis("off")
+
+        plt.savefig(save_path)
+        plt.close()
 
     def get_iterable_dimension(self):
         y_iter = None
@@ -90,7 +169,6 @@ class Map():
 
         return depth_vector
 
-    @property
     def depth_grid(self):
         # get fundus dimension
         global grid_pd_int
@@ -166,4 +244,4 @@ class Map():
 
             grid_pd_int = grid_pd_int.fillna( 0 )
 
-        return cv2.resize( np.array( grid_pd_int ), (128, 128) ).astype( np.int32 )
+            self.thickness_map = np.array(grid_pd_int)
