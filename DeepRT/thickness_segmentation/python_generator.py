@@ -61,6 +61,7 @@ class DataGenerator(keras.utils.Sequence):
 
 
 
+
             #resize samples
             im_resized = cv2.resize(im, self.shape).reshape(self.shape[0],self.shape[1],3)
             lbl_resized = np.array(Image.fromarray(lbl).resize(self.shape)).reshape((self.shape[0],
@@ -94,8 +95,8 @@ class DataGenerator(keras.utils.Sequence):
         rot90_ = bool(random.getrandbits(1))
         shift =  bool(random.getrandbits(1))
         noise =  bool(random.getrandbits(1))
-        brightness = bool(random.getrandbits(1))
-        contrast = bool(random.getrandbits(1))
+        brightness = False#bool(random.getrandbits(1))
+        contrast = False#bool(random.getrandbits(1))
         rotate = bool(random.getrandbits(1))
 
         if (rotate):

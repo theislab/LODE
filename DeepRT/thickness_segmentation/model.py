@@ -83,7 +83,7 @@ def get_unet(input_img, n_filters=16, dropout=1.0, batchnorm=True, training=True
     u12 = Dropout( dropout )( u12, training = training )
     c13 = conv2d_block( u12, n_filters = n_filters * 1, kernel_size = 3, batchnorm = batchnorm )
 
-    prediction = Conv2D( params["number_of_classes"], (1, 1), activation = "sigmoid" )( c13 )
+    prediction = Conv2D(1, (1, 1), activation = "sigmoid" )( c13 )
 
     outputs = prediction
 
