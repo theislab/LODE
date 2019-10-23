@@ -4,6 +4,6 @@ params["batch_size"] = 2
 params["epochs"] = 1
 params["learning_rate"] = 0.001
 params["continuing_training"] = False
-params["data_dir"] = "/home/olle/PycharmProjects/thickness_map_prediction/retinal_thickness_segmentation/data/clinic_data"
+params["data_dir"] = "./data"
 params["save_path"] = "./output"
 params["loss_function"] = "dice_loss"

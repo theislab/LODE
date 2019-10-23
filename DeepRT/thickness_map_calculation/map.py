@@ -232,7 +232,7 @@ class Map():
 
         return depth_vector
 
-    def depth_grid(self):
+    def depth_grid(self, interpolation):
         """
         :return:
         """
@@ -299,11 +299,11 @@ class Map():
         # set zero to nan: interpolate missing values
         grid[grid == 0] = np.nan
 
-        # TODO: (1) implement intepolation in numpy / scipy (2): configure other interpolation methods
+        # TODO: (1) implement intepolation in numpy / scipy
         # interpolate depending on which axis the depth vector is filled in
+        grid_pd_int = pd.DataFrame(grid).interpolate(limit_direction = 'both',
+                                                     axis = 0, method=interpolation)
         if y_cord == "iterable":
-            grid_pd_int = pd.DataFrame(grid).interpolate(limit_direction = 'both',
-                                                            axis = 0)
             # set all areas outside of measurements to 0
             min_starty = int(min(starty_pos.iloc[1:]))
             max_starty = int(max(starty_pos.iloc[1:]))
@@ -316,7 +316,7 @@ class Map():
 
         if x_cord == "iterable":
             grid_pd_int = pd.DataFrame(grid).interpolate(limit_direction = 'both',
-                                                            axis = 1)
+                                                         axis = 1, method=interpolation)
             # set all areas outside of measurements to 0
             min_startx = int(min(startx_pos.iloc[1:]))
             max_startx = int(max(startx_pos.iloc[1:]))

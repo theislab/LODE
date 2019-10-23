@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 # retrieve full paths to dicom files
 example_dir = "./data"
-dicom_paths = glob.glob(example_dir+"/*/*/*/*.dcm")
+dicom_paths = glob.glob(example_dir+"/*/*.dcm")
 
 params = {}
 # set path where segmenation algorithm is saved
@@ -54,7 +54,7 @@ for dicom_path in dicom_paths:
         map_ = Map(dicom, segmentations.oct_segmentations, dicom_path)
 
         # initialize calculation of thickness map
-        map_.depth_grid()
+        map_.depth_grid(interpolation = "linear")
 
         # plot thickness map
         map_.plot_thickness_map(os.path.join(dicom_dir, dicom.record_id+"_thickness_map.png"))
