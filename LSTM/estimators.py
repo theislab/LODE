@@ -7,9 +7,10 @@ import matplotlib.pyplot as plt
 import logging
 import models
 from datasets import IOVar, LongitudinalOCTDataset
-from sequences import load_sequences_from_pickle, split_sequences
+from sequences import load_sequences_from_pickle, split_sequences, Measurement
 from functools import partial
 from copy import deepcopy
+import pandas as pd
 from datetime import datetime
 
 def merged_config(config1, config2):
@@ -22,7 +23,8 @@ def merged_config(config1, config2):
 DEFAULT_CONFIG = {
     'sequence_data': {
         'sequence_fname': None,
-        'load_sequences': False
+        'load_sequences': False,
+        'features_fname': None,
     },
     'sequence_split': {
         'sequence_length': 5,
@@ -70,7 +72,7 @@ class Estimator():
             self.sequences_all = load_sequences_from_pickle(fname)
             # split sequences
             self.split_sequences()
-            # create datasets 
+            # create datasets
             self.datasets_from_sequences()
             
         self.create_model()
@@ -98,12 +100,14 @@ class Estimator():
         else:
             self.sequences_split = train, val, test
         
-    def datasets_from_sequences(self, sequences=None, return_values=False):
+    def datasets_from_sequences(self, sequences=None, return_values=False, grouped_features=None):
         # create dataset from given sequences
         assert (self.sequences_split is not None) or (sequences is not None), \
         "self.sequences_split is None, and no sequences are provided"
         if sequences is not None:
             self.sequences_split = self.split_sequences(sequences, return_values=True)
+        # load features if necessary
+        self.load_features(self, grouped_features)
         
         config = self.config['model']
         input_vars = config.get('input_vars')
@@ -126,6 +130,32 @@ class Estimator():
             self.train_dataset = datasets[0]
             self.val_dataset = datasets[1]
             self.test_dataset = datasets[2]
+            
+    def load_features(self, grouped_features=None):
+        """loads segmented clinical features and matches features to each sequence"""
+        from tqdm import tqdm
+        features_fname = self.config['sequence_data']['features_fname']
+        if features_fname is None:
+            # no features need to be loaded
+            return
+        if grouped_features is None:
+            self.log.info('Loading features from {}'.format(features_fname))
+            features = pd.read_csv(features_fname, index_col=0)
+            features.columns = Measurement.FEATURES + ['dicom_name','frame','patient_id','oct_path','laterality','study_date']
+            grouped_features = features.groupby(['oct_path'])[Measurement.FEATURES].sum()
+        for i, sequences in enumerate(self.sequences_split):
+            self.log.info(f'Adding features to sequences {i}')
+            for seq in tqdm(sequences):
+                for mmt in seq.measurements:
+                # get features for individual measurement
+                    try:
+                        mmt.features = np.array(grouped_features.loc[mmt.oct_path])
+                    except KeyError as e:
+                        print(f'Did not find features for oct {mmt.oct_path}')
+                   
+                #seq.add_features_from_pandas(grouped_features)
+                
+
                      
     def create_model(self):
         config = self.config['model']
@@ -248,3 +278,4 @@ def plot_train_curve_comparison(histories, names, baseline_err, ylim=None):
         ax.plot(epochs, [baseline_err for _ in epochs], label='baseline mae {:.3f}'.format(baseline_err))
         if ylim is not None:
             ax.set_ylim(*ylim)
+        ax.legend()
