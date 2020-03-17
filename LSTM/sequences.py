@@ -76,6 +76,7 @@ def split_sequences(sequences, sequence_length, train_frac=0.8, val_frac=0.1, nu
 
 class Measurement:
     MEDS = ['Avastin', 'Dexamethas', 'Eylea', 'Iluvien', 'Jetrea', 'Lucentis', 'Ozurdex', 'Triamcinol']
+    FEATURES = ['background','epiretinal_membrane','vitrous','camera_effect','neurosensory_retina','intraretinal_fluid','subretinal_fluid','subretinal_hyper_reflective_material','RPE','fibrovascular_PED','dusenoid_PED','posterios_hylaois_membrane']    
     # -- Initializers --
     def __init__(self, study_date, oct_path, cur_va):
         if isinstance(study_date, datetime):
@@ -98,6 +99,7 @@ class Measurement:
         self.next_va = None
         self.injections = [0 for _ in Measurement.MEDS]
         self.lens_surgery = False
+        self.features = [0 for _ in Measurement.FEATURES]
         
     @classmethod
     def from_pandas(cls, row):
@@ -155,10 +157,11 @@ class Measurement:
 
 class MeasurementSequence:
     
-    def __init__(self, diagnosis, measurements, patient_id):
+    def __init__(self, diagnosis, measurements, patient_id, laterality):
         self.diagnosis = diagnosis
         self.measurements = measurements
         self.patient_id = patient_id
+        self.laterality = laterality
         
         # properties (calculated)
         self.__num_cur_va = None
@@ -168,6 +171,7 @@ class MeasurementSequence:
     def from_pandas(cls, mmt_table):
         diagnosis = mmt_table.diagnosis.iloc[0]
         patient_id = int(mmt_table.patient_id.iloc[0])
+        laterality = mmt_table.laterality.iloc[0]
         measurements = [Measurement.from_pandas(mmt_table.iloc[0])]
         for i in range(1, len(mmt_table)):
             mmt = Measurement.from_pandas(mmt_table.iloc[i])
@@ -175,12 +179,12 @@ class MeasurementSequence:
             if mmt.oct_path is not None:
                 measurements.append(mmt)
                 
-        return cls(diagnosis, measurements, patient_id)
+        return cls(diagnosis, measurements, patient_id, laterality)
     
     @classmethod
     def from_dict(cls, d):
         measurements = [Measurement.from_dict(mmt) for mmt in d['measurements']]
-        return cls(diagnosis=d['diagnosis'], measurements=measurements, patient_id=d['patient_id'])
+        return cls(diagnosis=d['diagnosis'], measurements=measurements, patient_id=d['patient_id'], laterality=d.get('laterality', None))
     
     def __len__(self):
         return len(self.measurements)
@@ -259,7 +263,18 @@ class MeasurementSequence:
         d = {
             'diagnosis': self.diagnosis,
             'patient_id': self.patient_id,
+            'laterality': self.laterality,
             'measurements': [mmt.to_dict() for mmt in self.measurements]
         }
         return d
+    
+    def add_features_from_pandas(self, grouped_features):
+        """add feature values to measurement objects. Merge features_table with measurements"""
+        for mmt in self.measurements:
+            # get features for individual measurement
+            try:
+                mmt.features = np.array(grouped_features.loc[mmt.oct_path])
+            except KeyError as e:
+                print(f'Did not find features for oct {mmt.oct_path}')
+
 
