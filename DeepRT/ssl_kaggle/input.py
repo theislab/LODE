@@ -1,19 +1,10 @@
-# from __future__ import print_function
-from numpy.random import seed
-
-seed(1)
-from tensorflow import set_random_seed
-
-set_random_seed(2)
-
 from keras.preprocessing.image import ImageDataGenerator
 import glob as glob
 from utils import Params
 import os
-import model as m
+import numpy as np
 
 params = Params("params.json")
-
 
 def get_data_statistics(data_path):
     # number of training images
@@ -29,21 +20,36 @@ def get_data_statistics(data_path):
     return num_training_images, num_validation_images, num_test_images
 
 
+def apply_transform(x):
+    transform_parameters = {'red_mean': 138.91592015833191,
+                            'green_mean': 135.26675259654633,
+                            'blue_mean': 133.17857971137104,
+                            'var': 1379.760843672262}
+
+    im_processed = np.copy(x).astype(np.float64)
+
+    for k, i in enumerate( ["red_mean", "green_mean", "blue_mean"] ):
+        # subtract feature wise means
+        im_processed[:, :, k] = im_processed[:, :, k] - transform_parameters[i]
+
+    return im_processed / np.sqrt(np.float(transform_parameters["var"]))
+
+
 def create_generators(data_path):
     print('Using real-time data augmentation.')
 
+
     train_datagen = ImageDataGenerator(
-        rescale=(1. / 255),
         rotation_range=45,
         width_shift_range=0.0,
         height_shift_range=0.0,
         horizontal_flip=True,
         vertical_flip=True,
-        zoom_range=0.3)
+        preprocessing_function=apply_transform)
 
     test_datagen = ImageDataGenerator(
-        rescale=1. / 255,
-    )
+        preprocessing_function=apply_transform)
+
 
     train_generator = train_datagen.flow_from_directory(
         directory=data_path + "/train",
@@ -81,7 +87,7 @@ def create_generators(data_path):
 
 def create_test_generator(data_path):
     test_datagen = ImageDataGenerator(
-        rescale=1. / 255,
+        preprocessing_function=apply_transform,
     )
 
     test_generator = test_datagen.flow_from_directory(

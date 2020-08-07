@@ -1,5 +1,5 @@
 """General utility functions"""
-
+import keras.backend as K
 import json
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -7,6 +7,9 @@ import glob as glob
 import pandas as pd
 import numpy as np
 import os
+import shutil
+
+from keras.utils import get_file
 
 class Params():
     """Class that loads hyperparameters from a json file.
@@ -37,41 +40,51 @@ class Params():
         return self.__dict__
 
 
-
-
-
 class Logging():
-
     def __init__(self, logging_directory, params):
         self.log_dir = logging_directory
         self.model_directory = None
         self.tensorboard_directory = None
         self.params = params
 
-    def __create_dir(self,dir):
+    def __create_dir(self, dir):
         os.makedirs(dir)
 
-    def __create_tensorboard_dir(self,model_dir):
+    def __create_tensorboard_dir(self, model_dir):
 
-        #set abs path to new dir
-        new_dir = os.path.join(model_dir,"tensorboard_dir")
+        # set abs path to new dir
+        new_dir = os.path.join(model_dir, "tensorboard_dir")
 
-        #create new dir
+        # create new dir
         self.__create_dir(new_dir)
 
-        #set object instance to new path
-        self.tensorboard_directory =new_dir
+        # set object instance to new path
+        self.tensorboard_directory = new_dir
 
-    def create_model_directory(self,logging_directory):
+    def __remove_empty_directories(self):
+
+        # get current directories
+        current_directories = glob.glob(self.log_dir + "/*")
+
+        # check for each dir, if weight.hdf5 file is contained
+        for current_directory in current_directories:
+            if not os.path.isfile(os.path.join(current_directory, "weights.hdf5")):
+                # remove directory
+                shutil.rmtree(current_directory)
+
+    def create_model_directory(self):
         '''
         :param logging_directory: string, gen directory for logging
         :return: None
         '''
 
-        #get allready created directories
-        existing_ = os.listdir(logging_directory)
+        # remove emtpy directories
+        self.__remove_empty_directories()
 
-        #if first model iteration, set to zero
+        # get allready created directories
+        existing_ = os.listdir(self.log_dir)
+
+        # if first model iteration, set to zero
         if existing_ == []:
             new = 0
             # save abs path of created dir
@@ -83,25 +96,21 @@ class Logging():
             # create subdir for tensorboard logs
             self.__create_tensorboard_dir(created_dir)
 
-        if self.params.continue_training == 1:
-            # save abs path of created dir
-            created_dir = os.path.join(self.log_dir, str(self.params.model_iter))
-
         else:
-            #determine the new model directory
+            # determine the new model directory
             last_ = max(list(map(int, existing_)))
             new = int(last_) + 1
 
-            #save abs path of created dir
+            # save abs path of created dir
             created_dir = os.path.join(self.log_dir, str(new))
 
-            #make new directory
+            # make new directory
             self.__create_dir(created_dir)
 
-            #create subdir for tensorboard logs
+            # create subdir for tensorboard logs
             self.__create_tensorboard_dir(created_dir)
 
-        #set class instancy to hold abs path
+        # set class instancy to hold abs path
         self.model_directory = created_dir
 
     def save_dict_to_json(self, json_path):
@@ -115,10 +124,88 @@ class Logging():
             d = {k: str(v) for k, v in self.params.dict.items()}
             json.dump(d, f, indent=4)
 
-from sklearn.metrics import precision_score
-from sklearn.metrics import recall_score
-from sklearn.metrics import accuracy_score
-from sklearn.metrics import confusion_matrix
+
+class TrainOps():
+    def __init__(self, params):
+        self.params = params
+
+    def lr_schedule(self, epoch):
+        """Learning Rate Schedule
+
+        Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
+        Called automatically every epoch as part of callbacks during training.
+
+        # Arguments
+            epoch (int): The number of epochs
+
+        # Returns
+            lr (float32): learning rate
+        """
+        lr = 1e-3
+
+        if epoch > 85:
+            lr *= 1e-3
+        elif epoch > 80:
+            lr *= 1e-2
+        elif epoch > 20:
+            lr *= 1e-1
+        print('Learning rate: ', lr)
+        return lr
+
+    def percentual_deviance(self, y_true, y_pred):
+        return K.mean(K.abs(y_true[:, :, :, 0] - y_pred[:, :, :, 0])) / K.mean(y_true)
+
+    def custom_mae(self,y_true, y_pred):
+        return K.mean(K.abs((y_true[:, :, :, 0] - y_pred[:, :, :, 0])))
+
+    def load_models(self, model, weights):
+        pre_init = False
+        if weights == "imagenet":
+            WEIGHTS_PATH_NO_TOP = ('https://github.com/fchollet/deep-learning-models/'
+                                   'releases/download/v0.2/'
+                                   'resnet50_weights_tf_dim_ordering_tf_kernels_notop.h5')
+
+            weights_path = get_file(
+                'resnet50_weights_tf_dim_ordering_tf_kernels.h5',
+                WEIGHTS_PATH_NO_TOP,
+                cache_subdir = 'models',
+                md5_hash = 'a7b3fe01876f51b976af0dea6bc144eb')
+
+            # get model weights
+            model.load_weights(weights_path, by_name = True, skip_mismatch = True)
+
+            print("loaded imagenet model weights")
+            pre_init = True
+
+        if weights == "thickness_map":
+            weights_path = "./thickness_model_weights/weights.hdf5"
+            # get model weights
+            model.load_weights(weights_path, by_name = True, skip_mismatch = True)
+
+            print("load thickness map weights")
+            pre_init = True
+
+        if not pre_init:
+            print("init random weights")
+
+    def plot_examples(self, record, name):
+        fig = plt.figure(figsize = (16, 8))
+        columns = 2
+        rows = 1
+        names = ["image", "map"]
+        for i in range(1, columns * rows + 1):
+            img = record[i - 1]
+            fig.add_subplot(rows, columns, i)
+            if names[i - 1] == "map":
+                plt.imshow(img, cmap = plt.cm.jet)
+            if names[i - 1] == "image":
+                plt.imshow(img)
+
+            plt.title(names[i - 1])
+
+        plt.savefig(self.params.model_directory + "/exmaple_{}.png".format(name))
+        plt.close()
+
 
 class Evaluation():
     '''
@@ -127,179 +214,18 @@ class Evaluation():
     history: pandas data frame
     '''
 
-    def __init__(self, labels,predictions, history, model_dir, filenames, params):
+    def __init__(self, labels,predictions, softmax_output, model_dir, filenames, params):
         self.params = params
         self.labels = labels
         self.prediction = predictions
-        self.history = history
         self.model_dir = model_dir
         self.filenames = filenames
+        self.history = self.get_loss_files()
+        self.softmax = softmax_output
+
+        self.mae = None
+        self.mae_rel = None
 
 
-        self.accuracy = None
-        self.precision = None
-        self.recall = None
-        self.confusion_matrix = None
 
-    def __accuracy(self):
-        return (accuracy_score(self.labels, self.prediction))
-
-    def __precision(self):
-        return(precision_score(self.labels,self.prediction,average='micro'))
-
-    def __recall(self):
-        return(recall_score(self.labels, self.prediction,average='micro'))
-
-    def __confusion_matrix(self):
-        return(confusion_matrix(self.labels, self.prediction))
-
-    def __filenames(self):
-        # generate example predictions
-        pred_im = pd.DataFrame(self.filenames)
-        pred_im_pd = pred_im[0].str.split("/", expand=True)
-        pred_im_pd = pred_im_pd.rename(columns={0: "labels", 1: "id"})
-        return(pred_im_pd)
-
-    def __plot_confusion_matrix(self,normalize=True,title=None):
-        """
-        This function prints and plots the confusion matrix.
-        Normalization can be applied by setting `normalize=True`.
-        """
-        import itertools
-
-        if not title:
-            if normalize:
-                title = 'Normalized confusion matrix'
-            else:
-                title = 'Confusion matrix, without normalization'
-        y_true = self.labels
-        y_pred = self.prediction
-        # Compute confusion matrix
-        cm = confusion_matrix(y_true, y_pred)
-        # Only use the labels that appear in the data
-        if normalize:
-            cm = cm.astype('float') / cm.sum(axis=1)[:, np.newaxis]
-            print("Normalized confusion matrix")
-        else:
-            print('Confusion matrix, without normalization')
-
-        plt.matshow(cm, cmap=plt.cm.Blues)
-
-        thresh = cm.max() / 1.5
-        for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-            if normalize:
-                plt.text(j, i, "{:0.4f}".format(cm[i, j]),
-                         horizontalalignment="center",
-                         color="white" if cm[i, j] > thresh else "black")
-
-        plt.title("confusion matrix")
-        plt.xlabel('Predicted')
-        plt.ylabel('True')
-        plt.savefig(os.path.join(self.model_dir,"confusion_matrix.png"))
-        return
-
-    def __plot_history(self):
-        plt.rcParams.update({'font.size': 16})
-        plt.Figure(figsize=(10, 40))
-
-        # load loss curves
-        statistics_pd = self.history
-
-        plt.suptitle("Train statistics")
-        for i in range(1, 4):
-            plt.subplot(3, 1, i)
-            if i == 1:
-                plt.plot(statistics_pd["loss"], label="train loss")
-                plt.plot(statistics_pd["val_loss"], label="validation loss")
-                plt.xlabel("epochs")
-                plt.ylabel("cross entropy")
-                plt.legend()
-            if i == 2:
-                plt.plot(statistics_pd["acc"], label="train accuracy")
-                plt.plot(statistics_pd["val_acc"], label="validation accuracy")
-                plt.xlabel("epochs")
-                plt.ylabel("accuracy")
-                plt.legend()
-            if i == 3:
-                plt.plot(statistics_pd["lr"], label="learning rate decay")
-                plt.xlabel("epochs")
-                plt.ylabel("lr")
-                plt.legend()
-
-        plt.savefig(self.model_dir + "/history.png")
-
-    def __save_example_predictions(self, params):
-
-        #data frame with filenames and labels of test predictions
-        pred_im_pd = self.__filenames()
-
-        #only take the names of which we have predictions
-        if pred_im_pd.shape[0] > len(self.prediction):
-            pred_im_pd = pred_im_pd.iloc[:len(self.prediction)]
-
-        #test prediction added
-        pred_im_pd["predictions"] = self.prediction
-
-        #set label levels
-        levels = ["0", "1", "2", "3", "4"]
-
-        for level in levels:
-            pred_im_class_pd = pred_im_pd[pred_im_pd["labels"] == level]
-
-            # shuffle indices
-            pred_im_class_pd = pred_im_class_pd.sample(frac=1)
-
-            # save ten predictions
-            ten_im = pred_im_class_pd.iloc[0:5]
-
-            for im_name in ten_im["id"]:
-                pred_class = ten_im[ten_im["id"] == im_name].predictions.values[0]
-                im_path = os.path.join(params.data_path, "test", level, im_name)
-
-                # create save directory if does not exist
-                if not os.path.exists(os.path.join(self.model_dir, "predictions", level)):
-                    os.makedirs(os.path.join(self.model_dir, "predictions", level))
-
-                outcome_string = "__true__" + str(level) + "__pred__" + str(pred_class) + ".jpeg"
-                save_example_name = im_name.replace(".jpeg", outcome_string)
-
-                fundus_im = np.array(Image.open(im_path))
-
-                plt.imsave(os.path.join(self.model_dir, "predictions", level, save_example_name), fundus_im)
-
-    def __example_prediction_canvas(self):
-        plt.rcParams.update({'font.size': 5})
-        example_prediction_paths = glob.glob(self.model_dir + "/predictions/**/*")
-
-        fig = plt.figure(figsize=(10, 10))
-        # set figure proportion after number of examples created
-        columns = int(len(example_prediction_paths) / 5)
-        rows = 5
-        for i in range(1, columns * rows + 1):
-            img = np.array(Image.open(example_prediction_paths[i - 1]))
-            fig.add_subplot(rows, columns, i)
-            plt.imshow(img)
-            plt.title(example_prediction_paths[i - 1].split("/")[-1].replace(".jpeg", ""))
-            plt.axis('off')
-
-        plt.savefig(os.path.join(self.model_dir, "example_canvas.png"))
-
-    def __main_result(self):
-        '''init all metrics'''
-        self.accuracy = self.__accuracy()
-        self.precision = self.__precision()
-        self.recall = self.__recall()
-
-        # dump all stats in txt file
-        result_array = np.array(["accuracy",self.accuracy, "precision", self.precision, "recall",self.recall])
-        np.savetxt(self.model_dir + "/result.txt", result_array, fmt='%s')
-
-    def write_plot_evaluation(self):
-        self.__main_result()
-        self.__plot_confusion_matrix()
-        self.__plot_history()
-
-    def plot_examples(self):
-        self.__save_example_predictions(self.params)
-        self.__example_prediction_canvas()
 
