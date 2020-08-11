@@ -1,4 +1,5 @@
 import os
+import config
 from feature_statistics.config import PROJ_DIR, DATA_DIR, WORK_SPACE
 from feature_statistics.utils.etdrs_utils import ETDRSUtils
 import pandas as pd
@@ -38,9 +39,9 @@ def process(i):
         print("record not working, skippint record: ", i)
 
 
-if __name__ == "__main__":
-    processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs)
-    features_pd = pd.DataFrame.from_dict(processed_list)
-    features_pd.to_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"))
+#if __name__ == "__main__":
+processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs)
+features_pd = pd.DataFrame.from_dict(processed_list)
+features_pd.to_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"))
 
 
