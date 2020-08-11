@@ -1,6 +1,6 @@
 import os
-from feauture_statistics.config import PROJ_DIR, DATA_DIR
-from feauture_statistics.utils.etdrs_utils import ETDRSUtils
+from feature_statistics.config import PROJ_DIR, DATA_DIR
+from feature_statistics.utils.etdrs_utils import ETDRSUtils
 import pandas as pd
 from tqdm import tqdm
 from joblib import Parallel, delayed
