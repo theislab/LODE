@@ -1,0 +1,96 @@
+notes 16.07.2020
+
+which data do we have
+
+we have all clinical data
+visual acuity 
+
+
+Prediction target:
+
+
+########################
+time until try:
+
+(Injection treat Fluids only, atrophy and fibrosis increase.)
+
+how many injections until dry (only treat wet AMD)
+or time until dry
+
+AMD patients more reliable than diabetic
+
+what is dry?
+- dry means either no fluid at all (intra and sub retinal fluid)
+
+
+########################
+Surface area of fibrosis as a function of number of treatments.
+location (distance to fovea) how many develope fibrosis in fovea as a function of number of treatments
+choroid thickness in terms of number of injections and in relation to time to dry.
+Determine fovea location from OCT: 
+
+
+########################
+predict conversion in late stage AMD
+
+how to define in terms of clinical features - to be discussed?
+the more geographic atrophy the more late stage geographic. 
+
+more atrophy means less sensory cells.
+
+Multiple features determine atrophy.
+
+absence of RPE is best defenition now do columns wise
+Choroid gets thinner.
+Sometimes makes thinner but sometimes thicker if Fibrosis if present.
+
+Note: Once there is atrophy then one can not get back, i.e. always predict from not having to getting atrophy.
+
+########################
+Choroid - not correlated with atrophy
+
+
+########################
+Groups of patients:
+
+Naive compared to treated patients:
+
+naive patients: patients who never got treated vs treated scans
+treated naive scan: scan of the first visiit
+
+- if naive patient have been treated at other clinic then its not naive, so we need list from Michael.
+
+treated patients: patients who have visited clinical before or have had treatment.
+
+Start by doing all the statiscs and prognstics on certain naive patients.
+
+
+########################
+treatment plan: treat and extend depending on patient treatment.
+
+divide lucentis vs. alea injection.
+how does the diff drugs work better for diff feature states.
+
+########################
+Thickness of retina especially in center.
+
+We can use normal & pathological thickness for prediction labels.
+
+########################
+Compare statistics based on Gender, age groups.
+medication that the patients recieved.
+medication switches (time periods)
+patients who switched
+subgroups by vision (VA, diseases, gluacome, amd, diabetic retinopathy)
+patients with only amd or with other diseases as well
+
+
+
+
+
+
+
+
+
+
+

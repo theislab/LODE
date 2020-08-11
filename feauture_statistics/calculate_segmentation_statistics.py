@@ -1,30 +1,14 @@
 import os
-from config import PROJ_DIR, DATA_DIR
-from utils.etdrs_utils import ETDRSUtils
+from feauture_statistics.config import PROJ_DIR, DATA_DIR
+from feauture_statistics.utils.etdrs_utils import ETDRSUtils
 import pandas as pd
 from tqdm import tqdm
-import multiprocessing
 from joblib import Parallel, delayed
 
 num_cores = 8
 inputs = tqdm(os.listdir(DATA_DIR))
 
 print(f"number of cores {num_cores} set to paralell process")
-
-
-def process(i):
-    try:
-        etdrs = ETDRSUtils(path = os.path.join(DATA_DIR, i))
-        feature_log = etdrs.get_etdrs_stats()
-        return feature_log
-    except:
-        print("record not working, skippint record: ", i)
-
-
-if __name__ == "__main__":
-    processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs)
-    features_pd = pd.DataFrame.from_dict(processed_list)
-    features_pd.to_csv("./statistics/feature_statistics.csv")
 
 '''
 if __name__ == "__main__":
@@ -42,3 +26,20 @@ if __name__ == "__main__":
             print("record not working, skippint record: ", filename)
             continue
 '''
+
+
+def process(i):
+    try:
+        etdrs = ETDRSUtils(path = os.path.join(DATA_DIR, i))
+        feature_log = etdrs.get_etdrs_stats()
+        return feature_log
+    except:
+        print("record not working, skippint record: ", i)
+
+
+if __name__ == "__main__":
+    processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs)
+    features_pd = pd.DataFrame.from_dict(processed_list)
+    features_pd.to_csv("./statistics/feature_statistics.csv")
+
+
