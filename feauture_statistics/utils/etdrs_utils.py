@@ -82,9 +82,13 @@ def thickness_profiler(volume):
 
 
 def rpe_profiler(volume):
-    rpe_map = np.empty([volume.shape[1], volume.shape[2]])
+    rpe_map = np.zeros([volume.shape[1], volume.shape[2]])
     for i in range(volume.shape[0]):
-        neurosensory_retina = np.argwhere(np.sum(volume[0, :, :] == 2, axis = 0))
+        neurosensory_retina = np.argwhere(np.sum(volume[i, :, :] == 2, axis = 0))
+        if not neurosensory_retina.any():
+            rpe_map[i, :] = 0
+            continue
+
         start, stop = np.min(neurosensory_retina), np.max(neurosensory_retina)
 
         rpe_bool = volume[i, :, :] == 6

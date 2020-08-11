@@ -1,2 +1,2 @@
-PROJ_DIR = "/home/olle/PycharmProjects/LODE/feauture_statistics"
-DATA_DIR = PROJ_DIR + "/data"
+PROJ_DIR = "./"
+DATA_DIR = "/storage/groups/ml01/datasets/projects/20181610_eyeclinic_niklas.koehler/clinical_feature_segmentation/segmented_volumes20200728"
