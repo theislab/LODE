@@ -1,4 +1,7 @@
+.*
+!.gitignore
 .ipynb_checkpoints
 data
 raw_data
 workspace
+
