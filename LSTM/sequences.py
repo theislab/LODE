@@ -3,12 +3,28 @@ from datetime import datetime
 import numpy as np
 from copy import deepcopy
 from datasets import IOVar
+import os
+from tqdm import tqdm
+import pandas as pd
 
 
 def save_sequences_to_pickle(fname, sequences):
     """Serialize sequences to pickle format"""
     d = [seq.to_dict() if isinstance(seq, MeasurementSequence) else seq for seq in sequences]
     pickle.dump(d, open(fname, 'wb'))
+
+
+def save_sequences_to_dataframe(fname, sequences):
+    """Serialize sequences to pickle format"""
+    d = [seq.to_dataframe() if isinstance(seq, MeasurementSequence) else seq for seq in sequences]
+
+    main_dataframe = d[0]
+    # create main data frame
+    for i in tqdm(range(1, len(d))):
+        main_dataframe = main_dataframe.append(d[i])
+
+    # save data frame
+    main_dataframe.to_csv(fname, columns = main_dataframe.columns, index = False)
 
 
 def load_sequences_from_pickle(fname):
@@ -95,14 +111,42 @@ def split_sequences(sequences, min_len=None, max_len=None, train_frac=0.8, val_f
     return sequences_train, sequences_val, sequences_test
 
 
+def check_features(workspace_dir, longitudinal_data):
+    """
+    workspace_dir: str
+    longitudinal_data: DataFrame with long. data
+    """
+    feature_names = None
+    segmentation_feature_path = os.path.join(workspace_dir, "segmentation_statistics.csv")
+    if os.path.exists(segmentation_feature_path):
+        # if feature stat table exists load here
+        segmented_data = pd.read_csv(segmentation_feature_path, index_col = 0)
+
+        # get feature names
+        feature_names = segmented_data.columns[1:]
+
+        # join with longitudinal data table
+        keys = ["patient_id", "study_date", "laterality"]
+        segmented_data[keys] = segmented_data.record.str.split("_", expand = True)[[0, 1, 2]]
+
+        # convert keys to same format is in longitudinal_data
+        segmented_data["study_date"] = pd.to_datetime(segmented_data["study_date"]).astype(str)
+
+        # convert patient id to int
+        segmented_data["patient_id"] = segmented_data["patient_id"].astype(np.int64)
+
+        longitudinal_data = pd.merge(longitudinal_data, segmented_data, left_on = keys, right_on = keys, how = "inner")
+        return longitudinal_data, feature_names.tolist()
+    else:
+        return longitudinal_data, feature_names
+
+
 class Measurement:
     MEDS = ['Avastin', 'Dexamethas', 'Eylea', 'Iluvien', 'Jetrea', 'Lucentis', 'Ozurdex', 'Triamcinol']
-    FEATURES = ['background', 'epiretinal_membrane', 'vitrous', 'camera_effect', 'neurosensory_retina',
-                'intraretinal_fluid', 'subretinal_fluid', 'subretinal_hyper_reflective_material', 'RPE',
-                'fibrovascular_PED', 'dusenoid_PED', 'posterios_hylaois_membrane']
+    FEATURES = None
 
     # -- Initializers --
-    def __init__(self, study_date, oct_path, cur_va, seq_id):
+    def __init__(self, study_date, oct_path, cur_va, table, seq_id):
         if isinstance(study_date, datetime):
             self.study_date = study_date
         else:
@@ -122,19 +166,28 @@ class Measurement:
         self.delta_t = None
         self.next_va = None
         self.injections = [0 for _ in Measurement.MEDS]
-        self.features = [0 for _ in Measurement.FEATURES]
+
+        # if features are available, C0_total is example feature
+        if "C0_total" in table.index.tolist():
+            self.features = [table[feature] for feature in Measurement.FEATURES]
+        else:
+            self.features = 0
         self.injection_dates = []
         self.lens_surgery = False
         self.seq_id = seq_id
 
     @classmethod
+    def set_features(cls, features):
+        FEATURES = features
+
+    @classmethod
     def from_pandas(cls, row, seq_id):
-        return cls(row.study_date, row.oct_path, row.logMAR, seq_id)
+        return cls(row.study_date, row.oct_path, row.logMAR, row, seq_id)
 
     @classmethod
     def from_dict(cls, d):
         """initialize from serialized dict"""
-        self = cls(d['study_date'], d['oct_path'], d['cur_va'])
+        self = cls(d['study_date'], d['oct_path'], d['cur_va'],  d["features"].loc[0], d["seq_id"])
         self.delta_t = d['delta_t']
         self.lens_surgery = d['lens_surgery']
         self.injections = d['injections']
@@ -184,8 +237,28 @@ class Measurement:
             'delta_t': self.delta_t,
             'next_va': self.next_va,
             'injections': self.injections,
-            'lens_surgery': self.lens_surgery
+            'lens_surgery': self.lens_surgery,
+            'seq_id': self.seq_id,
+            'features': pd.DataFrame([self.features], columns=Measurement.FEATURES)
         }
+        return d
+
+    def to_dataframe(self):
+        """serialize as dict"""
+        d = {
+            'study_date': '{:%Y-%m-%d}'.format(self.study_date),
+            'oct_path': self.oct_path,
+            'cur_va': self.cur_va,
+            'delta_t': self.delta_t,
+            'next_va': self.next_va,
+            'injections': ", ".join(list(map(str, self.injections))),
+            'lens_surgery': self.lens_surgery,
+            'seq_id': self.seq_id,
+        }
+
+        # add all clinical features
+        for i, feature in enumerate(Measurement.FEATURES):
+            d[feature] = self.features[i]
         return d
 
 
@@ -384,10 +457,14 @@ class MeasurementSequence:
         # remove mmt from self.measurements
         del self.measurements[mmt_id]
 
-    def subset(self, ids):
+    def subset(self, ids, keep_followup):
         """return new subsetted sequences only containing measurements at ids"""
         seq_sub = deepcopy(self)
-        ids_to_remove = np.setdiff1d(range(0, len(seq_sub)), ids)
+        if not keep_followup:
+            ids_to_remove = np.setdiff1d(range(0, len(seq_sub)), ids)
+        else:
+            ids_to_remove = list(filter(lambda x: x > max(ids), list(range(0, len(seq_sub)))))
+
         ids_to_remove = np.sort(ids_to_remove)[::-1]
         for mmt_id in ids_to_remove:
             seq_sub.remove_measurement(mmt_id)
@@ -429,6 +506,24 @@ class MeasurementSequence:
             'measurements': [mmt.to_dict() for mmt in self.measurements]
         }
         return d
+
+    def to_dataframe(self):
+        d = [mmt.to_dataframe() for mmt in self.measurements]
+        # d contains sequence
+        if d:
+            s = pd.DataFrame(columns = list(d[0].keys()))
+
+            # convert to data frame
+            for dict_ in d:
+                s = s.append(pd.DataFrame.from_dict([dict_]))
+
+            # add sequence meta data
+            meta_columns = {"laterality": self.laterality, "diagnosis": self.diagnosis, "patient_id": self.patient_id}
+            for meta_str in meta_columns.keys():
+                s.insert(loc = 0, column = meta_str, value = meta_columns[meta_str])
+            return s
+        else:
+            return d
 
     def add_features_from_pandas(self, grouped_features, normalize=None):
         """add feature values to measurement objects. Merge features_table with measurements"""
