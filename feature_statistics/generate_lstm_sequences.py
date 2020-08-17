@@ -61,8 +61,7 @@ req_checkup_oct = True
 req_checkup_va = False
 
 # create sequences with 3 month / 12 month checkup
-sequences_checkup_3 = []
-sequences_checkup_3_12 = []
+sequences_checkup = []
 for seq in tqdm(seqs):
     # get seq_ids - all mmts fullfilling criterion
     seq_ids = []
@@ -73,20 +72,13 @@ for seq in tqdm(seqs):
             seq_ids.append(seq_id)
 
     # iterate over all possible end_ids - mmt with has_checkup() - set min(seq_ids) t0 just consider first visit
-    for i, end_id in enumerate([min(seq_ids)]): #
-        checkup_3_id = seq.has_checkup(end_id, checkup_time = 90, max_deviation = 20,
+    for i, end_id in enumerate([min(seq_ids)]):
+        seq_timespan = seq.measurements[-1].study_date - seq.measurements[0].study_date
+        checkup_full_id = seq.has_checkup(end_id, checkup_time = seq_timespan.days, max_deviation = 20,
                                        req_oct = req_checkup_oct, req_va = req_checkup_va)
-        checkup_12_id = seq.has_checkup(end_id, checkup_time = 360, max_deviation = 30,
-                                        req_oct = req_checkup_oct, req_va = req_checkup_va)
-        if checkup_3_id:
-            # get new sub-setted sequence
-            seq_sub = seq.subset(seq_ids[0:i + 1] + [checkup_3_id], keep_followup = True)
-            sequences_checkup_3.append(seq_sub)
-            if checkup_12_id:
-                # is valid end_id for 3-12
-                # get new sub-setted sequence
-                seq_sub = seq.subset(seq_ids[0:i + 1] + [checkup_3_id, checkup_12_id], keep_followup = True)
-                sequences_checkup_3_12.append(seq_sub)
+
+        seq_sub = seq.subset(seq_ids[0:i + 1] + [checkup_full_id], keep_followup = True)
+        sequences_checkup.append(seq_sub)
 
 # save sequences to file to avoid recomputing
 sequences.save_sequences_to_dataframe(os.path.join(workspace_dir, 'sequences_3.csv'), sequences_checkup_3)
