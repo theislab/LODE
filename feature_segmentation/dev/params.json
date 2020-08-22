@@ -1,0 +1,11 @@
+{
+    "learning_rate": 0.001,
+    "batch_size": 1,
+    "num_epochs": 100,
+    "img_shape": 256,
+    "n_filters": 16,
+    "num_classes": 15,
+    "continue_training": 1,
+    "data_path": "./data/train_data/hq_examples",
+    "dropout": 0.2
+}
