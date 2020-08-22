@@ -1,15 +1,11 @@
 """General utility functions"""
 import json
-import matplotlib.pyplot as plt
-from matplotlib import colors
 import cv2
 from PIL import Image
 import numpy as np
-import matplotlib.gridspec as gridspec
 import os
 from pydicom import read_file
 import keras.backend as K
-from segmentation.color_config import color_array
 from utils.im_processing import resize
 from utils.utils import Params, Logging, TrainOps
 
@@ -48,18 +44,6 @@ def load_config(model_directory):
     return params, logging, trainops
 
 
-def color_mappings(params):
-    color_palett = color_array[0:params.num_classes + 1]
-    color_palett_norm = color_palett / 255  # (np.max(color_palett)-np.min(color_palett))
-    custom_cmap = colors.ListedColormap(color_palett_norm)
-
-    # set counts and norm
-    array_bounds = np.arange(params.num_classes + 1) - 0.1  # 7
-    bounds = array_bounds.tolist()
-    norm = colors.BoundaryNorm(bounds, custom_cmap.N)
-    return custom_cmap, norm, bounds
-
-
 class EvalVolume():
     def __init__(self, params, path, model, mode, volume_save_path,
                  embedd_save_path, save_volume=False, save_embedding=False, n_scan=49):
@@ -83,11 +67,9 @@ class EvalVolume():
         self.study_date = self.dicom.StudyDate
         self.series_id = self.dicom.SeriesNumber
         self.record_id = f"{self.pat_id}_{self.study_date}_{self.laterality}_{self.series_id}"
-
         self.create_save_directories()
         self.image = self.load_volume()
         self.segmented_volume = self.segment_volume()
-        self.seg_cmap, self.seg_norm, self.bounds = color_mappings(self.params)
         self.feature_dict = {"id": [], "0": [], "1": [], "2": [], "3": [], "4": [],
                              "5": [], "6": [], "7": [], "8": [], "9": [], "10": [],
                              "11": [], "12": [], "13": [], "14": [], "15": []}
@@ -183,7 +165,6 @@ class EvalBScan():
         self.model_input_shape = (1, params.img_shape, params.img_shape, 3)
         self.image = self.load_oct()
         self.segmented_oct = self.segment_oct()
-        self.seg_cmap, self.seg_norm, self.bounds = self.color_mappings()
         self.feature_dict = {"id": [], "0": [], "1": [], "2": [], "3": [], "4": [],
                              "5": [], "6": [], "7": [], "8": [], "9": [], "10": [],
                              "11": []}
