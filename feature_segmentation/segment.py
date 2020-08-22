@@ -1,6 +1,6 @@
 import os
-from keras.engine.saving import load_model
 import pandas as pd
+from keras.engine.saving import load_model
 from segmentation_models.metrics import iou_score
 import time
 from keras import Model
