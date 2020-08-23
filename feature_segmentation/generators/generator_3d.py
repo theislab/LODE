@@ -5,12 +5,14 @@ import random
 import matplotlib.pyplot as plt
 from generators.generator_utils.image_processing import resize, read_resize, read_resize_image
 from generators.generator_utils.oct_augmentations import get_augmentations
+from feature_segmentation.utils.plotting import save_segmentation_plot
+import cv2
 
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
 
-    def __init__(self, list_IDs, params, is_training):
+    def __init__(self, list_IDs, params, is_training, pretraining=False):
         'Initialization'
         self.shape = (params.img_shape, params.img_shape)
         self.batch_size = params.batch_size
@@ -18,10 +20,11 @@ class DataGenerator(keras.utils.Sequence):
         self.list_IDs = list_IDs
         self.on_epoch_end()
         self.params = params
+        self.pretraining = pretraining
         self.image_path = os.path.join(params.data_path, "images")
         self.label_path = os.path.join(params.data_path, "masks")
         self.is_training = is_training
-        self.augment_box = get_augmentations(params)[params.aug_stretegy]
+        self.augment_box = get_augmentations(params)[params.aug_strategy]
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -87,7 +90,10 @@ class DataGenerator(keras.utils.Sequence):
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
-            patient_id, lat, study_date, series_id, frame = DataGenerator.decode_filename(ID)
+            try:
+                patient_id, lat, study_date, series_id, frame = DataGenerator.decode_filename(ID)
+            except:
+                frame = 1
 
             # load samples
             im_path = os.path.join(self.image_path, ID)
@@ -101,9 +107,16 @@ class DataGenerator(keras.utils.Sequence):
             X[i, self.params.n_scans // 2,] = im_resized
             y[i,] = lbl_resized
 
+            req_number = False
+            # check volume path
+            if os.path.exists(volume_path):
+                num_octs = len(os.listdir(volume_path + "/volume"))
+                if num_octs == 49:
+                    req_number = True
+
             # if frame info not available, pad with zeros
-            if (not frame) or (not os.path.exists(volume_path)):
-                X[i, self.params.n_scans // 2, ] = im_resized
+            if (not frame) or (not os.path.exists(volume_path) or (not req_number)):
+                X[i, self.params.n_scans // 2,] = im_resized
 
             elif frame:
                 # get right and left available indices
@@ -139,20 +152,23 @@ class DataGenerator(keras.utils.Sequence):
                     X[i, self.params.n_scans // 2 - (len(left_samples) - k),] = oct_
 
             X[i,], y[i,] = self.__pre_process(X[i,], y[i,])
+
+            if self.pretraining:
+                y[y == 14] = 15
+                y[y == 13] = 14
         return X, y.astype(np.int32)
 
     def example_record(self):
         record_idx = random.randint(0, len(self.list_IDs))
+        X, y = self.__getitem__(record_idx)
 
-        # load samples
-        im_path = os.path.join(self.image_path, self.list_IDs[record_idx - 1])
-        lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1])
-        image, label = read_resize(im_path, lbl_path, self.shape)
+        save_path = os.path.join(self.params.model_directory, "examples", f"example_{record_idx}")
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
 
-        image, label = self.__pre_process(image, label)
-
-        record = [image, label[:, :, 0]]
-        return record, self.list_IDs[record_idx - 1]
+        save_segmentation_plot(save_path + "/_label", y[0, :, :, 0])
+        for i in range(X.shape[1]):
+            cv2.imwrite(os.path.join(save_path + f"/image_scan_{i}.png"), X[0, i,] * 255)
 
     def __pre_process(self, train_im, label_im):
         train_im = np.nan_to_num(train_im)

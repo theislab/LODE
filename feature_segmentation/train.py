@@ -20,17 +20,18 @@ params.data_path = TRAIN_DATA_PATH
 ids = os.listdir(os.path.join(params.data_path, "images"))
 train_ids, validation_ids, test_ids = data_split(ids)
 
+if TRAIN_DATA_PATH.split("/")[-1] == "first_examples":
+    train_ids = train_ids + test_ids
+    pretraining = True
+
 print("number of train and test image are: ", len(train_ids), len(validation_ids))
 
 # Generators
-train_generator = DataGenerator(train_ids, params = params, is_training = True)
-test_generator = DataGenerator(validation_ids, params = params, is_training = False)
-
-for i in range(len(ids)):
-    _, _ = train_generator.__getitem__(i)
+train_generator = DataGenerator(train_ids, params = params, is_training = True, pretraining = pretraining)
+test_generator = DataGenerator(validation_ids, params = params, is_training = False, pretraining = pretraining)
 
 # set model tries
-model_configs = ["deep_unet"]
+model_configs = ["volumeNet"]
 
 for model_config in model_configs:
     # set this iterations model
@@ -49,17 +50,13 @@ for model_config in model_configs:
 
     # plot examples
     for k in range(2):
-        record, name = train_generator.example_record()
-        plot_model_run_images(record, model_dir = logging.model_directory, mode = "train", filename = name)
+        train_generator.example_record()
 
-    for k in range(2):
-        record, name = test_generator.example_record()
-        plot_model_run_images(record, model_dir = logging.model_directory, mode = "test",
-                              filename = "test_1_{}".format(name))
+    for k in range(len(test_ids)):
+        test_generator.example_record()
 
     # get model
     model = get_model(params)
-
     history = model.fit_generator(generator = train_generator,
                                   steps_per_epoch = int(len(train_ids) / (params.batch_size * 1)),
                                   epochs = params.num_epochs,

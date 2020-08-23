@@ -1,21 +1,21 @@
 import os
-from utils.config import PROJ_DIR
-from utils.utils import Params
+from feature_segmentation.utils.config import PROJ_DIR
+from feature_segmentation.utils.utils import Params
 from keras.backend import int_shape
 from keras.models import Model
 from keras.layers import Reshape, Dropout, Conv2DTranspose, MaxPooling2D, \
     concatenate, Input, MaxPooling3D, AveragePooling3D
-from models.networks.layers.custom_layers import *
+from feature_segmentation.models.networks.layers.custom_layers import *
 
 
 def unet(params):
-    inputs = Input(shape = (params.number_of_scans, params.img_shape, params.img_shape, 3))
+    inputs = Input(shape = (params.n_scans, params.img_shape, params.img_shape, 3))
 
     # contracting path
-    c1 = conv3d_block(inputs, n_filters = params.n_filters * 1, kernel_size = 3)
+    c1 = conv3d_block(inputs, n_filters = params.n_filters * 1)
     p1 = MaxPooling3D((2, 2, 2))(c1)
 
-    c2 = conv3d_block(p1, n_filters = params.n_filters * 2, kernel_size = 3)
+    c2 = conv3d_block(p1, n_filters = params.n_filters * 2)
     p2 = MaxPooling3D((4, 2, 2))(c2)
 
     # reshape 3d image to 2d
