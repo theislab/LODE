@@ -29,14 +29,13 @@ class MeasureSeqTimeUntilDry():
 
     def __init__(self, meta_data, time_line, naive, time_until_dry, number_of_injections,
                  treatment_dict):
-
         self.patient_id = meta_data[MeasureSeqTimeUntilDry.META_DATA[0]]
         self.laterality = meta_data[MeasureSeqTimeUntilDry.META_DATA[1]]
         self.diagnosis = meta_data[MeasureSeqTimeUntilDry.META_DATA[2]]
-
         self.time_line = time_line
         self.number_of_months = len(time_line)
         self.naive = naive
+        self.number_of_visits = self.get_number_of_visits()
         self.time_until_dry = time_until_dry
         self.number_of_injections = number_of_injections
         self.three_month_effect = treatment_dict["three_month"]
@@ -44,7 +43,6 @@ class MeasureSeqTimeUntilDry():
 
     @classmethod
     def from_record(cls, record_table):
-        print(record_table.patient_id.iloc[0], record_table.laterality.iloc[0])
         time_utils = TimeUtils(record_table = record_table)
         time_line = time_utils.time_line
 
@@ -111,11 +109,15 @@ class MeasureSeqTimeUntilDry():
     @classmethod
     def get_time_until_dry(cls, time_line):
         months = list(time_line.keys())
-        for month in months:
-            if time_line[month]["total_fluid"] == 0:
-                return month
-            else:
-                continue
+        first_fluid = cls.first_visit_fluid(time_line)
+        if not first_fluid:
+            return "no fluid"
+        else:
+            for month in months[first_fluid:]:
+                if time_line[month]["total_fluid"] == 0:
+                    return month
+                else:
+                    continue
         return -1
 
     @classmethod
@@ -123,7 +125,6 @@ class MeasureSeqTimeUntilDry():
         time_dict = {"three": 2, "six": 5}
         for time_point in time_line.keys():
             injection_point = time_line[time_point]["total_injections"]
-
             injection_bool = (injection_point > 0) and (injection_point is not np.nan)
             time_bool = (time_point + time_dict[time_dist] <= len(time_line))
             if injection_bool and time_bool:
@@ -133,6 +134,9 @@ class MeasureSeqTimeUntilDry():
             else:
                 time_line[time_point][f"{time_dist}_month_effect"] = np.nan
         return time_line
+
+    def get_number_of_visits(self):
+        return len(list(filter(lambda x: x != "nan", self.study_dates)))
 
     @property
     def time_series(self):
@@ -159,6 +163,14 @@ class MeasureSeqTimeUntilDry():
         segmentation_files = list(
             filter(lambda k: (patient_cond in k) & (laterality_cond in k), MeasureSeqTimeUntilDry.SEG_PATHS))
         return segmentation_files
+
+    @classmethod
+    def first_visit_fluid(cls, time_line):
+        months = list(time_line.keys())
+        for month in months:
+            if time_line[month]["total_fluid"] > 0:
+                return month
+        return None
 
     def record_identifier(self, study_date):
         """
@@ -188,7 +200,8 @@ class MeasureSeqTimeUntilDry():
 
             indices = np.linspace(0, map.shape[0] - 1, map.shape[0] - 1, dtype = np.int32)
             for idx in indices:
-                plot_segmentation_map(map[idx, :, :], show = False, save_path = os.path.join(WORK_SPACE, "dump"),
+                plot_segmentation_map(map[idx, :, :], show = False,
+                                      save_path = os.path.join(WORK_SPACE, "dump/2d_segmentations"),
                                       img_name = f"{idx}.png")
 
     def add_segmentation_to_timeline(self):
@@ -256,20 +269,7 @@ class MeasureSeqTimeUntilDry():
                   2: (x_offset, (y_max // 5) * 3)}
 
         # set image zoom by time series length
-        if (time_series.shape[0] < 15) & (time_series.shape[0] > 6):
-            zoom = 2 / time_series.shape[0]
-
-        if (time_series.shape[0] > 15) & (time_series.shape[0] <= 25):
-            zoom = 3 / time_series.shape[0]
-
-        if (time_series.shape[0] > 25):
-            zoom = 4 / time_series.shape[0]
-
-        if (time_series.shape[0] > 40):
-            zoom = 6 / time_series.shape[0]
-
-        if (time_series.shape[0] <= 6):
-            zoom = 1 / time_series.shape[0]
+        zoom = 1.5 / self.number_of_visits
 
         # zip joins x and y coordinates in pairs
         for x, y in zip(xs, ys):
@@ -308,14 +308,22 @@ class MeasureSeqTimeUntilDry():
 
 
 if __name__ == "__main__":
+    """
+    questions:
+    # distribution of sequence lengths & sequence time span
+    # number of sequences with injections
+    # number of sequences with diff diagnosises
+    # distribution of time until dry
+    # distribution of 3 and 6 month treatment effect
+    """
     # load sequences
     seq_pd = pd.read_csv(os.path.join(WORK_SPACE, 'sequences.csv'))
 
-    PATIENT_ID = 1570  # 2005
+    PATIENT_ID = 307732  # 2005
     LATERALITY = "L"
 
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
-    # seq_pd = seq_pd.loc[filter_]
+    #  seq_pd = seq_pd.loc[filter_]
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates() # .iloc[0:10]
 
@@ -323,15 +331,16 @@ if __name__ == "__main__":
     for patient, lat in tqdm(unique_records.itertuples(index = False)):
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
         time_until_dry.append(MeasureSeqTimeUntilDry.from_record(record_pd))
-        # time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
-        # time_until_dry[-1].dump_segmentation_map(5)
+        time_until_dry[-1].show_time_series(show_segmentations = False, show = False, save_fig = True)
+        # time_until_dry[-1].dump_segmentation_map(11)
 
     time_serie_log = {"patient_id": [], "laterality": [], "time_until_dry": [], "number_of_injections": [],
-                      "three_month_effect": [], "six_month_effect": [], "number_of_months": []}
+                      "three_month_effect": [], "six_month_effect": [], "number_of_months": [],
+                      "diagnosis": [], "number_of_visits": [], "naive": []}
 
     for measurem in time_until_dry:
         for key in time_serie_log.keys():
             time_serie_log[key].append(measurem.__dict__[key])
 
     time_until_dry_pd = pd.DataFrame(time_serie_log)
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "time_until_dry.csv"))
+    # time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "time_until_dry.csv"))

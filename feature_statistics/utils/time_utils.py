@@ -1,5 +1,4 @@
 import math
-
 import numpy as np
 import datetime
 import pandas as pd
@@ -19,7 +18,7 @@ class TimeUtils:
     def set_number_of_months(self):
         months = pd.to_datetime(self.table.study_date)
         time_span = months.iloc[-1] - months.iloc[0]
-        return math.ceil(time_span.days / 30) + 1
+        return math.ceil(time_span.days / 30)
 
     def assign_to_timeline(self, time_line, item):
         """
