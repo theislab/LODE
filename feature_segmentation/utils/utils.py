@@ -1,5 +1,7 @@
 """General utility functions"""
 import json
+from random import shuffle
+
 import matplotlib.pyplot as plt
 from matplotlib import colors
 import glob
@@ -14,8 +16,8 @@ import tensorflow as tf
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 from pydicom import read_file
 
-from utils.loss_functions import dice_loss, gen_dice
-from utils.plotting import color_mappings
+from feature_segmentation.utils.loss_functions import dice_loss, gen_dice
+from feature_segmentation.utils.plotting import color_mappings
 
 
 class Params():
@@ -346,3 +348,18 @@ class EvalVolume():
                     else:
                         self.feature_dict[feature].append(0)
         return self.feature_dict
+
+def data_split(ids):
+    """
+    @param ids: list of image names
+    @type ids: list
+    @return: three lists divided into train, validation and test split
+    @rtype: list
+    """
+    shuffle(ids)
+    n_records = len(ids)
+
+    test_ids = ids[int(n_records * 0.9):-1]
+    validation_ids = ids[int(len(ids) * 0.8):int(len(ids) * 0.9)]
+    train_ids = ids[0:int(len(ids) * 0.8)]
+    return train_ids, validation_ids, test_ids

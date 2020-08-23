@@ -2,9 +2,8 @@ import numpy as np
 import keras
 import os
 import random
-from PIL import Image
-
-from generators.generator_utils.image_processing import resize, read_resize
+import matplotlib.pyplot as plt
+from generators.generator_utils.image_processing import resize, read_resize, read_resize_image
 from generators.generator_utils.oct_augmentations import get_augmentations
 
 
@@ -41,12 +40,26 @@ class DataGenerator(keras.utils.Sequence):
         return X, y
 
     @classmethod
+    def record_identifier(cls, patient_id, lat, study_date):
+        return f"{patient_id}_{lat}_{study_date}_*", f"{patient_id}_{lat}_{study_date}_*"
+
+    @classmethod
     def decode_filename(cls, filename):
+        series_id = None
+        frame = None
+
+        components = filename.split("_")
         # check if no series id is logged
-        if len(filename.split("_")) < 5:
-            patient_id, lat, study_date, frame = filename.replace(".png", "").split("_")
+        if len(components) < 5:
+            patient_id, lat, study_date = components[:3]
+
+            # decide final component is frame or series id
+            final_ = components[-1].replace(".png", "")
+            if int(final_) in range(0, 49):
+                frame = final_
+            else:
+                series_id = final_
             lat = cls.laterality_formatting(lat)
-            series_id = "MISSING"
         else:
             patient_id, lat, study_date, series_id, frame = filename.replace(".png", "").split("_")
             lat = cls.laterality_formatting(lat)
@@ -60,26 +73,6 @@ class DataGenerator(keras.utils.Sequence):
             lat = "L"
         return lat
 
-    @staticmethod
-    def generate_volume_indices(frame, number_of_indices):
-        sample_size = (number_of_indices - 1) // 2
-        upper_sample_size = (number_of_indices - 1) // 2
-        lower_sample_size = (number_of_indices - 1) // 2
-
-        frame_idx = int(frame)
-        if (frame_idx - sample_size) < 0:
-            # not enough lower frames
-            lower_sample_size = np.abs(frame_idx - sample_size)
-
-        if (frame_idx + sample_size) > 48:
-            # not enough upper frames
-            upper_sample_size = np.abs(frame_idx + sample_size - 48)
-
-        # sample indices without replacement
-        lower_indices = np.random.choice(np.arange(0,frame_idx - 1), lower_sample_size, replace=False)
-        upper_indices = np.random.choice(np.arange(frame_idx + 1, 48), upper_sample_size, replace = False)
-        return np.sort(lower_indices), np.sort(upper_indices)
-
     def on_epoch_end(self):
         'Updates indexes after each epoch'
         self.indexes = np.arange(int(len(self.list_IDs)))
@@ -89,30 +82,63 @@ class DataGenerator(keras.utils.Sequence):
     def __data_generation(self, list_IDs_temp):
         'Generates data containing batch_size samples'
         # Initialization
-        X = np.empty((self.batch_size, self.params.number_of_scans, self.shape[0], self.shape[1], 3))
-        y = np.empty((self.batch_size, self.params.number_of_scans, self.shape[0], self.shape[1], 1), dtype = np.int32)
+        X = np.zeros((self.batch_size, self.params.n_scans, self.shape[0], self.shape[1], 3), dtype = np.float64)
+        y = np.zeros((self.batch_size, self.shape[0], self.shape[1], 1), dtype = np.int32)
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             patient_id, lat, study_date, series_id, frame = DataGenerator.decode_filename(ID)
-
-            # generate oct volume indices
-            lower_indices, upper_indices = DataGenerator.upgenerate_volume_indices(frame, self.params.number_of_frames)
-
-            for i in range(4):
-                lower_idx = lower_indices[i]
-                upper_idx = upper_indices[i]
 
             # load samples
             im_path = os.path.join(self.image_path, ID)
             lbl_path = os.path.join(self.label_path, ID)
             im_resized, lbl_resized = read_resize(im_path, lbl_path, self.shape)
 
-            # Store sample
-            X[i, ] = im_resized
-            y[i, ] = lbl_resized
+            volume_path = os.path.join(self.params.data_path, "volumes",
+                                       ID.replace(".png", ""))
 
-            X[i, ], y[i, ] = self.__pre_process(X[i,], y[i,])
+            # add annotated scan
+            X[i, self.params.n_scans // 2,] = im_resized
+            y[i,] = lbl_resized
+
+            # if frame info not available, pad with zeros
+            if (not frame) or (not os.path.exists(volume_path)):
+                X[i, self.params.n_scans // 2, ] = im_resized
+
+            elif frame:
+                # get right and left available indices
+                _right_frames = np.arange(int(frame) + 1, 49)
+                _left_frames = np.arange(0, int(frame))
+
+                n_right = len(_right_frames)
+                n_left = len(_left_frames)
+
+                side_sample_size = (self.params.n_scans - 1) // 2
+
+                if n_right >= side_sample_size:
+                    right_samples = _right_frames[np.arange(0, 4)]
+                else:
+                    right_samples = _right_frames
+
+                if n_left >= side_sample_size:
+                    left_samples = _left_frames[- np.arange(4, 0, -1)]
+                else:
+                    left_samples = _left_frames
+
+                # add sample oct's to volume
+                for k, right_sample in enumerate(right_samples, 1):
+                    oct_ = read_resize_image(os.path.join(volume_path, "volume", str(right_sample) + ".png"),
+                                             self.shape)
+                    # add to volume
+                    X[i, self.params.n_scans // 2 + k,] = oct_
+
+                for k, left_sample in enumerate(left_samples, 0):
+                    oct_ = read_resize_image(os.path.join(volume_path, "volume", str(left_sample) + ".png"),
+                                             self.shape)
+                    # add to volume
+                    X[i, self.params.n_scans // 2 - (len(left_samples) - k),] = oct_
+
+            X[i,], y[i,] = self.__pre_process(X[i,], y[i,])
         return X, y.astype(np.int32)
 
     def example_record(self):
@@ -129,17 +155,18 @@ class DataGenerator(keras.utils.Sequence):
         return record, self.list_IDs[record_idx - 1]
 
     def __pre_process(self, train_im, label_im):
-
-        # label_im = np.nan_to_num(label_im)
         train_im = np.nan_to_num(train_im)
 
         if self.is_training:
-            aug = self.augment_box(image = train_im.astype(np.uint8), mask = label_im.astype(np.uint8))
-            train_im = aug['image']
-            label_im = aug['mask']
+            for n in range(self.params.n_scans):
+                if n == self.params.n_scans // 2:
+                    aug = self.augment_box(image = train_im[n,].astype(np.uint8), mask = label_im.astype(np.uint8))
+                    train_im[n,] = aug['image']
+                    label_im = aug['mask']
+                else:
+                    aug = self.augment_box(image = train_im[n,].astype(np.uint8))
+                    train_im[n,] = aug['image']
 
-        # label_im = np.divide(label_im, 500., dtype=np.float32)
         train_im = np.divide(train_im, 255., dtype = np.float32)
-        return (train_im.reshape(self.shape[0], self.shape[1], 3), label_im.reshape((self.shape[0],
-                                                                                     self.shape[0],
-                                                                                     1)))
+        return train_im.reshape(1, self.params.n_scans, self.shape[0], self.shape[1], 3), \
+               label_im.reshape(1, self.shape[0], self.shape[1], 1)

@@ -41,3 +41,22 @@ def read_resize(img_path, label_path, shape):
     image = im_resized.reshape(shape[0], shape[1], 3)
     label = lbl_resized.reshape((shape[0], shape[1], 1))
     return image, label
+
+
+def read_resize_image(img_path, shape):
+    # load samples
+    im = Image.open(img_path)
+
+    # convert to numpy
+    im = np.array(im)
+
+    # resize samples
+    im_resized = resize(im, shape)
+
+    # if image grey scale, make 3 channel
+    if len(im_resized.shape) == 2:
+        im_resized = np.stack((im_resized,) * 3, axis = -1)
+
+    # Store sample
+    image = im_resized.reshape(shape[0], shape[1], 3)
+    return image

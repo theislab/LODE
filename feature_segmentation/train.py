@@ -1,36 +1,33 @@
 import random
-from utils.utils import Params, TrainOps, Logging
+from feature_segmentation.utils.utils import Params, TrainOps, Logging, data_split
 import os
 from generators.generator_3d import DataGenerator
 import keras.backend as K
-from models.model import get_model
+from feature_segmentation.models.model import get_model
 import pandas as pd
 from random import shuffle
+from segmentation.config import TRAIN_DATA_PATH
 
 # load utils classes
-from utils.plotting import plot_model_run_images
+from feature_segmentation.utils.plotting import plot_model_run_images
 
 params = Params("params.json")
 logging = Logging("./logs", params)
 trainops = TrainOps(params)
 
-train_ids = os.listdir(params.data_path + "/images")
-shuffle(train_ids)
-test_ids = train_ids[int(len(train_ids)*0.9):-1]
-validation_ids = train_ids[int(len(train_ids)*0.8):int(len(train_ids)*0.9)]
-train_ids = train_ids[0:int(len(train_ids)*0.8)]
+params.data_path = TRAIN_DATA_PATH
 
-train_ids = pd.read_csv(os.path.join(params.model_directory, "train_ids.csv"))["0"].tolist()
-validation_ids = pd.read_csv(os.path.join(params.model_directory, "validation_ids.csv"))["0"].tolist()
-test_ids = pd.read_csv(os.path.join(params.model_directory, "test_ids.csv"))["0"].tolist()
-
-random.shuffle(train_ids)
+ids = os.listdir(os.path.join(params.data_path, "images"))
+train_ids, validation_ids, test_ids = data_split(ids)
 
 print("number of train and test image are: ", len(train_ids), len(validation_ids))
 
 # Generators
-train_generator = DataGenerator(train_ids, params=params, is_training=True)
-test_generator = DataGenerator(validation_ids, params=params, is_training=False)
+train_generator = DataGenerator(train_ids, params = params, is_training = True)
+test_generator = DataGenerator(validation_ids, params = params, is_training = False)
+
+for i in range(len(ids)):
+    _, _ = train_generator.__getitem__(i)
 
 # set model tries
 model_configs = ["deep_unet"]
@@ -57,19 +54,20 @@ for model_config in model_configs:
 
     for k in range(2):
         record, name = test_generator.example_record()
-        plot_model_run_images(record, model_dir = logging.model_directory, mode = "test", filename = "test_1_{}".format(name))
+        plot_model_run_images(record, model_dir = logging.model_directory, mode = "test",
+                              filename = "test_1_{}".format(name))
 
     # get model
     model = get_model(params)
 
-    history = model.fit_generator(generator=train_generator,
-                                  steps_per_epoch=int(len(train_ids) / (params.batch_size * 1)),
-                                  epochs=params.num_epochs,
-                                  validation_data=test_generator,
-                                  validation_steps=int(len(validation_ids) / 1),
-                                  callbacks=trainops.callbacks_(),
-                                  use_multiprocessing=True,
-                                  workers=4)
+    history = model.fit_generator(generator = train_generator,
+                                  steps_per_epoch = int(len(train_ids) / (params.batch_size * 1)),
+                                  epochs = params.num_epochs,
+                                  validation_data = test_generator,
+                                  validation_steps = int(len(validation_ids) / 1),
+                                  callbacks = trainops.callbacks_(),
+                                  use_multiprocessing = True,
+                                  workers = 4)
 
     if K.backend() == 'tensorflow':
         K.clear_session()

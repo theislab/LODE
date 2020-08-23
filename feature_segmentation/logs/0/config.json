@@ -1,0 +1,21 @@
+{
+    "learning_rate": "0.001",
+    "batch_size": "1",
+    "num_epochs": "500",
+    "data_path": "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation/data/train_data/hq_examples_fibrosis",
+    "img_shape": "256",
+    "n_filters": "64",
+    "num_classes": "16",
+    "continue_training": "1",
+    "dropout": "0.2",
+    "model": "deep_unet",
+    "n_scans": "9",
+    "flip": "0.5",
+    "brightness": "0.0",
+    "gamma": "0.2",
+    "noise": "0.2",
+    "elastic": "0.0",
+    "aug_stretegy": "medium",
+    "model_directory": "./logs/0",
+    "pretrained_model": "./logs/42"
+}
