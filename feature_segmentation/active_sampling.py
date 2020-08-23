@@ -49,12 +49,12 @@ if __name__ == '__main__':
                         type = int, default = 49)
     args = parser.parse_args()
 
-    file_manager = FileManager("annotated_files_test.csv")
+    file_manager = FileManager("annotated_files.csv")
 
     # get record paths
     unannotated_embeddings_paths = file_manager.unannotated_records
     annotated_embeddings_paths = file_manager.get_annotated_embedding_paths()
-    # unannotated_embeddings_paths = random.sample(unannotated_embeddings_paths, 10000)
+    unannotated_embeddings_paths = random.sample(unannotated_embeddings_paths, 40000)
 
     print("number of embedded volumes", len(unannotated_embeddings_paths))
     print("number of annotated embedded volumes", len(annotated_embeddings_paths))
@@ -66,8 +66,6 @@ if __name__ == '__main__':
 
     print("filter unannotated paths for features of interest (foi)")
     features_filtered_pd = selection.filter_paths(selection.uae_paths, args.sampling_rate, filter_ = True)
-    features_unfiltered_pd = selection.filter_paths(selection.uae_paths, args.sampling_rate, filter_ = False)
-
     features_filtered_pd.to_csv(os.path.join(WORK_SPACE, "active_learning", "features_filtered_pd.csv"))
 
     print("number of filtered octs", features_filtered_pd.shape[0])

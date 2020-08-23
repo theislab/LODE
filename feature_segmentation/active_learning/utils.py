@@ -205,9 +205,9 @@ def move_selected_octs(selected_pd, dst_dir):
     dicom_paths = []
     for row in selected_pd.itertuples():
         dicom_file_path = os.path.join(OCT_DIR, str(row.patient_id), row.laterality, str(row.study_date), row.dicom)
-        dicom_file_path = os.path.join(OCT_DIR, row.dicom)
+        # dicom_file_path = os.path.join(OCT_DIR, row.dicom)
         # load dicom file if not empty
-        dc = read_file(os.path.join(OCT_DIR, row.dicom))
+        dc = read_file(dicom_file_path)
         vol = dc.pixel_array
         oct_ = vol[int(row.frame), :, :]
 

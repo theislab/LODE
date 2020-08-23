@@ -1,6 +1,6 @@
 from keras.engine.saving import load_model
 from keras.optimizers import adam
-from models.networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet
+from feature_segmentation.models.networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet
 import segmentation_models as sm
 
 

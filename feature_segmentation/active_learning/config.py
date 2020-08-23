@@ -1,4 +1,4 @@
-PROJ_DIR = "/home/icb/olle.holmberg/projects/feature_segmentation/segmentation/active_learning_uq"
-EMBEDD_DIR = "/home/olle/PycharmProjects/feature_segmentation/workspace/segmentation/embeddings20200728"
-OCT_DIR = "/home/olle/PycharmProjects/feature_segmentation/workspace/segmentation/test_examples"
-WORK_SPACE = "/home/olle/PycharmProjects/feature_segmentation/workspace"
+PROJ_DIR = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
+EMBEDD_DIR = "/storage/groups/ml01/workspace/olle.holmberg/LODE/feature_segmentation/segmentation/embeddings20200822"
+OCT_DIR = "/storage/groups/ml01/datasets/raw/2018_LMUAugenklinik_niklas.koehler/Studies/Optical Coherence Tomography Scanner"
+WORK_SPACE = "/storage/groups/ml01/workspace/olle.holmberg/LODE/feature_segmentation"

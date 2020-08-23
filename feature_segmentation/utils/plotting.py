@@ -35,7 +35,7 @@ def color_mappings():
     return custom_cmap, norm, bounds
 
 
-def create_visualizations(out_clsv_file, cls):
+def save_segmentation_plot(out_clsv_file, cls):
     """
     :param out_clsv_file: str: save path
     :param cls: numpy array integer class map
