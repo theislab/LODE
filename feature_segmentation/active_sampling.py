@@ -24,15 +24,17 @@ workspace
     ├── annotated_files.csv - record names of all annotated octs so far
    
 Description: 
-This module uses the path files in the workspace directory to read, segment and gather feature statistics for each 
-B-scan in every OCT volume available in path files *.csvs. The program assumes that each csv in path files contains 
-absolute paths to dicom files with corresponding OCT images under column name "path". 
+This module uses the the output of segment.py, i.e. the embeddings and feature statistics to sample more images of
+features of interest (foi). The foi are currently set manully in the active_learning/utils.py (to be upgraded).
 
-The output of the program is one data table (.csv file) with logging for every record and its belonging feature 
-statistics. Beside the calculated statistics the .csv output file contains frame, laterality, study date, 
-patient pseudo id and dicom file name for record identification.
+In short, the program uses the core set approach to maximize the information in the new samples while focusing
+on foi as well as only sampling from different patients.
 
-The outfile file is saved in the WORK_SPACE directory under ./feature_tables  
+The input of this program relies on the output of segment.py in the workspace/segmentation directory as well as
+annotated_files.csv (see above) containing the records annotated so far. 
+
+the output is saved in DST_DIR set in active_learning/config.py. It saved the selected scan as well as as the whole 
+OCT volume for reference. 
 '''
 
 if __name__ == '__main__':

@@ -1,11 +1,8 @@
 """General utility functions"""
 import json
-import matplotlib.pyplot as plt
-from matplotlib import colors
 import cv2
 from PIL import Image
 import numpy as np
-import matplotlib.gridspec as gridspec
 import os
 from pydicom import read_file
 import keras.backend as K
@@ -70,7 +67,6 @@ class EvalVolume():
         self.study_date = self.dicom.StudyDate
         self.series_id = self.dicom.SeriesNumber
         self.record_id = f"{self.pat_id}_{self.study_date}_{self.laterality}_{self.series_id}"
-
         self.create_save_directories()
         self.image = self.load_volume()
         self.segmented_volume = self.segment_volume()
