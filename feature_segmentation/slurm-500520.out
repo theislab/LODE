@@ -1,0 +1,4 @@
+Segmentation Models: using `keras` framework.
+/storage/groups/ml01/workspace/olle.holmberg/LODE/feature_segmentation/segmentation/path_files/paths2.csv
+/storage/groups/ml01/workspace/olle.holmberg/LODE/feature_segmentation/segmentation/model_v1/weights.hdf5
+Number of files to segment are:  28975
