@@ -1,7 +1,7 @@
 import random
 from utils.utils import Params, TrainOps, Logging, data_split
 import os
-from generators.generator_3d import DataGenerator
+from generators.generator_2d import DataGenerator
 import keras.backend as K
 from models.model import get_model
 import pandas as pd
@@ -27,15 +27,17 @@ if TRAIN_DATA_PATH.split("/")[-1] == "first_examples":
 print("number of train and test image are: ", len(train_ids), len(validation_ids))
 
 # Generators
-train_generator = DataGenerator(train_ids, params = params, is_training = True, pretraining = False)
-test_generator = DataGenerator(validation_ids, params = params, is_training = False, pretraining = False)
+train_generator = DataGenerator(train_ids, params = params, is_training = True, 
+        pretraining = False, choroid_latest = params.choroid_latest)
+test_generator = DataGenerator(validation_ids, params = params, is_training = False, 
+        pretraining = False, choroid_latest = params.choroid_latest)
 
 # set model tries
 model_configs = ["volumeNet"]
 
 for model_config in model_configs:
     # set this iterations model
-    params.model = model_config
+    # params.model = model_config
 
     # create logging directory
     logging.create_model_directory()
@@ -63,7 +65,7 @@ for model_config in model_configs:
                                   validation_data = test_generator,
                                   validation_steps = int(len(validation_ids) / 1),
                                   callbacks = trainops.callbacks_(),
-                                  use_multiprocessing = True,
+                                  use_multiprocessing = False,
                                   workers = 4)
 
     if K.backend() == 'tensorflow':

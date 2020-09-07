@@ -6,7 +6,7 @@ from tqdm import tqdm
 from joblib import Parallel, delayed
 
 num_cores = 60 
-inputs = os.listdir(SEG_DIR)
+inputs = tqdm(os.listdir(SEG_DIR))
 # inputs = ["61619_20170110_L_512575001.npy"]*100
 print(f"number of cores {num_cores} set to paralell process")
 feature_pd = None

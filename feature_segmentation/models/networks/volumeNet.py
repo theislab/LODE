@@ -15,7 +15,6 @@ from custom_layers import *
 from utils.utils import Params
 
 from config import PROJ_DIR
-from feature_segmentation.models.networks.layers.custom_layers import *
 
 
 def unet(params):
