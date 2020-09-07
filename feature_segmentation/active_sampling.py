@@ -45,16 +45,21 @@ if __name__ == '__main__':
                         type = int, default = 200)
     parser.add_argument("chunk_size", help = "which of the different sub .csv files to read from ",
                         type = int, default = 100)
-    parser.add_argument("sampling_rate", help = "which of the different sub .csv files to read from ",
-                        type = int, default = 49)
+    parser.add_argument("sampling_rate", help = "which of the different sub .csv files to read from",                     type = int, default = 49)
+    parser.add_argument("number_to_search", help = "number of unannotated scans to search",
+            type = int, default=1000)
     args = parser.parse_args()
 
     file_manager = FileManager("annotated_files.csv")
-
+    
+    assert_error = f"chunksize: {args.chunk_size} need to be 100 smaller than number_to_search: {args.number_to_search}. Deacrease chunk size or increase number to search argument."
+    assert args.chunk_size <= (args.number_to_search // 100), assert_error
+    
     # get record paths
     unannotated_embeddings_paths = file_manager.unannotated_records
     annotated_embeddings_paths = file_manager.get_annotated_embedding_paths()
-    unannotated_embeddings_paths = random.sample(unannotated_embeddings_paths, 40000)
+    unannotated_embeddings_paths = random.sample(unannotated_embeddings_paths, args.number_to_search)
+    
 
     print("number of embedded volumes", len(unannotated_embeddings_paths))
     print("number of annotated embedded volumes", len(annotated_embeddings_paths))
@@ -82,7 +87,7 @@ if __name__ == '__main__':
 
     print("format csv")
     selected_scans_pd = selected_scans.id.str.split("_", expand = True).rename(
-        columns = {0: "patient_id", 1: "laterality", 2: "study_date", 3: "frame"})
+            columns = {0: "patient_id", 1: "study_date", 2: "laterality", 3: "frame"})
 
     # assign id
     selected_scans_pd["id"] = selected_scans["id"]

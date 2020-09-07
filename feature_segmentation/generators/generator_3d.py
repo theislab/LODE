@@ -5,7 +5,7 @@ import random
 import matplotlib.pyplot as plt
 from generators.generator_utils.image_processing import resize, read_resize, read_resize_image
 from generators.generator_utils.oct_augmentations import get_augmentations
-from feature_segmentation.utils.plotting import save_segmentation_plot
+from utils.plotting import save_segmentation_plot
 import cv2
 
 
