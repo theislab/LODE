@@ -1,6 +1,15 @@
 from keras.engine.saving import load_model
+import os
+import sys
+from pathlib import Path
+
+path_variable = Path(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(path_variable, "networks"))
+sys.path.insert(0, str(path_variable.parent))
+sys.path.insert(0, str(path_variable.parent.parent))
+
 from keras.optimizers import adam
-from models.networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet
+from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet, cluster_unet
 import segmentation_models as sm
 
 
@@ -21,6 +30,9 @@ def get_model(params):
 
     if params.model == 'volumeNet':
         model = volumeNet.unet(params)
+
+    if params.model == "cluster_unet":
+        model = cluster_unet.unet(params)
 
     '''Compile model'''
     model.compile(optimizer=adam(lr=params.learning_rate),
