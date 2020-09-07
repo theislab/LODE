@@ -11,7 +11,7 @@ from generators.generator_utils.oct_augmentations import get_augmentations
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
 
-    def __init__(self, list_IDs, params, is_training):
+    def __init__(self, list_IDs, params, is_training, pretraining, choroid_latest):
         'Initialization'
         self.shape = (params.img_shape, params.img_shape)
         self.batch_size = params.batch_size
@@ -20,9 +20,13 @@ class DataGenerator(keras.utils.Sequence):
         self.on_epoch_end()
         self.params = params
         self.image_path = os.path.join(params.data_path, "images")
-        self.label_path = os.path.join(params.data_path, "masks")
+        if choroid_latest:
+            self.label_path = os.path.join(params.data_path, "masks_choroid")
+        else:
+            self.label_path = os.path.join(params.data_path, "masks")
+
         self.is_training = is_training
-        self.augment_box = get_augmentations(params)[params.aug_stretegy]
+        self.augment_box = get_augmentations(params)[params.aug_strategy]
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -48,8 +52,8 @@ class DataGenerator(keras.utils.Sequence):
     def __data_generation(self, list_IDs_temp):
         'Generates data containing batch_size samples'
         # Initialization
-        X = np.empty((self.batch_size, self.params.number_of_scans, self.shape[0], self.shape[1], 3))
-        y = np.empty((self.batch_size, self.params.number_of_scans, self.shape[0], self.shape[1], 1), dtype = np.int32)
+        X = np.empty((self.batch_size, self.shape[0], self.shape[1], 3))
+        y = np.empty((self.batch_size, self.shape[0], self.shape[1], 1), dtype = np.int32)
 
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
