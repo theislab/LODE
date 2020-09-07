@@ -58,13 +58,15 @@ if __name__ == "__main__":
     params, logging, trainops = load_config(model_directory)
 
     file_name = args.filename
+    print(os.path.join(WORK_SPACE, "segmentation/path_files", file_name + ".csv"))
     test_ids = pd.read_csv(os.path.join(WORK_SPACE, "segmentation/path_files",
-                                        file_name + ".csv"))["path"].dropna().tolist()
+                                        file_name + ".csv"))["PATH"].dropna().tolist()
 
     # copy remaining ids
     remaining_ids = test_ids.copy()
 
     save_model_path = os.path.join(params.model_directory, "weights.hdf5")
+    print(save_model_path)
     model = load_model(save_model_path, custom_objects = {'iou_score': iou_score})
 
     # set up inference model
@@ -110,6 +112,6 @@ if __name__ == "__main__":
                 remaining_ids.remove(test_ids[i])
 
         # progress
-        if i % 1 == 0:
+        if i % 100 == 0:
             feature_statistics.to_csv(feature_save_path)
             pd.DataFrame(remaining_ids).to_csv(progress_save_path)

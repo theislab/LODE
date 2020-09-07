@@ -2,7 +2,7 @@
     "learning_rate": "0.001",
     "batch_size": "1",
     "num_epochs": "500",
-    "data_path": "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation/data/train_data/first_examples",
+    "data_path": "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation/data/train_data/hq_examples_fibrosis",
     "img_shape": "256",
     "n_filters": "64",
     "num_classes": "16",

@@ -1,9 +1,19 @@
 import os
-from feature_segmentation.utils.utils import Params
+import sys
+from pathlib import Path
+
+path_variable = Path(os.path.dirname(__file__))
+sys.path.insert(0, os.path.join(path_variable, "layers"))
+sys.path.insert(0, str(path_variable.parent))
+sys.path.insert(0, str(path_variable.parent.parent))
+
 from keras.backend import int_shape
-from keras.models import Model
-from keras.layers import Reshape, Dropout, Conv2DTranspose, MaxPooling2D, \
+from keras.layers import Dropout, Conv2DTranspose, MaxPooling2D, \
     concatenate, Input, MaxPooling3D, AveragePooling3D
+from keras.models import Model
+from custom_layers import *
+from utils.utils import Params
+
 from config import PROJ_DIR
 from feature_segmentation.models.networks.layers.custom_layers import *
 

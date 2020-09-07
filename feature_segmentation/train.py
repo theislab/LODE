@@ -1,15 +1,15 @@
 import random
-from feature_segmentation.utils.utils import Params, TrainOps, Logging, data_split
+from utils.utils import Params, TrainOps, Logging, data_split
 import os
 from generators.generator_3d import DataGenerator
 import keras.backend as K
-from feature_segmentation.models.model import get_model
+from models.model import get_model
 import pandas as pd
 from random import shuffle
-from segmentation.config import TRAIN_DATA_PATH
+from config import TRAIN_DATA_PATH
 
 # load utils classes
-from feature_segmentation.utils.plotting import plot_model_run_images
+from utils.plotting import plot_model_run_images
 
 params = Params("params.json")
 logging = Logging("./logs", params)
@@ -27,8 +27,8 @@ if TRAIN_DATA_PATH.split("/")[-1] == "first_examples":
 print("number of train and test image are: ", len(train_ids), len(validation_ids))
 
 # Generators
-train_generator = DataGenerator(train_ids, params = params, is_training = True, pretraining = pretraining)
-test_generator = DataGenerator(validation_ids, params = params, is_training = False, pretraining = pretraining)
+train_generator = DataGenerator(train_ids, params = params, is_training = True, pretraining = False)
+test_generator = DataGenerator(validation_ids, params = params, is_training = False, pretraining = False)
 
 # set model tries
 model_configs = ["volumeNet"]

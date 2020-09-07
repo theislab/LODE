@@ -69,17 +69,17 @@ class OCTEmbeddings:
                     embed_loc = np.where(embedding_frames == iter_)[0][0]
 
                     # extract id and embedding array
-                    id = features_ep[features_ep.frame == iter_].id.iloc[0]
+                    id_ = features_ep[features_ep.frame == iter_].id.iloc[0]
                     embedding_array = embedding[embed_loc, :]
 
-                    assert isinstance(id, str), "id value must be string"
+                    assert isinstance(id_, str), "id value must be string"
                     assert type(embedding_array) is not np.array, "embedding vector must be numpy array"
 
                     if embedding_array.size == 0:
                         print("embedding array is empty, skip record")
-                        continue
-
-                    embeddings[0].append(id)
+                        continue                    
+                    
+                    embeddings[0].append(id_)
                     embeddings[1].append(embedding_array)
 
             umap_ = self.apply_umap(embeddings[1].copy())
@@ -213,10 +213,22 @@ def to_three_channel(img):
 def move_selected_octs(selected_pd, dst_dir):
     dicom_paths = []
     for row in selected_pd.itertuples():
-        dicom_file_path = os.path.join(OCT_DIR, str(row.patient_id), row.laterality, str(row.study_date), row.dicom)
-        dicom_file_path = os.path.join(OCT_DIR, row.dicom)
+        if row.laterality == "L":
+            laterality = "Left"
+        elif row.laterality == "R":
+            laterality = "Right"
+        else:
+            laterality = row.laterality
+        
+        print(row.laterality)
+        dicom_file_path = os.path.join(OCT_DIR, str(row.patient_id), 
+                laterality, str(row.study_date), row.dicom)
+        
+        print("#"*100)
+        print(dicom_file_path)
+        # dicom_file_path = os.path.join(OCT_DIR, row.dicom)
         # load dicom file if not empty
-        dc = read_file(os.path.join(OCT_DIR, row.dicom))
+        dc = read_file(dicom_file_path)
         vol = dc.pixel_array
         oct_ = vol[int(row.frame), :, :]
 

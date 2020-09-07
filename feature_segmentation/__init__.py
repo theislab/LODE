@@ -1,3 +1,3 @@
-from utils.config import PROJ_DIR
+from config import PROJ_DIR
 import sys
 sys.path.append(PROJ_DIR)
