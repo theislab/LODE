@@ -29,7 +29,6 @@ if __name__ == "__main__":
             continue
 '''
 
-
 def process(i):
     try:
         etdrs = ETDRSUtils(path = os.path.join(DATA_DIR, i))
@@ -39,9 +38,9 @@ def process(i):
         print("record not working, skippint record: ", i)
 
 
-#if __name__ == "__main__":
-processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs)
-features_pd = pd.DataFrame.from_dict(processed_list)
-features_pd.to_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"))
+if __name__ == "__main__":
+    processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs)
+    features_pd = pd.DataFrame.from_dict(processed_list)
+    features_pd.to_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"))
 
 

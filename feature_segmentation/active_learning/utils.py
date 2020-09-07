@@ -33,10 +33,15 @@ class OCTEmbeddings:
     @staticmethod
     def apply_umap(feature_vector):
         # first run faster PCA before final UMAP
-        pca = decomposition.PCA(n_components = 30)
-        pca.fit(np.array(feature_vector))
-        X = pca.transform(np.array(feature_vector))
-        return umap.UMAP(metric = 'correlation').fit_transform(X)
+        try:
+            n_components = min(len(feature_vector), 30)
+            pca = decomposition.PCA(n_components = n_components)
+            pca.fit(np.array(feature_vector))
+            X = pca.transform(np.array(feature_vector))
+            res = umap.UMAP(metric = 'correlation').fit_transform(X)
+        except:
+            res = None
+        return res
 
     def reduce_dim_annotated(self, embedding_paths):
         embeddings = []
@@ -69,6 +74,10 @@ class OCTEmbeddings:
 
                     assert isinstance(id, str), "id value must be string"
                     assert type(embedding_array) is not np.array, "embedding vector must be numpy array"
+
+                    if embedding_array.size == 0:
+                        print("embedding array is empty, skip record")
+                        continue
 
                     embeddings[0].append(id)
                     embeddings[1].append(embedding_array)

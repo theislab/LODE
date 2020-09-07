@@ -16,8 +16,8 @@ import tensorflow as tf
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 from pydicom import read_file
 
-from feature_segmentation.utils.loss_functions import dice_loss, gen_dice
-from feature_segmentation.utils.plotting import color_mappings
+from utils.loss_functions import dice_loss, gen_dice
+from utils.plotting import color_mappings
 
 
 class Params():

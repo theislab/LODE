@@ -7,7 +7,7 @@ from keras import Model
 from pydicom import read_file
 import matplotlib
 from tqdm import tqdm
-from segmentation.config import PROJ_DIR, EMBEDD_SAVE_PATH, VOL_SAVE_PATH, WORK_SPACE
+from segmentation_config import WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
 from segmentation.utils import EvalVolume, load_config
 import argparse
 matplotlib.use('agg')
@@ -43,6 +43,7 @@ patient pseudo id and dicom file name for record identification.
 
 The outfile file is saved in the WORK_SPACE directory under ./feature_tables  
 '''
+
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()

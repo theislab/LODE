@@ -1,4 +1,6 @@
 import math
+from copy import deepcopy
+
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from utils.time_utils import TimeUtils
 from feature_statistics.config import WORK_SPACE, SEG_DIR
@@ -9,7 +11,7 @@ import matplotlib.pyplot as plt
 from datetime import timedelta
 import numpy as np
 from utils.pandas_utils import sum_etdrs_columns, get_total_number_of_injections, interpolate_numeric_field
-from utils.util_functions import nan_helper
+from utils.util_functions import nan_helper, SeqUtils
 from utils.plotting_utils import plot_segmentation_map, color_mappings
 import datetime
 from tqdm import tqdm
@@ -17,7 +19,7 @@ import glob
 import matplotlib.patches as mpatches
 
 
-class MeasureSeqTimeUntilDry():
+class MeasureSeqTimeUntilDry(SeqUtils):
     NUMBER_OF_MONTHS = 13
     NUM_SEGMENTATIONS = 3
     DAYS = 30
@@ -27,7 +29,7 @@ class MeasureSeqTimeUntilDry():
     META_DATA = ["patient_id", "laterality", "diagnosis"]
     SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
 
-    def __init__(self, meta_data, time_line, naive, time_until_dry, number_of_injections,
+    def __init__(self, meta_data, time_line, naive, time_until_dry, time_until_dry_injection, number_of_injections,
                  treatment_dict):
         self.patient_id = meta_data[MeasureSeqTimeUntilDry.META_DATA[0]]
         self.laterality = meta_data[MeasureSeqTimeUntilDry.META_DATA[1]]
@@ -37,14 +39,20 @@ class MeasureSeqTimeUntilDry():
         self.naive = naive
         self.number_of_visits = self.get_number_of_visits()
         self.time_until_dry = time_until_dry
+        self.time_until_dry_injection = time_until_dry_injection
         self.number_of_injections = number_of_injections
         self.three_month_effect = treatment_dict["three_month"]
         self.six_month_effect = treatment_dict["six_month"]
+        self.fluid_change_injections = treatment_dict["fluid_coef_injection"]
+        self.fluid_change_no_injections = treatment_dict["fluid_coef_no_injection"]
 
     @classmethod
     def from_record(cls, record_table):
         time_utils = TimeUtils(record_table = record_table)
         time_line = time_utils.time_line
+
+        # initalize sequence class
+        super().__init__(SeqUtils, time_line=time_line)
 
         # reset index of table
         record_table.reset_index(inplace = True)
@@ -54,8 +62,7 @@ class MeasureSeqTimeUntilDry():
                                          features = [3, 4], foveal_region = ["C0"], new_column_name = "total_fluid")
 
         # round va
-        record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2),
-                            allow_duplicates = True)
+        record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2))
 
         # add total injections
         record_table = get_total_number_of_injections(table = record_table)
@@ -71,72 +78,30 @@ class MeasureSeqTimeUntilDry():
         treatment_dict = {}
         # set treatment effect
         for dist in ["three", "six"]:
-            time_line = cls.set_treatment_effect(time_line, time_dist = dist)
+            time_line = SeqUtils.set_treatment_effect(time_line, time_dist = dist, item = "total_fluid")
 
             item = f"{dist}_month_effect"
-            treatment_dict[f"{dist}_month"] = cls.get_treatment_effect(item, time_line)
+            treatment_dict[f"{dist}_month"] = SeqUtils.get_treatment_effect(item, time_line)
 
         # calculate time until dry, -1 means not dry
-        time_ = cls.get_time_until_dry(time_line)
+        time_fluid = SeqUtils.get_time_until_dry(time_line, "first_fluid")
+        time_injection = SeqUtils.get_time_until_dry(time_line, "first_injection")
+
+        treatment_dict["fluid_coef_injection"] = SeqUtils.fluid_coefficient(time_line, "first_injection")
+        treatment_dict["fluid_coef_no_injection"] = SeqUtils.fluid_coefficient(time_line, "first_fluid")
 
         # check if naive record
-        naive = cls.is_naive(record_table)
+        naive = SeqUtils.is_naive(record_table)
 
         # get number of injections total
-        number_of_injections = cls.get_seq_number_of_injections(time_line)
-        return cls(meta_data = record_table.iloc[0], time_line = time_line, naive = naive, time_until_dry = time_,
-                   number_of_injections = number_of_injections, treatment_dict = treatment_dict)
-
-    @classmethod
-    def get_treatment_effect(cls, item, time_line):
-        log = [time_line[time_point][item] for time_point in time_line.keys() if
-               time_line[time_point][item] is not np.nan]
-        if not log:
-            return np.nan
-        else:
-            return log[0]
-
-    @classmethod
-    def get_seq_number_of_injections(cls, time_line):
-        return np.nansum([time_line[time_point]["total_injections"] for time_point in time_line])
-
-    @classmethod
-    def is_naive(cls, table):
-        first_record = table.iloc[[0]]
-        injections = list(map(lambda x: int(x), first_record.injections[0].split(", ")))
-        return (not first_record.lens_surgery[0]) & (np.sum(injections) == 0)
-
-    @classmethod
-    def get_time_until_dry(cls, time_line):
-        months = list(time_line.keys())
-        first_fluid = cls.first_visit_fluid(time_line)
-        if not first_fluid:
-            return "no fluid"
-        else:
-            for month in months[first_fluid:]:
-                if time_line[month]["total_fluid"] == 0:
-                    return month
-                else:
-                    continue
-        return -1
-
-    @classmethod
-    def set_treatment_effect(cls, time_line, time_dist):
-        time_dict = {"three": 2, "six": 5}
-        for time_point in time_line.keys():
-            injection_point = time_line[time_point]["total_injections"]
-            injection_bool = (injection_point > 0) and (injection_point is not np.nan)
-            time_bool = (time_point + time_dict[time_dist] <= len(time_line))
-            if injection_bool and time_bool:
-                current_fluid = time_line[time_point]["total_fluid"]
-                effect = time_line[time_point + time_dict[time_dist]]["total_fluid"] / current_fluid
-                time_line[time_point][f"{time_dist}_month_effect"] = effect
-            else:
-                time_line[time_point][f"{time_dist}_month_effect"] = np.nan
-        return time_line
-
-    def get_number_of_visits(self):
-        return len(list(filter(lambda x: x != "nan", self.study_dates)))
+        number_of_injections = SeqUtils.get_seq_number_of_injections(time_line)
+        return cls(meta_data = record_table.iloc[0],
+                   time_line = time_line,
+                   naive = naive,
+                   time_until_dry = time_fluid,
+                   time_until_dry_injection = time_injection,
+                   number_of_injections = number_of_injections,
+                   treatment_dict = treatment_dict)
 
     @property
     def time_series(self):
@@ -148,29 +113,12 @@ class MeasureSeqTimeUntilDry():
         return np.array(time_series)
 
     @property
-    def study_dates(self):
-        study_dates = []
-        # iterate through months and retrieve measurement vector
-        months = list(self.time_line.keys())
-        for month in months:
-            study_dates.append(self.time_line[month]["study_date"])
-        return np.array(study_dates)
-
-    @property
     def segmentation_paths(self):
         laterality_cond = "_" + (self.laterality) + "_"
         patient_cond = str(self.patient_id) + "_"
         segmentation_files = list(
             filter(lambda k: (patient_cond in k) & (laterality_cond in k), MeasureSeqTimeUntilDry.SEG_PATHS))
         return segmentation_files
-
-    @classmethod
-    def first_visit_fluid(cls, time_line):
-        months = list(time_line.keys())
-        for month in months:
-            if time_line[month]["total_fluid"] > 0:
-                return month
-        return None
 
     def record_identifier(self, study_date):
         """
@@ -317,13 +265,13 @@ if __name__ == "__main__":
     # distribution of 3 and 6 month treatment effect
     """
     # load sequences
-    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, 'sequences.csv'))
+    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data", 'sequences.csv'))
 
-    PATIENT_ID = 307732  # 2005
-    LATERALITY = "L"
+    PATIENT_ID = 1557  # 2005
+    LATERALITY = "R"
 
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
-    #  seq_pd = seq_pd.loc[filter_]
+    # seq_pd = seq_pd.loc[filter_]
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates() # .iloc[0:10]
 
@@ -331,16 +279,26 @@ if __name__ == "__main__":
     for patient, lat in tqdm(unique_records.itertuples(index = False)):
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
         time_until_dry.append(MeasureSeqTimeUntilDry.from_record(record_pd))
-        time_until_dry[-1].show_time_series(show_segmentations = False, show = False, save_fig = True)
+        # time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
         # time_until_dry[-1].dump_segmentation_map(11)
 
-    time_serie_log = {"patient_id": [], "laterality": [], "time_until_dry": [], "number_of_injections": [],
-                      "three_month_effect": [], "six_month_effect": [], "number_of_months": [],
-                      "diagnosis": [], "number_of_visits": [], "naive": []}
+    time_serie_log = {"patient_id": [],
+                      "laterality": [],
+                      "time_until_dry": [],
+                      "time_until_dry_injection": [],
+                      "number_of_injections": [],
+                      "three_month_effect": [],
+                      "six_month_effect": [],
+                      "number_of_months": [],
+                      "diagnosis": [],
+                      "number_of_visits": [],
+                      "naive": [],
+                      "fluid_change_injections": [],
+                      "fluid_change_no_injections": []}
 
     for measurem in time_until_dry:
         for key in time_serie_log.keys():
             time_serie_log[key].append(measurem.__dict__[key])
 
     time_until_dry_pd = pd.DataFrame(time_serie_log)
-    # time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "time_until_dry.csv"))
+    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"))

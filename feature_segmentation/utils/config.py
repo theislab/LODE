@@ -1,1 +1,0 @@
-PROJ_DIR = "/home/olle/PycharmProjects/feature_segmentation-master"

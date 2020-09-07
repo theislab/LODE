@@ -8,35 +8,49 @@ import datetime
 import matplotlib.pyplot as plt
 from datetime import timedelta
 import numpy as np
-from utils.pandas_utils import sum_etdrs_columns, get_total_number_of_injections, interpolate_numeric_field
-from utils.util_functions import nan_helper
+from utils.pandas_utils import sum_etdrs_columns, get_total_number_of_injections, interpolate_numeric_field, \
+    avg_etdrs_columns
+from utils.util_functions import nan_helper, SeqUtils
 from utils.plotting_utils import plot_segmentation_map, color_mappings
 import datetime
+import itertools
 from tqdm import tqdm
+import matplotlib.cm as cm
+
 import glob
 import matplotlib.patches as mpatches
+colors = [[203., 54., 68.],
+            [192., 194., 149.],
+            [105., 194., 185.],
+            [205., 205., 205.],
+            [140., 204., 177.],
+            [183., 186., 219.],
+            [114, 137, 218],
+            [209., 227., 239.],
+            [226., 233., 48.]]
 
-
-class MeasureSeqTimeUntilDry():
+class MeasureSeqAtrophy(SeqUtils):
     NUMBER_OF_MONTHS = 13
     NUM_SEGMENTATIONS = 3
     DAYS = 30
     REGIONS = ["S", "N", "I", "T"]
-    FLUIDS = ["3", "4"]
-    DATA_POINTS = ["study_date", "total_fluid", "total_injections", "cur_va_rounded", "next_va"]
+    ATROPHY = []
+    ATROPHY_COLUMNS = ['C0_atropy_percentage', 'S2_atropy_percentage', 'S1_atropy_percentage', 'N1_atropy_percentage',
+                       'N2_atropy_percentage', 'I1_atropy_percentage', 'I2_atropy_percentage', 'T1_atropy_percentage',
+                       'T2_atropy_percentage']
+
+    DATA_POINTS = ["study_date", "avg_atrophy", "total_injections", "cur_va_rounded", "next_va"]
     META_DATA = ["patient_id", "laterality", "diagnosis"]
     SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
 
-    def __init__(self, meta_data, time_line, naive, time_until_dry, number_of_injections,
-                 treatment_dict):
-        self.patient_id = meta_data[MeasureSeqTimeUntilDry.META_DATA[0]]
-        self.laterality = meta_data[MeasureSeqTimeUntilDry.META_DATA[1]]
-        self.diagnosis = meta_data[MeasureSeqTimeUntilDry.META_DATA[2]]
+    def __init__(self, meta_data, time_line, naive, number_of_injections, treatment_dict):
+        self.patient_id = meta_data[MeasureSeqAtrophy.META_DATA[0]]
+        self.laterality = meta_data[MeasureSeqAtrophy.META_DATA[1]]
+        self.diagnosis = meta_data[MeasureSeqAtrophy.META_DATA[2]]
         self.time_line = time_line
         self.number_of_months = len(time_line)
         self.naive = naive
         self.number_of_visits = self.get_number_of_visits()
-        self.time_until_dry = time_until_dry
         self.number_of_injections = number_of_injections
         self.three_month_effect = treatment_dict["three_month"]
         self.six_month_effect = treatment_dict["six_month"]
@@ -50,8 +64,9 @@ class MeasureSeqTimeUntilDry():
         record_table.reset_index(inplace = True)
 
         # add total fluid
-        record_table = sum_etdrs_columns(record_table, rings = [1, 2], regions = MeasureSeqTimeUntilDry.REGIONS,
-                                         features = [3, 4], foveal_region = ["C0"], new_column_name = "total_fluid")
+        record_table = avg_etdrs_columns(record_table, rings = [1, 2], regions = MeasureSeqAtrophy.REGIONS,
+                                         features = ["atropy_percentage"], foveal_region = ["C0"],
+                                         new_column_name = "avg_atrophy")
 
         # round va
         record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2),
@@ -60,118 +75,52 @@ class MeasureSeqTimeUntilDry():
         # add total injections
         record_table = get_total_number_of_injections(table = record_table)
 
+        MeasureSeqAtrophy.DATA_POINTS = MeasureSeqAtrophy.DATA_POINTS + MeasureSeqAtrophy.ATROPHY_COLUMNS
         # assign items to time line
-        for data_point in MeasureSeqTimeUntilDry.DATA_POINTS:
+        for data_point in MeasureSeqAtrophy.DATA_POINTS:
             time_line = time_utils.assign_to_timeline(time_line = time_line, item = data_point)
 
         # interpolate time vector
-        for item in ["total_fluid"]:
+        for item in ["avg_atrophy"] + MeasureSeqAtrophy.ATROPHY_COLUMNS:
             time_line = interpolate_numeric_field(time_line, item = item)
 
         treatment_dict = {}
         # set treatment effect
         for dist in ["three", "six"]:
-            time_line = cls.set_treatment_effect(time_line, time_dist = dist)
+            time_line = SeqUtils.set_treatment_effect(time_line, time_dist = dist, item = "avg_atrophy")
 
             item = f"{dist}_month_effect"
-            treatment_dict[f"{dist}_month"] = cls.get_treatment_effect(item, time_line)
-
-        # calculate time until dry, -1 means not dry
-        time_ = cls.get_time_until_dry(time_line)
+            treatment_dict[f"{dist}_month"] = SeqUtils.get_treatment_effect(item, time_line)
 
         # check if naive record
-        naive = cls.is_naive(record_table)
+        naive = SeqUtils.is_naive(record_table)
 
         # get number of injections total
-        number_of_injections = cls.get_seq_number_of_injections(time_line)
-        return cls(meta_data = record_table.iloc[0], time_line = time_line, naive = naive, time_until_dry = time_,
+        number_of_injections = SeqUtils.get_seq_number_of_injections(time_line)
+        return cls(meta_data = record_table.iloc[0], time_line = time_line, naive = naive,
                    number_of_injections = number_of_injections, treatment_dict = treatment_dict)
-
-    @classmethod
-    def get_treatment_effect(cls, item, time_line):
-        log = [time_line[time_point][item] for time_point in time_line.keys() if
-               time_line[time_point][item] is not np.nan]
-        if not log:
-            return np.nan
-        else:
-            return log[0]
-
-    @classmethod
-    def get_seq_number_of_injections(cls, time_line):
-        return np.nansum([time_line[time_point]["total_injections"] for time_point in time_line])
-
-    @classmethod
-    def is_naive(cls, table):
-        first_record = table.iloc[[0]]
-        injections = list(map(lambda x: int(x), first_record.injections[0].split(", ")))
-        return (not first_record.lens_surgery[0]) & (np.sum(injections) == 0)
-
-    @classmethod
-    def get_time_until_dry(cls, time_line):
-        months = list(time_line.keys())
-        first_fluid = cls.first_visit_fluid(time_line)
-
-        if not first_fluid:
-            return "no fluid"
-        else:
-            for month in months[first_fluid:]:
-                if time_line[month]["total_fluid"] == 0:
-                    return month
-                else:
-                    continue
-        return -1
-
-    @classmethod
-    def set_treatment_effect(cls, time_line, time_dist):
-        time_dict = {"three": 2, "six": 5}
-        for time_point in time_line.keys():
-            injection_point = time_line[time_point]["total_injections"]
-            injection_bool = (injection_point > 0) and (injection_point is not np.nan)
-            time_bool = (time_point + time_dict[time_dist] <= len(time_line))
-            if injection_bool and time_bool:
-                current_fluid = time_line[time_point]["total_fluid"]
-                effect = time_line[time_point + time_dict[time_dist]]["total_fluid"] / current_fluid
-                time_line[time_point][f"{time_dist}_month_effect"] = effect
-            else:
-                time_line[time_point][f"{time_dist}_month_effect"] = np.nan
-        return time_line
 
     def get_number_of_visits(self):
         return len(list(filter(lambda x: x != "nan", self.study_dates)))
 
     @property
     def time_series(self):
-        time_series = []
+        time_series = dict.fromkeys(MeasureSeqAtrophy.ATROPHY_COLUMNS)
         # iterate through months and retrieve measurement vector
         months = list(self.time_line.keys())
-        for month in months:
-            time_series.append(self.time_line[month]["total_fluid"])
-        return np.array(time_series)
-
-    @property
-    def study_dates(self):
-        study_dates = []
-        # iterate through months and retrieve measurement vector
-        months = list(self.time_line.keys())
-        for month in months:
-            study_dates.append(self.time_line[month]["study_date"])
-        return np.array(study_dates)
+        for feature in time_series.keys():
+            time_series[feature] = []
+            for month in months:
+                time_series[feature].append(self.time_line[month][feature])
+        return time_series
 
     @property
     def segmentation_paths(self):
-        laterality_cond = "_" + (self.laterality) + "_"
+        laterality_cond = "_" + self.laterality + "_"
         patient_cond = str(self.patient_id) + "_"
         segmentation_files = list(
-            filter(lambda k: (patient_cond in k) & (laterality_cond in k), MeasureSeqTimeUntilDry.SEG_PATHS))
+            filter(lambda k: (patient_cond in k) & (laterality_cond in k), MeasureSeqAtrophy.SEG_PATHS))
         return segmentation_files
-
-    @classmethod
-    def first_visit_fluid(cls, time_line):
-        months = list(time_line.keys())
-        for month in months:
-            if time_line[month]["total_fluid"] > 0:
-                return month
-        return None
 
     def record_identifier(self, study_date):
         """
@@ -221,10 +170,10 @@ class MeasureSeqTimeUntilDry():
                 path = list(filter(lambda k: (date.replace("-", "") in k), self.segmentation_paths))[0]
                 map = np.load(path)
 
-                indices = np.linspace(0, map.shape[0] - 1, MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS, dtype = np.int32)
+                indices = np.linspace(0, map.shape[0] - 1, MeasureSeqAtrophy.NUM_SEGMENTATIONS, dtype = np.int32)
                 self.time_line[month]["segmentation_maps"] = map[indices, :, :]
 
-    def show_time_series(self, show_segmentations=False, show=False, save_fig=False):
+    def show_time_series(self, show_segmentations=False, show=False, save_fig=False, colors=None):
         """
         @param show_segmentations: whether to show segmentations
         @type show_segmentations: bool
@@ -249,20 +198,21 @@ class MeasureSeqTimeUntilDry():
         darkred_patch = mpatches.Patch(color = 'darkorange', label = 'injections')
         time_series = self.time_series
 
-        # set y axis params
-        if np.max(time_series) < 50000:
-            y_max = 50000
-        else:
-            y_max = np.max(time_series)
+        ts_length = len(self.time_series['C0_atropy_percentage'])
 
-        fig, ax = plt.subplots(figsize = (int(time_series.shape[0]), 10))
+        fig, ax = plt.subplots(figsize = (ts_length, 10))
         fig.subplots_adjust(bottom = 0.4)
 
-        xs = np.arange(0, time_series.shape[0], 1)
-        ys = time_series
+        y_max = 0.5
+        y_min = 0
 
-        # plot points
-        ax.plot(xs, ys, "bo-")
+        xs = np.arange(0, ts_length, 1)
+        ys = [0.01]*ts_length
+
+        colors_iter = itertools.cycle(["r", "g", "b", "y", "orange", "darkblue", "peru", "pink", "purple"])
+        for feature in self.time_series.keys():
+            # plot points
+            ax.plot(xs, time_series[feature], "bo-", label = feature, color=next(colors_iter))
 
         x_offset = 0
         xy_box = {0: (x_offset, y_max // 5),
@@ -278,10 +228,10 @@ class MeasureSeqTimeUntilDry():
                 label = f"Inj: {self.time_line[x + 1]['total_injections']} \n VA: {self.time_line[x + 1]['cur_va_rounded']}"
             else:
                 label = ""
-            ax.text(x, y + 1000, label, fontdict = font)
+            ax.text(x, y, label, fontdict = font)
 
             if show_segmentations & (self.time_line[x + 1]["study_date"] is not np.nan):
-                for i in range(MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS):
+                for i in range(MeasureSeqAtrophy.NUM_SEGMENTATIONS):
                     imagebox = OffsetImage(self.time_line[x + 1]["segmentation_maps"][i, :, :],
                                            zoom = zoom, cmap = seg_cmap, norm = seg_norm)
                     imagebox.image.axes = ax
@@ -289,10 +239,10 @@ class MeasureSeqTimeUntilDry():
                                         frameon = False)
                     ax.add_artist(ab)
 
-        plt.ylim(-100, y_max)
+        plt.ylim(y_min, y_max)
         plt.xlabel("month")
-        plt.ylabel("total fluid")
-        plt.legend(handles = [darkred_patch])
+        plt.ylabel("atrophy ")
+        plt.legend()
 
         title_ = f"{self.patient_id}_{self.laterality}"
         plt.title(title_)
@@ -320,22 +270,22 @@ if __name__ == "__main__":
     # load sequences
     seq_pd = pd.read_csv(os.path.join(WORK_SPACE, 'sequences.csv'))
 
-    PATIENT_ID = 307732  # 2005
+    PATIENT_ID = 709  # 2005
     LATERALITY = "L"
 
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
-    # seq_pd = seq_pd.loc[filter_]
+    seq_pd = seq_pd.loc[filter_]
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates() # .iloc[0:10]
 
     time_until_dry = []
     for patient, lat in tqdm(unique_records.itertuples(index = False)):
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
-        time_until_dry.append(MeasureSeqTimeUntilDry.from_record(record_pd))
-        # time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
-        # time_until_dry[-1].dump_segmentation_map(11)
+        time_until_dry.append(MeasureSeqAtrophy.from_record(record_pd))
+        time_until_dry[-1].show_time_series(show_segmentations = False, show = True, save_fig = True, colors = colors)
+        time_until_dry[-1].dump_segmentation_map(11)
 
-    time_serie_log = {"patient_id": [], "laterality": [], "time_until_dry": [], "number_of_injections": [],
+    time_serie_log = {"patient_id": [], "laterality": [], "number_of_injections": [],
                       "three_month_effect": [], "six_month_effect": [], "number_of_months": [],
                       "diagnosis": [], "number_of_visits": [], "naive": []}
 
@@ -344,4 +294,4 @@ if __name__ == "__main__":
             time_serie_log[key].append(measurem.__dict__[key])
 
     time_until_dry_pd = pd.DataFrame(time_serie_log)
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "time_until_dry.csv"))
+    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "atrophy.csv"))

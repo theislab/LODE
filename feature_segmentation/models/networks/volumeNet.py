@@ -1,10 +1,10 @@
 import os
-from feature_segmentation.utils.config import PROJ_DIR
 from feature_segmentation.utils.utils import Params
 from keras.backend import int_shape
 from keras.models import Model
 from keras.layers import Reshape, Dropout, Conv2DTranspose, MaxPooling2D, \
     concatenate, Input, MaxPooling3D, AveragePooling3D
+from config import PROJ_DIR
 from feature_segmentation.models.networks.layers.custom_layers import *
 
 

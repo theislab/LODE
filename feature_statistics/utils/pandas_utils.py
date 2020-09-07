@@ -19,7 +19,33 @@ def sum_etdrs_columns(record_table, rings, regions, features, foveal_region, new
     return record_table
 
 
+def avg_etdrs_columns(record_table, rings, regions, features, foveal_region, new_column_name):
+    n_counts = 0
+    value_ = pd.Series(np.zeros(record_table.shape[0]))
+    for etdrs_tuple in list(itertools.product(regions, rings, features)):
+        region_value = f"{etdrs_tuple[0]}{etdrs_tuple[1]}_{etdrs_tuple[2]}"
+        value_ += record_table[region_value]
+        n_counts += 1
+
+    # add foval fluid
+    for foveal_tuple in list(itertools.product(foveal_region, features)):
+        foveal_value = f"{foveal_tuple[0]}_{foveal_tuple[1]}"
+        value_ += record_table[foveal_value]
+        n_counts += 1
+
+    # average the summations
+    avg_values = value_ / n_counts
+    record_table.insert(10, new_column_name, avg_values.values.tolist(), True)
+    return record_table
+
+
 def get_total_number_of_injections(table):
+    """
+    @param table: record table with clinical information for sequence
+    @type table: DataFrame
+    @return: DataFrame with total injections, i.e. number of injections of all types at visit, added as column
+    @rtype: DataFrame
+    """
     total_injections = [np.sum(list(map(lambda x: int(x), row))) for row in table.injections.str.split(", ")]
     table.insert(loc = 10, column = "total_injections", value = pd.Series(total_injections),
                  allow_duplicates = True)

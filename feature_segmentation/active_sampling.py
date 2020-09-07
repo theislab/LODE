@@ -3,7 +3,7 @@ import os
 import time
 import random
 import pandas as pd
-from active_learning.config import WORK_SPACE
+from segmentation_config import WORK_SPACE
 from active_learning.utils import Select, move_selected_octs, FileManager
 
 '''
@@ -38,6 +38,7 @@ OCT volume for reference.
 '''
 
 if __name__ == '__main__':
+
     parser = argparse.ArgumentParser()
     parser.add_argument("name", help = "which model version to use for segmenting",
                         type = str, default = "test")
@@ -48,8 +49,16 @@ if __name__ == '__main__':
     parser.add_argument("sampling_rate", help = "which of the different sub .csv files to read from ",
                         type = int, default = 49)
     args = parser.parse_args()
+    '''
 
+    budget = 5
+    chunk_size = 100
+    sampling_rate = 49
+    name = "test"
+     '''
+    start_filemanager = time.time()
     file_manager = FileManager("annotated_files_test.csv")
+    print(f"file system takes {time.time() - start_filemanager}")
 
     # get record paths
     unannotated_embeddings_paths = file_manager.unannotated_records
@@ -59,32 +68,31 @@ if __name__ == '__main__':
     print("number of embedded volumes", len(unannotated_embeddings_paths))
     print("number of annotated embedded volumes", len(annotated_embeddings_paths))
 
-    selection = Select(args.budget,
+    selection = Select(budget, # args.budget,
                        ft_path = file_manager.feature_table_paths,
                        ae_paths = annotated_embeddings_paths,
                        uae_paths = unannotated_embeddings_paths)
 
-    print("filter unannotated paths for features of interest (foi)")
+    start_filtering = time.time()
     features_filtered_pd = selection.filter_paths(selection.uae_paths, args.sampling_rate, filter_ = True)
-    features_unfiltered_pd = selection.filter_paths(selection.uae_paths, args.sampling_rate, filter_ = False)
+    print(f"filtering takes {time.time() - start_filtering}")
 
     features_filtered_pd.to_csv(os.path.join(WORK_SPACE, "active_learning", "features_filtered_pd.csv"))
 
     print("number of filtered octs", features_filtered_pd.shape[0])
 
-    start = time.time()
-    print("finished with annotated embeddings, proceeding with unannotated embeddings")
+    start_embedding = time.time()
     unannotated_embeddings = selection.reduce_dim_unannotated(features_filtered_pd, chunk = args.chunk_size)
+    print(f"embedding takes {time.time() - start_embedding}")
 
-    print("time required for {} octs were {} seconds".format(unannotated_embeddings.shape[0],
-                                                             str(time.time() - start)))
-
+    start_selection = time.time()
     [ind_to_label, min_dist] = selection.select_batch(unannotated_embeddings, budget = args.budget)
     selected_scans = unannotated_embeddings.iloc[ind_to_label]
+    print(f"selection takes {time.time() - start_selection}")
 
     print("format csv")
     selected_scans_pd = selected_scans.id.str.split("_", expand = True).rename(
-        columns = {0: "patient_id", 1: "laterality", 2: "study_date", 3: "frame"})
+        columns = {0: "patient_id", 1: "study_date", 2: "laterality", 3: "frame"})
 
     # assign id
     selected_scans_pd["id"] = selected_scans["id"]

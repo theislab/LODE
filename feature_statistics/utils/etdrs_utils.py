@@ -218,5 +218,4 @@ class ETDRSUtils:
 
             # add all tissue types count for etdrs regions
             record_log[etdrs_region + "_" + "total"] = region_total
-
         return record_log
