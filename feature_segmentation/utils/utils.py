@@ -213,6 +213,7 @@ class Evaluation():
 
         im_scaled = np.divide(im_resized, 255., dtype = np.float32)
 
+        self.image = im_resized
         return im_scaled, lbl_resized.astype(int)
 
     def __predict_image(self):

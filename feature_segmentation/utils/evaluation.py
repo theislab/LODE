@@ -8,8 +8,11 @@ import pandas as pd
 from segmentation_models.metrics import iou_score
 import json
 from pprint import pprint
+
 # select model to be evaluated
-model_directory = "./logs/7"
+from plotting import plot_model_run_images
+
+model_directory = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation/model_v1"
 
 # load utils classes
 params = Params(os.path.join(model_directory, "config.json"))
@@ -53,7 +56,8 @@ from sklearn.metrics import classification_report
 target_names = ['class 0', 'class 1', 'class 2',
                 'class 3', 'class 4', 'class 5',
                 'class 6', 'class 7', 'class 8',
-                'class 9', 'class 10', 'class 11', 'class 12', 'class 13', 'class 14',
+                'class 9', 'class 10', 'class 11',
+                'class 12', 'class 13', 'class 14',
                 'class 15']
 
 all_predictions = []
@@ -67,9 +71,11 @@ for i in range(0,len(test_ids)-1):
                             mode="test",
                             choroid = params.choroid_latest)
 
-    print(test_ids[i], np.unique(evaluation.prediction), np.unique(evaluation.label))
     all_predictions.extend(evaluation.prediction.flatten().tolist())
     all_labels.extend(evaluation.label.flatten().tolist())
+
+    records = [evaluation.image, evaluation.label, evaluation.prediction]
+    plot_model_run_images(records, model_directory, mode="test", filename = test_ids[i])
 
 
 ious = jaccard_score(all_labels, all_predictions, average=None)
