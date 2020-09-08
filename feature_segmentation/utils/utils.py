@@ -2,7 +2,7 @@
 import os
 import sys
 from pathlib import Path
-
+import pandas as pd
 path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable.parent))
 
@@ -362,19 +362,24 @@ class EvalVolume():
                         self.feature_dict[feature].append(0)
         return self.feature_dict
 
-def data_split(ids):
+def data_split(ids, params):
     """
     @param ids: list of image names
     @type ids: list
     @return: three lists divided into train, validation and test split
     @rtype: list
     """
-    shuffle(ids)
-    n_records = len(ids)
+    if not params.load_train_records:
+        shuffle(ids)
+        n_records = len(ids)
 
-    test_ids = ids[int(n_records * 0.9):-1]
-    validation_ids = ids[int(len(ids) * 0.8):int(len(ids) * 0.9)]
-    train_ids = ids[0:int(len(ids) * 0.8)]
+        test_ids = ids[int(n_records * 0.9):-1]
+        validation_ids = ids[int(len(ids) * 0.8):int(len(ids) * 0.9)]
+        train_ids = ids[0:int(len(ids) * 0.8)]
+    else:
+        train_ids = pd.read_csv(os.path.join(params.model_directory, "train_ids.csv"))["0"].tolist()
+        validation_ids = pd.read_csv(os.path.join(params.model_directory, "validation_ids.csv"))["0"].tolist()
+        test_ids = pd.read_csv(os.path.join(params.model_directory, "test_ids.csv"))["0"].tolist()
     return train_ids, validation_ids, test_ids
 
 if __name__ == "__main__":
