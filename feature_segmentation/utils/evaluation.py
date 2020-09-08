@@ -1,15 +1,16 @@
 import os
 from keras.engine.saving import load_model
-from utils.utils import Params, TrainOps, Evaluation, Logging
+from utils import Params, TrainOps, Evaluation, Logging
 import random
 import numpy as np
 from sklearn.metrics import jaccard_score
 import pandas as pd
 from segmentation_models.metrics import iou_score
 import json
-
+from pprint import pprint
 # select model to be evaluated
-model_directory = "./logs/44"
+model_directory = "./logs/7"
+
 # load utils classes
 params = Params(os.path.join(model_directory, "config.json"))
 
@@ -63,15 +64,16 @@ for i in range(0,len(test_ids)-1):
     evaluation = Evaluation(params=params,
                             filename=test_ids[i],
                             model=model,
-                            mode="test")
+                            mode="test",
+                            choroid = params.choroid_latest)
+
     print(test_ids[i], np.unique(evaluation.prediction), np.unique(evaluation.label))
     all_predictions.extend(evaluation.prediction.flatten().tolist())
     all_labels.extend(evaluation.label.flatten().tolist())
 
 
-
-    # plot result
-    evaluation.plot_record()
-
+ious = jaccard_score(all_labels, all_predictions, average=None)
 print(classification_report(all_labels, all_predictions, target_names=target_names))
-print(jaccard_score(all_labels, all_predictions, average=None))
+
+pprint(f"The class ious are: {ious}")
+pprint(f"The mIOU is {np.mean(ious)}")

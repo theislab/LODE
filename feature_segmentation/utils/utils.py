@@ -16,8 +16,8 @@ import tensorflow as tf
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 from pydicom import read_file
 
-from utils.loss_functions import dice_loss, gen_dice
-from utils.plotting import color_mappings
+from loss_functions import dice_loss, gen_dice
+from plotting import color_mappings
 
 
 class Params():
@@ -156,7 +156,7 @@ class Logging():
 
 class Evaluation():
 
-    def __init__(self, params, filename, model, mode):
+    def __init__(self, params, filename, model, mode, choroid):
         self.params = params
         self.model_dir = params.model_directory
         self.mode = mode
@@ -165,9 +165,10 @@ class Evaluation():
         self.filename = filename
         self.image, self.label = self.__load_test_image()
         self.prediction = self.__predict_image()
-        self.seg_cmap, self.seg_norm, self.bounds = self.color_mappings()
+        self.seg_cmap, self.seg_norm, self.bounds = color_mappings()
         self.jaccard = jaccard_score(self.label.flatten(), self.prediction.flatten(), average = None)
-
+        self.choroid = choroid
+    
     def resize(self, im):
         desired_size = self.params.img_shape
         im = Image.fromarray(im)
@@ -189,7 +190,11 @@ class Evaluation():
     def __load_test_image(self):
         # load samples
         im = Image.open(os.path.join(self.params.data_path, "images", self.filename))
-        lbl = Image.open(os.path.join(self.params.data_path, "masks", self.filename))
+
+        if self.params.choroid_latest:
+            lbl = Image.open(os.path.join(self.params.data_path, "masks_choroid", self.filename))
+        else:
+            lbl = Image.open(os.path.join(self.params.data_path, "masks", self.filename))
 
         im = np.array(im)
         lbl = np.array(lbl)
