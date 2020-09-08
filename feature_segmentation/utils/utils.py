@@ -1,4 +1,11 @@
 """General utility functions"""
+import os
+import sys
+from pathlib import Path
+
+path_variable = Path(os.path.dirname(__file__))
+sys.path.insert(0, str(path_variable.parent))
+
 import json
 from random import shuffle
 
@@ -15,8 +22,8 @@ from sklearn.metrics import jaccard_score
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 from pydicom import read_file
-from loss_functions import dice_loss, gen_dice
-from plotting import color_mappings
+from utils.loss_functions import dice_loss, gen_dice
+from utils.plotting import color_mappings
 
 
 class Params():
@@ -368,3 +375,6 @@ def data_split(ids):
     validation_ids = ids[int(len(ids) * 0.8):int(len(ids) * 0.9)]
     train_ids = ids[0:int(len(ids) * 0.8)]
     return train_ids, validation_ids, test_ids
+
+if __name__ == "__main__":
+    print("successfully run")

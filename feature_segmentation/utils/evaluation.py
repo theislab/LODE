@@ -12,7 +12,7 @@ from pprint import pprint
 # select model to be evaluated
 from plotting import plot_model_run_images
 
-model_directory = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation/model_v1"
+model_directory = "./pretrained_models/model_v1"
 
 # load utils classes
 params = Params(os.path.join(model_directory, "config.json"))
@@ -53,12 +53,12 @@ model = load_model(save_model_path, custom_objects={'iou_score': iou_score})# mo
 
 from sklearn.metrics import classification_report
 
-target_names = ['class 0', 'class 1', 'class 2',
-                'class 3', 'class 4', 'class 5',
-                'class 6', 'class 7', 'class 8',
-                'class 9', 'class 10', 'class 11',
-                'class 12', 'class 13', 'class 14',
-                'class 15']
+target_dict = {0:'class 0', 1:'class 1', 2:'class 2',
+                3: 'class 3', 4: 'class 4', 5: 'class 5',
+                6: 'class 6', 7: 'class 7', 8: 'class 8',
+                9: 'class 9', 10: 'class 10', 11: 'class 11',
+                12: 'class 12', 13: 'class 13', 14: 'class 14',
+                15: 'class 15'}
 
 all_predictions = []
 all_labels = []
@@ -77,6 +77,11 @@ for i in range(0,len(test_ids)-1):
     records = [evaluation.image, evaluation.label, evaluation.prediction]
     plot_model_run_images(records, model_directory, mode="test", filename = test_ids[i])
 
+target_names = []
+labels_present = np.unique(all_labels)
+for lp in labels_present:
+    target_names.append(target_dict[lp])
+    
 
 ious = jaccard_score(all_labels, all_predictions, average=None)
 print(classification_report(all_labels, all_predictions, target_names=target_names))
