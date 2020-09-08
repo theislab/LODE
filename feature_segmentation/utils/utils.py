@@ -22,7 +22,6 @@ from sklearn.metrics import jaccard_score
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 from pydicom import read_file
-
 from utils.loss_functions import dice_loss, gen_dice
 from utils.plotting import color_mappings
 

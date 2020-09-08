@@ -11,9 +11,9 @@ inputs = tqdm(os.listdir(SEG_DIR))
 print(f"number of cores {num_cores} set to paralell process")
 feature_pd = None
 
-'''
+
 if __name__ == "__main__":
-    filename = "271148_20160509_L_463059001.npy"
+    filename = "709_20160808_L_482412001.npy"
     for i, filename in tqdm(enumerate(os.listdir(SEG_DIR))):
         try:
             etdrs = ETDRSUtils(path=os.path.join(SEG_DIR, filename))
@@ -26,6 +26,8 @@ if __name__ == "__main__":
         except:
             print("record not working, skippint record: ", filename)
             continue
+
+    feature_pd.to_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"))
 
 '''
 
@@ -42,4 +44,4 @@ if __name__ == "__main__":
     processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs)
     features_pd = pd.DataFrame.from_dict(processed_list)
     features_pd.to_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"))
-
+'''
