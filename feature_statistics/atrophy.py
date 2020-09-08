@@ -267,8 +267,9 @@ if __name__ == "__main__":
     # distribution of time until dry
     # distribution of 3 and 6 month treatment effect
     """
+
     # load sequences
-    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, 'sequences.csv'))
+    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, 'sequence_data/sequences.csv'))
 
     PATIENT_ID = 709  # 2005
     LATERALITY = "L"
@@ -282,7 +283,7 @@ if __name__ == "__main__":
     for patient, lat in tqdm(unique_records.itertuples(index = False)):
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
         time_until_dry.append(MeasureSeqAtrophy.from_record(record_pd))
-        time_until_dry[-1].show_time_series(show_segmentations = False, show = True, save_fig = True, colors = colors)
+        time_until_dry[-1].show_time_series(show_segmentations = False, show = False, save_fig = True, colors = colors)
         time_until_dry[-1].dump_segmentation_map(11)
 
     time_serie_log = {"patient_id": [], "laterality": [], "number_of_injections": [],

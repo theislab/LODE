@@ -61,5 +61,5 @@ def plot_segmentation_map(cls, show=False, save_path=None, img_name = None):
         if not os.path.exists(save_path):
             os.makedirs(save_path, exist_ok = True)
         plt.savefig(os.path.join(save_path, img_name))
-    plt.close()
+        plt.close()
     return colorbar_im

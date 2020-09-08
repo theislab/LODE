@@ -1,7 +1,7 @@
 import numpy as np
 import matplotlib.pyplot as plt
 from skimage.measure import moments
-
+from utils.plotting_utils import plot_segmentation_map
 
 def plot_bool_mask(mask):
     from tvtk.api import tvtk
@@ -82,7 +82,8 @@ def thickness_profiler(volume):
 
 
 def rpe_profiler(volume):
-    rpe_map = np.zeros([volume.shape[1], volume.shape[2]])
+    map_positions = np.linspace(0, 255, volume.shape[0], dtype=np.int32)
+    rpe_map = np.zeros([volume.shape[1], volume.shape[2]], dtype = np.int32)
     for i in range(volume.shape[0]):
         neurosensory_retina = np.argwhere(np.sum(volume[i, :, :] == 2, axis = 0))
         if not neurosensory_retina.any():
@@ -95,7 +96,26 @@ def rpe_profiler(volume):
         rpe_presence = np.sum(rpe_bool, axis = 0)[start:stop]
 
         # find absence of rpe
-        rpe_map[i, start:stop] = rpe_presence == 0
+        rpe_map[map_positions[i], start:stop] = rpe_presence == 0
+
+    # interpolate atrophy regions
+    previous_position = None
+    for k, position in enumerate(map_positions):
+        if k > 0:
+            current_v = rpe_map[position, :]
+            previous_v = rpe_map[previous_position, :]
+
+            element_index = 0
+            for element_a, element_b in zip(current_v, previous_v):
+                if element_a == 1 & element_b == 1:
+                    # fill atrophy values
+                    rpe_map[previous_position:position, element_index] = 1
+                    element_index += 1
+                else:
+                    element_index += 1
+                    continue
+        # set prev vector index
+        previous_position = position
     return rpe_map
 
 
@@ -121,23 +141,28 @@ class ETDRSUtils:
     def lower_left(self):
         return np.arange(0, self.width)[:, None] > np.arange(self.height)
 
-    def inner_mask(self):
+    def inner_disk(self):
         inner_ring_radius = int(self.height // 6) / 2
         return create_circular_mask(h = self.height, w = self.width, center = None, radius = inner_ring_radius)
 
-    def middle_mask(self):
-        middle_ring_radius = int(self.height // 3) / 2
-        return create_circular_mask(h = self.height, w = self.width, center = None, radius = middle_ring_radius)
+    def middle_disk(self):
+        middle_ring_radius = int(self.height // 2) / 2
+        middle_disk = create_circular_mask(h = self.height, w = self.width, center = None, radius = middle_ring_radius)
+        middle_disk[self.inner_disk() == 1] = 0
+        return middle_disk
 
-    def outer_mask(self):
+    def outer_disk(self):
         outer_ring_radius = int(self.height // 1) / 2
-        return create_circular_mask(h = self.height, w = self.width, center = None, radius = outer_ring_radius)
+        outer_disk = create_circular_mask(h = self.height, w = self.width, center = None, radius = outer_ring_radius)
+        outer_disk[self.inner_disk() == 1] = 0
+        outer_disk[self.middle_disk() == 1] = 0
+        return outer_disk
 
     def make_volume_mask(self, mask):
         return np.stack((mask,) * self.volume_scans, axis = 0)
 
     def zones(self):
-        zones_dict = {"middle": self.middle_mask(), "outer": self.outer_mask(),
+        zones_dict = {"middle": self.middle_disk(), "outer": self.outer_disk(),
                       "upper_right": self.upper_right(), "lower_left": self.lower_left(),
                       "upper_left": self.upper_left(), "lower_right": self.lower_right()}
 
@@ -156,7 +181,7 @@ class ETDRSUtils:
                 ("upper_left", "outer", "lower_left")]
 
         # create 9 depth regions
-        self.etdrs_bool_grid["C0"] = self.make_volume_mask(self.inner_mask())
+        self.etdrs_bool_grid["C0"] = self.make_volume_mask(self.inner_disk())
         for k, roi in enumerate(rois, 1):
             self.etdrs_bool_grid[etdrs_regions[k]] = np.asarray(zones_dict[roi[0]] &
                                                                 zones_dict[roi[1]] &
