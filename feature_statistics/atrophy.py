@@ -35,9 +35,11 @@ class MeasureSeqAtrophy(SeqUtils):
     DAYS = 30
     REGIONS = ["S", "N", "I", "T"]
     ATROPHY = []
-    ATROPHY_COLUMNS = ['C0_atropy_percentage', 'S2_atropy_percentage', 'S1_atropy_percentage', 'N1_atropy_percentage',
-                       'N2_atropy_percentage', 'I1_atropy_percentage', 'I2_atropy_percentage', 'T1_atropy_percentage',
-                       'T2_atropy_percentage']
+    ATROPHY_COLUMNS = ["avg_atrophy"]
+
+    # ['C0_atropy_percentage', 'S2_atropy_percentage', 'S1_atropy_percentage', 'N1_atropy_percentage',
+    #                   'N2_atropy_percentage', 'I1_atropy_percentage', 'I2_atropy_percentage', 'T1_atropy_percentage',
+    #                   'T2_atropy_percentage']
 
     DATA_POINTS = ["study_date", "avg_atrophy", "total_injections", "cur_va_rounded", "next_va"]
     META_DATA = ["patient_id", "laterality", "diagnosis"]
@@ -50,6 +52,7 @@ class MeasureSeqAtrophy(SeqUtils):
         self.time_line = time_line
         self.number_of_months = len(time_line)
         self.naive = naive
+        self.atrophy_delta = self.get_atrophy_delta
         self.number_of_visits = self.get_number_of_visits()
         self.number_of_injections = number_of_injections
         self.three_month_effect = treatment_dict["three_month"]
@@ -74,8 +77,8 @@ class MeasureSeqAtrophy(SeqUtils):
 
         # add total injections
         record_table = get_total_number_of_injections(table = record_table)
-
         MeasureSeqAtrophy.DATA_POINTS = MeasureSeqAtrophy.DATA_POINTS + MeasureSeqAtrophy.ATROPHY_COLUMNS
+
         # assign items to time line
         for data_point in MeasureSeqAtrophy.DATA_POINTS:
             time_line = time_utils.assign_to_timeline(time_line = time_line, item = data_point)
@@ -102,6 +105,12 @@ class MeasureSeqAtrophy(SeqUtils):
 
     def get_number_of_visits(self):
         return len(list(filter(lambda x: x != "nan", self.study_dates)))
+
+    @property
+    def get_atrophy_delta(self):
+        start_value = self.time_line[min(self.time_line.keys())]["avg_atrophy"]
+        end_value = self.time_line[max(self.time_line.keys())]["avg_atrophy"]
+        return end_value - start_value
 
     @property
     def time_series(self):
@@ -151,7 +160,8 @@ class MeasureSeqAtrophy(SeqUtils):
             indices = np.linspace(0, map.shape[0] - 1, map.shape[0] - 1, dtype = np.int32)
             for idx in indices:
                 plot_segmentation_map(map[idx, :, :], show = False,
-                                      save_path = os.path.join(WORK_SPACE, "dump/2d_segmentations"),
+                                      save_path = os.path.join(WORK_SPACE,
+                                                               f"dump/2d_segmentations/{self.patient_id}/{date}"),
                                       img_name = f"{idx}.png")
 
     def add_segmentation_to_timeline(self):
@@ -198,18 +208,18 @@ class MeasureSeqAtrophy(SeqUtils):
         darkred_patch = mpatches.Patch(color = 'darkorange', label = 'injections')
         time_series = self.time_series
 
-        ts_length = len(self.time_series['C0_atropy_percentage'])
+        ts_length = len(self.time_series[list(self.time_series.keys())[0]])
 
         fig, ax = plt.subplots(figsize = (ts_length, 10))
         fig.subplots_adjust(bottom = 0.4)
 
-        y_max = 0.5
+        y_max = 1.0
         y_min = 0
 
         xs = np.arange(0, ts_length, 1)
         ys = [0.01]*ts_length
 
-        colors_iter = itertools.cycle(["r", "g", "b", "y", "orange", "darkblue", "peru", "pink", "purple"])
+        colors_iter = itertools.cycle([ "b", "r", "g", "y", "orange", "darkblue", "peru", "pink", "purple"])
         for feature in self.time_series.keys():
             # plot points
             ax.plot(xs, time_series[feature], "bo-", label = feature, color=next(colors_iter))
@@ -275,7 +285,7 @@ if __name__ == "__main__":
     LATERALITY = "L"
 
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
-    seq_pd = seq_pd.loc[filter_]
+    # seq_pd = seq_pd.loc[filter_]
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates() # .iloc[0:10]
 
@@ -288,7 +298,7 @@ if __name__ == "__main__":
 
     time_serie_log = {"patient_id": [], "laterality": [], "number_of_injections": [],
                       "three_month_effect": [], "six_month_effect": [], "number_of_months": [],
-                      "diagnosis": [], "number_of_visits": [], "naive": []}
+                      "diagnosis": [], "number_of_visits": [], "naive": [], "atrophy_delta": []}
 
     for measurem in time_until_dry:
         for key in time_serie_log.keys():
