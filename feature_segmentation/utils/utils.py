@@ -22,8 +22,8 @@ from sklearn.metrics import jaccard_score
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 from pydicom import read_file
-from utils.loss_functions import dice_loss, gen_dice
-from utils.plotting import color_mappings
+from loss_functions import dice_loss, gen_dice
+from plotting import color_mappings
 
 
 class Params():
@@ -376,9 +376,9 @@ def data_split(ids, params):
         validation_ids = ids[int(len(ids) * 0.8):int(len(ids) * 0.9)]
         train_ids = ids[0:int(len(ids) * 0.8)]
     else:
-        train_ids = pd.read_csv(os.path.join(params.model_directory, "train_ids.csv"))["0"].tolist()
-        validation_ids = pd.read_csv(os.path.join(params.model_directory, "validation_ids.csv"))["0"].tolist()
-        test_ids = pd.read_csv(os.path.join(params.model_directory, "test_ids.csv"))["0"].tolist()
+        train_ids = pd.read_csv(os.path.join(params.pretrained_model, "train_ids.csv"))["0"].tolist()
+        validation_ids = pd.read_csv(os.path.join(params.pretrained_model, "validation_ids.csv"))["0"].tolist()
+        test_ids = pd.read_csv(os.path.join(params.pretrained_model, "test_ids.csv"))["0"].tolist()
     return train_ids, validation_ids, test_ids
 
 if __name__ == "__main__":

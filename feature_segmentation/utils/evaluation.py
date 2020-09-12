@@ -12,7 +12,7 @@ from pprint import pprint
 # select model to be evaluated
 from plotting import plot_model_run_images
 
-model_directory = "./pretrained_models/model_v1"
+model_directory = "./logs/20"
 
 # load utils classes
 params = Params(os.path.join(model_directory, "config.json"))
@@ -78,7 +78,7 @@ for i in range(0,len(test_ids)-1):
     plot_model_run_images(records, model_directory, mode="test", filename = test_ids[i])
 
 target_names = []
-labels_present = np.unique(all_labels)
+labels_present = np.unique(np.unique(all_labels).tolist() + np.unique(all_predictions).tolist())
 for lp in labels_present:
     target_names.append(target_dict[lp])
     
