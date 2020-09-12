@@ -12,7 +12,8 @@ import cv2
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
 
-    def __init__(self, list_IDs, params, is_training, pretraining=False):
+    def __init__(self, list_IDs, params, is_training, pretraining=False,
+            choroid_latest = False):
         'Initialization'
         self.shape = (params.img_shape, params.img_shape)
         self.batch_size = params.batch_size
@@ -21,10 +22,15 @@ class DataGenerator(keras.utils.Sequence):
         self.on_epoch_end()
         self.params = params
         self.pretraining = pretraining
-        self.image_path = os.path.join(params.data_path, "images")
-        self.label_path = os.path.join(params.data_path, "masks")
         self.is_training = is_training
         self.augment_box = get_augmentations(params)[params.aug_strategy]
+        self.choroid = choroid_latest
+        
+        self.image_path = os.path.join(params.data_path, "images")
+        if self.choroid:
+            self.label_path = os.path.join(params.data_path, "masks_choroid")
+        else:
+            self.label_path = os.path.join(params.data_path, "masks")
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -129,12 +135,12 @@ class DataGenerator(keras.utils.Sequence):
                 side_sample_size = (self.params.n_scans - 1) // 2
 
                 if n_right >= side_sample_size:
-                    right_samples = _right_frames[np.arange(0, 4)]
+                    right_samples = _right_frames[np.arange(0, side_sample_size - 1)]
                 else:
                     right_samples = _right_frames
 
                 if n_left >= side_sample_size:
-                    left_samples = _left_frames[- np.arange(4, 0, -1)]
+                    left_samples = _left_frames[- np.arange(side_sample_size - 1, 0, -1)]
                 else:
                     left_samples = _left_frames
 

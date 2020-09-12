@@ -3,7 +3,7 @@ import keras
 import os
 import random
 from PIL import Image
-
+import glob
 from generators.generator_utils.image_processing import resize, read_resize
 from generators.generator_utils.oct_augmentations import get_augmentations
 
@@ -58,8 +58,10 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             # load samples
-            im_path = os.path.join(self.image_path, ID)
-            lbl_path = os.path.join(self.label_path, ID)
+            im_path = glob.glob(os.path.join(self.image_path, ID.replace(".png", "*")))[0]
+            lbl_path = glob.glob(os.path.join(self.label_path, ID.replace(".png", "*")))[0]
+            #im_path = os.path.join(self.image_path, ID)
+            #lbl_path = os.path.join(self.label_path, ID)
             im_resized, lbl_resized = read_resize(im_path, lbl_path, self.shape)
 
             # Store sample
@@ -73,8 +75,10 @@ class DataGenerator(keras.utils.Sequence):
         record_idx = random.randint(0, len(self.list_IDs))
 
         # load samples
-        im_path = os.path.join(self.image_path, self.list_IDs[record_idx - 1])
-        lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1])
+        im_path = glob.glob(os.path.join(self.image_path, self.list_IDs[record_idx - 1].replace(".png", "*")))[0]
+        lbl_path = glob.glob(os.path.join(self.label_path, self.list_IDs[record_idx - 1].replace(".png", "*")))[0]    
+        #im_path = os.path.join(self.image_path, self.list_IDs[record_idx - 1])
+        #lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1])
         image, label = read_resize(im_path, lbl_path, self.shape)
 
         image, label = self.__pre_process(image, label)
