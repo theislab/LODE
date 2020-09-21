@@ -12,7 +12,7 @@ from pprint import pprint
 # select model to be evaluated
 from plotting import plot_model_run_images
 
-model_directory = "./logs/20"
+model_directory = "./logs/21"
 
 # load utils classes
 params = Params(os.path.join(model_directory, "config.json"))

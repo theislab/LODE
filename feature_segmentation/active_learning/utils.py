@@ -83,6 +83,9 @@ class OCTEmbeddings:
                     embeddings[1].append(embedding_array)
 
             umap_ = self.apply_umap(embeddings[1].copy())
+            if not umap_:
+                continue
+
             umap_embeddings = umap_embeddings.append(
                 pd.DataFrame([embeddings[0].copy(), umap_]).T.rename(columns = {0: "id", 1: "embedding"}))
         print("--- unannotated images embedded ---")
@@ -149,7 +152,7 @@ class OctOI(OCTEmbeddings):
                     fibPED = record_statistic["7"]
                     fibrosis = record_statistic["13"]
 
-                    feature_bool = ((srhm > 50) | (drusen > 50) | (fibPED > 50) | (fibrosis > 50))
+                    feature_bool = fibrosis > 50
 
                     # remove paths without feature of interest
                     filtered_record_statistic = record_statistic.loc[feature_bool]
@@ -188,7 +191,7 @@ class FileManager:
     @property
     def annotated_patients(self):
         embeddings = pd.read_csv(os.path.join(WORK_SPACE, f"active_learning/{self.annotated_file}"),
-                                 header = None).dropna()[0].tolist()
+                                    ).dropna()["0"].tolist()
 
         # extract patient ids from first column
         ids = list(map(lambda x: str(x).split("_")[0], embeddings))

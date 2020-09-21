@@ -1,7 +1,7 @@
 import random
 from utils.utils import Params, TrainOps, Logging, data_split
 import os
-from generators.generator_2d import DataGenerator
+
 import keras.backend as K
 from models.model import get_model
 import pandas as pd
@@ -18,13 +18,18 @@ trainops = TrainOps(params)
 params.data_path = TRAIN_DATA_PATH
 
 ids = os.listdir(os.path.join(params.data_path, "images"))
-train_ids, validation_ids, test_ids = data_split(ids)
+train_ids, validation_ids, test_ids = data_split(ids, params)
 
 if TRAIN_DATA_PATH.split("/")[-1] == "first_examples":
     train_ids = train_ids + test_ids
     pretraining = True
 
 print("number of train and test image are: ", len(train_ids), len(validation_ids))
+
+if params.model == "volumeNet":
+    from generators.generator_3d import DataGenerator
+else:
+    from generators.generator_2d import DataGenerator
 
 # Generators
 train_generator = DataGenerator(train_ids, params = params, is_training = True, 

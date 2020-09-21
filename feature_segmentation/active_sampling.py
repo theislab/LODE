@@ -3,7 +3,7 @@ import os
 import time
 import random
 import pandas as pd
-from segmentation_config import WORK_SPACE
+from config import WORK_SPACE
 from active_learning.utils import Select, move_selected_octs, FileManager
 
 '''
@@ -20,7 +20,7 @@ EMBEDD_DIR: path where embeddings are stored
 workspace directory expected to contain:
 
 workspace
-└── active_learning
+└── feature_segmentation/active_learning
     ├── annotated_files.csv - record names of all annotated octs so far
    
 Description: 
@@ -40,15 +40,14 @@ OCT volume for reference.
 if __name__ == '__main__':
 
     parser = argparse.ArgumentParser()
-    parser.add_argument("name", help = "which model version to use for segmenting",
-                        type = str, default = "test")
-    parser.add_argument("budget", help = "which of the different sub .csv files to read from ",
-                        type = int, default = 200)
+    parser.add_argument("budget", help = "number of images to select",
+                        type = int, default = 100)
     parser.add_argument("chunk_size", help = "which of the different sub .csv files to read from ",
                         type = int, default = 100)
+    
+    parser.add_argument("number_to_search", help="number of images to search", type =int, default=10000)
     parser.add_argument("sampling_rate", help = "which of the different sub .csv files to read from", type = int, default = 49)
-    parser.add_argument("number_to_search", help = "number of unannotated scans to search",
-            type = int, default=1000)
+
     args = parser.parse_args()
 
     file_manager = FileManager("annotated_files.csv")
@@ -72,7 +71,7 @@ if __name__ == '__main__':
     start_filtering = time.time()
     features_filtered_pd = selection.filter_paths(selection.uae_paths, args.sampling_rate, filter_ = True)
 
-    features_filtered_pd.to_csv(os.path.join(WORK_SPACE, "active_learning", "features_filtered_pd.csv"))
+    features_filtered_pd.to_csv(os.path.join(WORK_SPACE, "feature_segmentation/active_learning", "features_filtered_pd.csv"))
 
     print("number of filtered octs", features_filtered_pd.shape[0])
 
@@ -103,7 +102,7 @@ if __name__ == '__main__':
     if not os.path.exists(DST_DIR):
         os.makedirs(DST_DIR)
 
-    selected_path = os.path.join(WORK_SPACE, "active_learning", f"records_selected_{args.name}.csv")
+    selected_path = os.path.join(WORK_SPACE, "feature_segmentation/active_learning", f"records_selected_{args.name}.csv")
     selected_scans_pd.to_csv(os.path.join(DST_DIR, selected_path))
 
     print("move the selected volumes to selected dir")
