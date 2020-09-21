@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 import pandas as pd
 path_variable = Path(os.path.dirname(__file__))
+sys.path.insert(0, str(path_variable))
 sys.path.insert(0, str(path_variable.parent))
 
 import json
@@ -277,7 +278,7 @@ class TrainOps():
 
         es = EarlyStopping(monitor = 'val_accuracy', patience = 300)
 
-        return [lr_scheduler, checkpoint, tb, csv_logger, es]
+        return [lr_scheduler, checkpoint, tb, csv_logger]
 
 
 class EvalVolume():
