@@ -12,10 +12,6 @@ sys.path.append(str(path.parent.parent))
 from config import WORK_SPACE, EMBEDD_DIR
 
 
-path = Path(os.getcwd())
-sys.path.append(str(path.parent.parent))
-
-from config import WORK_SPACE, EMBEDD_DIR
 class FileManager:
     def __init__(self, annotated_file):
         self.annotated_file = annotated_file
@@ -54,15 +50,23 @@ class FileManager:
             unannotated_ids = os.listdir(EMBEDD_DIR)
             uap_pd = EMBEDD_DIR + "/" + pd.DataFrame(unannotated_ids)
 
+            # rename columns
+            uap_pd = uap_pd.rename(columns={0: "path"})
+            record_ids = uap_pd.path.str.split("/", expand = True).iloc[:, -1]
+
             # extract patients
-            patients = uap_pd[0].str.split("/", expand = True).iloc[:, -1].str.split("_", expand = True).iloc[:, 0]
+            patients = record_ids.str.split("_", expand = True).iloc[:, 0]
+            study_date = record_ids.str.split("_", expand = True).iloc[:, 1]
+            laterality = record_ids.str.split("_", expand = True).iloc[:, 2]
+
+            uap_pd["patient_id"] = patients
+            uap_pd["study_date"] = study_date
+            uap_pd["laterality"] = laterality
 
             # filter already selected
             ap_pd = uap_pd[patients.isin(self.annotated_patients)]
             uap_filtered_pd = uap_pd[~patients.isin(self.annotated_patients)]
-
-            uap_filtered_pd.to_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"), index = 0)
-        return uap_filtered_pd[0].values.tolist(), ap_pd[0].values.tolist()
+        return uap_filtered_pd, ap_pd
 
 
 if __name__ == "__main__":
@@ -77,8 +81,8 @@ if __name__ == "__main__":
     args = Args(number_to_search = 10)
 
     # get record paths
-    unannotated_paths, annotated_paths = file_manager.unannotated_records(use_cache = False)
-    unannotated_paths = random.sample(unannotated_paths, args.number_to_search)
+    unannotated_pd, annotated_pd = file_manager.unannotated_records(use_cache = False)
+    unannotated_pd = unannotated_pd.sample(args.number_to_search)
 
-    print("number of embedded volumes", len(unannotated_paths))
-    print("number of annotated embedded volumes", len(annotated_paths))
+    print("number of embedded volumes", unannotated_pd.shape[0])
+    print("number of annotated embedded volumes", annotated_pd.shape[0])

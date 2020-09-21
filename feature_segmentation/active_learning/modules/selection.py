@@ -98,16 +98,10 @@ class OCTEmbeddings:
 
 
 class Filter():
-    def __init__(self, ft_paths, ae_paths, uae_paths):
-        self.annotated_patients = [i.split("/")[-1].split("_")[0] for i in ae_paths]
-
+    def __init__(self, ft_paths, uae_paths):
         # set paths to instances
         self.feature_table_paths = ft_paths
-        self.ae_paths = ae_paths
         self.uae_paths = uae_paths
-
-        # load feature table
-        self.features_pd = self.selection_table()
 
     def selection_table(self):
         """
@@ -118,92 +112,45 @@ class Filter():
         for path in self.feature_table_paths:
             table = pd.read_csv(path, index_col = 0)
             feature_table = feature_table.append(table)
+
+        feature_table.study_date = feature_table.study_date.astype(str)
+        feature_table.patient_id = feature_table.patient_id.astype(str)
         return feature_table
 
-    def filter_paths(self, paths, sampling_rate, filter_=True):
-        filtered_pd = pd.DataFrame(columns = self.features_pd.columns.tolist() + ["embedding_path"])
-        for p in tqdm(paths):
-            # get record identifiers
-            record = p.split("/")[-1]
-            patient_id = record.split("_")[0]
-            study_date = record.split("_")[1]
-            laterality = record.split("_")[2]
+    def filter_paths(self, features_table):
+        """
+        @param features_table:
+        @type features_table:
+        @return:
+        @rtype:
+        """
+        fibrosis_bool = features_table["13"] > 50
+        features_table_filtered = features_table[fibrosis_bool]
+        return features_table_filtered
 
-            # extract boolean vector for record
-            bool_ = ((self.features_pd.patient_id.astype(str) == patient_id) &
-                     (self.features_pd.laterality == laterality) &
-                     (self.features_pd.study_date.astype(str) == study_date))
-
-            # filter for record
-            record_statistic = self.features_pd.loc[bool_]
-
-            # get statistics for embedded oct's
-            idx = np.round(np.linspace(0, record_statistic.shape[0] - 1, sampling_rate)).astype(int)
-
-            if record_statistic.shape[0] == 0:
-                print("statistic table empty for record, moving to next sample")
-                continue
-            record_statistic = record_statistic.iloc[idx]
-
-            # exclude any paths from already annotated patients
-            if patient_id in self.annotated_patients:
-                print(f"patient {patient_id} already annotated")
-
-            if patient_id not in self.annotated_patients:
-                if filter_:
-                    srhm = record_statistic["4"]
-                    drusen = record_statistic["8"]
-                    fibPED = record_statistic["7"]
-                    fibrosis = record_statistic["13"]
-
-                    feature_bool = fibrosis > 50
-
-                    # remove paths without feature of interest
-                    filtered_record_statistic = record_statistic.loc[feature_bool]
-
-                    # append embedding path
-                    filtered_record_statistic["embedding_path"] = p
-                    filtered_pd = filtered_pd.append(filtered_record_statistic.drop_duplicates())
-                    continue
-                else:
-                    # append b scans with foi to data frame
-                    record_statistic["embedding_path"] = p
-                    filtered_pd = filtered_pd.append(record_statistic)
-        return filtered_pd
-
-
-'''
-class Select(Filter):
-    def __init__(self, budget, ft_path, ae_paths, uae_paths):
-        self.budget = budget
-        super().__init__(ft_path, ae_paths, uae_paths)
-
-    def select_batch(self, embeddings, budget):
-        kcenters = kCenterGreedy(embeddings)
-        # select new indices
-        [ind_to_label, min_dist] = kcenters.select_batch_(already_selected = kcenters.already_selected, N = budget)
-        return [ind_to_label, min_dist]
-'''
 
 if __name__ == "__main__":
     file_manager = FileManager("annotated_files.csv")
 
     # get record paths
-    unannotated_paths, annotated_paths = file_manager.unannotated_records(use_cache = False)
-    unannotated_paths = random.sample(unannotated_paths, args.number_to_search)
+    unannotated_pd, annotated_pd = file_manager.unannotated_records(use_cache = False)
+    # unannotated_pd = unannotated_pd.sample(args.number_to_search)
 
-    filter = Filter(file_manager.feature_table_paths, annotated_paths, unannotated_paths)
+    filter = Filter(file_manager.feature_table_paths, unannotated_pd)
 
     features_table = filter.selection_table()
-    features_filtered_pd = filter.filter_paths(filter.uae_paths, args.sampling_rate, filter_ = True)
+
+    keys = ["patient_id", "laterality", "study_date"]
+    features_table_pd = pd.merge(unannotated_pd, features_table, left_on = keys, right_on = keys, how = "left")
+    features_ffiltered_pd = filter.filter_paths(features_table_pd)
 
     pprint(features_table.head(5))
-    pprint(features_filtered_pd.head(5))
+    pprint(features_ffiltered_pd.head(5))
 
     print("number of unfiltered samples are:", features_table.shape)
-    print("number of filtered samples are:", features_filtered_pd.shape)
+    print("number of filtered samples are:", features_ffiltered_pd.shape)
 
-    assert np.sum(features_filtered_pd.patient_id.isin(filter.annotated_patients)) == 0, \
-        "allready selected patient choosen"
+    assert sum(unannotated_pd.patient_id.isin(annotated_pd.patient_id.values)) == 0, "patient overlap"
+    assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
-    assert features_filtered_pd is not None, "returning None"
+    assert features_ffiltered_pd is not None, "returning None"
