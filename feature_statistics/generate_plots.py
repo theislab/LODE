@@ -150,17 +150,31 @@ def atrophy_wrt_injections_table(table):
     inj_level_stat = table.atrophy_delta.loc[inj_lev_bool]
     log[5] = [np.mean(inj_level_stat), np.std(inj_level_stat)]
 
+
+def fluid_wrt_injections_table(table):
+    log = {}
+    injections_levels = [0, 1, 2, 3, 4]
+    for inj_lev in injections_levels:
+        inj_lev_bool = table.number_of_injections == inj_lev
+        inj_level_stat = table.total_fluid.loc[inj_lev_bool]
+        log[inj_lev] = [np.mean(inj_level_stat), np.std(inj_level_stat)]
+
+    inj_lev_bool = table.number_of_injections >= 5
+    inj_level_stat = table.total_fluid.loc[inj_lev_bool]
+    log[5] = [np.mean(inj_level_stat), np.std(inj_level_stat)]
+
+
 '''
 # sequence data
-
 '''
-
 
 SAVE_DIR = os.path.join(WORK_SPACE, "plots")
 
 statistics_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data/statistics.csv"), index_col = 0)
+#time_until_dry_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"), index_col = 0)
+
+#fluid_wrt_injections_table(time_until_dry_pd)
 '''
-time_until_dry_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"), index_col = 0)
 atrophy_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data/atrophy.csv"), index_col = 0)
 segmentation_pd = pd.read_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"), index_col = 0)
 

@@ -37,7 +37,7 @@ class SeqUtils():
         @return: number of injection during patient life cycle
         @rtype: int
         """
-        return int(np.nansum([time_line[time_point]["total_injections"] for time_point in time_line]))
+        return int(np.nansum([time_line[time_point]["injections"] for time_point in time_line]))
 
     @classmethod
     def is_naive(cls, table):
@@ -48,8 +48,7 @@ class SeqUtils():
         @rtype: boolean
         """
         first_record = table.iloc[[0]]
-        injections = list(map(lambda x: int(x), first_record.injections[0].split(", ")))
-        return (not first_record.lens_surgery[0]) & (np.sum(injections) == 0)
+        return first_record.lens_surgery[0]
 
     @classmethod
     def get_recorded_months(cls, time_line):
@@ -60,7 +59,7 @@ class SeqUtils():
         # set copy for independent editing
         time_line_temp = deepcopy(time_line)
         recorded_months = cls.get_recorded_months(time_line)
-        first_injection = cls.first_event_time(recorded_months, time_line_temp, "total_injections")
+        first_injection = cls.first_event_time(recorded_months, time_line_temp, "injections")
 
         if from_ == "first_injection":
             if not first_injection:
@@ -108,7 +107,7 @@ class SeqUtils():
         months = list(time_line_temp.keys())
         recorded_months = cls.get_recorded_months(time_line)
 
-        first_injection = cls.first_event_time(recorded_months, time_line_temp, "total_injections")
+        first_injection = cls.first_event_time(recorded_months, time_line_temp, "injections")
         if from_ == "first_injection":
             if not first_injection:
                 return "no injection"
@@ -137,7 +136,7 @@ class SeqUtils():
     def set_treatment_effect(cls, time_line, time_dist, item):
         time_dict = {"three": 2, "six": 5}
         for time_point in time_line.keys():
-            injection_point = time_line[time_point]["total_injections"]
+            injection_point = time_line[time_point]["injections"]
             injection_bool = (injection_point > 0) and (injection_point is not np.nan)
             time_bool = (time_point + time_dict[time_dist] <= len(time_line))
             if injection_bool and time_bool:

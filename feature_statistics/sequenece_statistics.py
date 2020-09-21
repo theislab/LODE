@@ -20,13 +20,14 @@ import glob
 import matplotlib.patches as mpatches
 import seaborn as sns
 
+
 class MeasureSeqGeneral(SeqUtils):
     NUMBER_OF_MONTHS = 13
     NUM_SEGMENTATIONS = 3
     DAYS = 30
     REGIONS = ["S", "N", "I", "T"]
     FLUIDS = ["3", "4"]
-    DATA_POINTS = ["study_date", "total_fluid", "avg_atrophy", "total_injections", "cur_va_rounded", "next_va"]
+    DATA_POINTS = ["study_date", "total_fluid", "avg_atrophy", "injections", "cur_va_rounded", "next_va"]
     META_DATA = ["patient_id", "laterality", "diagnosis"]
     SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
 
@@ -49,8 +50,14 @@ class MeasureSeqGeneral(SeqUtils):
         self.atrophy_deltas_treated = self.month_feature_deltas(self.time_line, feature = "avg_atrophy",
                                                                 after_injections = True)
 
-        self.fluid_std = self.sequence_feature_std(time_line, "total_fluid")
-        self.atrophy_std = self.sequence_feature_std(time_line, "avg_atrophy")
+        self.range_fluid = self.sequence_feature_range(time_line, "total_fluid")
+        self.range_atrophy = self.sequence_feature_range(time_line, "avg_atrophy")
+
+        self.mean_fluid = self.sequence_feature_mean(time_line, "total_fluid")
+        self.mean_atrophy = self.sequence_feature_mean(time_line, "avg_atrophy")
+
+        self.std_fluid = self.sequence_feature_std(time_line, "total_fluid")
+        self.std_atrophy = self.sequence_feature_std(time_line, "avg_atrophy")
 
     @classmethod
     def from_record(cls, record_table):
@@ -75,7 +82,7 @@ class MeasureSeqGeneral(SeqUtils):
         record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2))
 
         # add total injections
-        record_table = get_total_number_of_injections(table = record_table)
+        # record_table = get_total_number_of_injections(table = record_table)
 
         # assign items to time line
         for data_point in MeasureSeqGeneral.DATA_POINTS:
@@ -111,7 +118,7 @@ class MeasureSeqGeneral(SeqUtils):
         deltas_temp = []
         if after_injections:
             for month in list(time_line.keys())[:-1]:
-                if (time_line[month]["total_injections"] != 0) & (time_line[month]["total_injections"] != np.nan):
+                if (time_line[month]["injections"] != 0) & (time_line[month]["injections"] != np.nan):
                     deltas_temp.append(deltas[month - 1])
             return deltas_temp
         return deltas
@@ -127,6 +134,30 @@ class MeasureSeqGeneral(SeqUtils):
         """
         time_series = np.array([time_line[month][feature] for month in time_line.keys()])
         return np.std(time_series)
+
+    def sequence_feature_mean(self, time_line, feature):
+        """
+        @param time_line:
+        @type time_line:
+        @param after_injections:
+        @type after_injections:
+        @return:
+        @rtype:
+        """
+        time_series = np.array([time_line[month][feature] for month in time_line.keys()])
+        return np.mean(time_series)
+
+    def sequence_feature_range(self, time_line, feature):
+        """
+        @param time_line:
+        @type time_line:
+        @param after_injections:
+        @type after_injections:
+        @return:
+        @rtype:
+        """
+        time_series = np.array([time_line[month][feature] for month in time_line.keys()])
+        return np.max(time_series) - np.min(time_series)
 
     @property
     def time_series(self):
@@ -166,6 +197,7 @@ def delta_plot(delta_dict, keys, title):
     plt.ylabel('number of sequences')
     plt.savefig(os.path.join(SAVE_DIR, f"{title}.png"))
     plt.close()
+
 
 if __name__ == "__main__":
     """
@@ -208,27 +240,51 @@ if __name__ == "__main__":
         "atrophy_deltas": [],
         "atrophy_deltas_treated": [],
         "fluid_std": [],
-        "atrophy_std": []
+        "atrophy_std": [],
+
+        "mean_fluid": [],
+        "range_fluid": [],
+        "std_fluid": [],
+        "mean_atrophy": [],
+        "range_atrophy": [],
+        "std_atrophy": []
     }
     SAVE_DIR = os.path.join(WORK_SPACE, "plots")
 
+    ################## PLOTTING ####################
     atrophy_deltas = []
     atrophy_deltas_treated = []
     fluid_delta = []
     fluid_delta_treated = []
-    fluid_std = []
-    atrophy_std = []
+    std_fluid = []
+    std_atrophy = []
+    mean_fluid = []
+    mean_atrophy = []
+    range_atrophy = []
+    range_fluid = []
 
     for measurem in time_until_dry:
-            atrophy_deltas = atrophy_deltas + measurem.atrophy_deltas.tolist()
-            atrophy_deltas_treated = atrophy_deltas_treated + measurem.atrophy_deltas_treated
-            fluid_delta = atrophy_deltas + measurem.fluid_deltas.tolist()
-            fluid_delta_treated = fluid_delta_treated + measurem.fluid_deltas_treated
-            fluid_std.append(measurem.fluid_std)
-            atrophy_std.append(measurem.atrophy_std)
+        atrophy_deltas = atrophy_deltas + measurem.atrophy_deltas.tolist()
+        atrophy_deltas_treated = atrophy_deltas_treated + measurem.atrophy_deltas_treated
+        fluid_delta = atrophy_deltas + measurem.fluid_deltas.tolist()
+        fluid_delta_treated = fluid_delta_treated + measurem.fluid_deltas_treated
+        std_fluid.append(measurem.std_fluid)
+        std_atrophy.append(measurem.std_atrophy)
+        mean_fluid.append(measurem.mean_fluid)
+        mean_atrophy.append(measurem.mean_atrophy)
+        range_fluid.append(measurem.range_fluid)
+        range_atrophy.append(measurem.range_atrophy)
 
-    delta_dict = {"atrophy_delta": atrophy_deltas, "atrophy_delta_treated": atrophy_deltas_treated,
-                  "fluid_delta": fluid_delta, "fluid_delta_treated": fluid_delta_treated}
+    delta_dict = {"atrophy_delta": atrophy_deltas,
+                  "atrophy_delta_treated": atrophy_deltas_treated,
+                  "fluid_delta": fluid_delta,
+                  "fluid_delta_treated": fluid_delta_treated,
+                  "std_fluid": std_fluid,
+                  "std_atrophy": std_atrophy,
+                  "mean_fluid": mean_fluid,
+                  "mean_atrophy": mean_atrophy,
+                  "range_fluid": range_fluid,
+                  "range_atrophy": range_atrophy}
 
     atrophy_keys = ["atrophy_delta", "atrophy_delta_treated"]
     fluid_keys = ["fluid_delta", "fluid_delta_treated"]
@@ -237,5 +293,29 @@ if __name__ == "__main__":
     delta_plot(delta_dict, atrophy_keys, "atrophy_distribution")
     delta_plot(delta_dict, fluid_keys, "fluid_distribution")
 
-    time_until_dry_pd = pd.DataFrame(time_serie_log)
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/statistics.csv"))
+    print("fluid delta mean, std: ", np.round(np.mean(delta_dict["fluid_delta_treated"]), 2),
+          np.round(np.std(delta_dict["fluid_delta_treated"]), 2))
+
+    print("treated fluid delta mean, std: ", np.round(np.mean(delta_dict["fluid_delta"]), 2),
+          np.round(np.std(delta_dict["fluid_delta"]), 2))
+
+    print("atrophy delta mean , std: ", np.round(np.mean(delta_dict["atrophy_delta"]), 2),
+          np.round(np.std(delta_dict["atrophy_delta"]), 2))
+
+    print("treated atrophy delta mean , std: ", np.round(np.mean(delta_dict["atrophy_delta_treated"]), 2),
+          np.round(np.std(delta_dict["atrophy_delta_treated"]), 2))
+
+    print("fluid mean, std: ", np.round(np.mean(delta_dict["mean_fluid"]), 2),
+          np.round(np.mean(delta_dict["std_fluid"]), 2))
+
+    print("atrophy mean , std: ", np.round(np.mean(delta_dict["mean_atrophy"]), 2),
+          np.round(np.mean(delta_dict["std_atrophy"]), 2))
+
+    print("fluid mean range:", np.round(np.mean(delta_dict["range_fluid"]), 2), "fluid std range:",
+          np.round(np.std(delta_dict["range_fluid"]), 2))
+
+    print("atrophy mean range", np.round(np.mean(delta_dict["range_atrophy"]), 2), "fluid std range:",
+          np.round(np.std(delta_dict["range_atrophy"]), 2))
+
+    # time_until_dry_pd = pd.DataFrame(time_serie_log)
+    # time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/statistics.csv"))

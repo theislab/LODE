@@ -10,7 +10,7 @@ import LSTM.sequences as sequences  # <- this contains the custom code
 workspace_dir = WORK_SPACE
 
 # longitudinal data is a merged table from all oct measurements and the cleaned diagnosis table
-longitudinal_data = pd.read_csv(os.path.join(workspace_dir, 'longitudinal_data.csv'), index_col = 0)
+longitudinal_data = pd.read_csv(os.path.join(workspace_dir, 'sequence_data/longitudinal_data.csv'), index_col = 0)
 longitudinal_data, feature_names = sequences.check_features(workspace_dir, longitudinal_data)
 
 # change the feature names in measurements
@@ -18,7 +18,7 @@ if feature_names:
     sequences.Measurement.FEATURES = feature_names
 
 # events is a table containing injections and lens surgery events for each patient
-events = pd.read_csv(os.path.join(workspace_dir, 'longitudinal_events.csv'), index_col = 0)
+events = pd.read_csv(os.path.join(workspace_dir, 'sequence_data/longitudinal_events.csv'), index_col = 0)
 events = events.sort_values('study_date')
 events.loc[:, 'visus?'] = False
 events.loc[:, 'oct?'] = False
@@ -27,6 +27,8 @@ events.loc[:, 'oct?'] = False
 filtered_diagnosis = longitudinal_data.dropna(subset = ['diagnosis'])
 filtered_oct_path = filtered_diagnosis.dropna(subset = ['oct_path'])
 all_patients = filtered_oct_path.sort_values('study_date')
+
+# all_patients = all_patients.loc[filtered_diagnosis.patient_id == 1557]
 
 # drop all groups that do not have at least one OCT and one logMAR
 grouped = all_patients.groupby(['patient_id', 'laterality'])
@@ -47,7 +49,7 @@ for name, group in tqdm(grouped_patients):
         pass
 
     seq = sequences.MeasurementSequence.from_pandas(group)
-    seq.add_events_from_pandas(group_events, how = 'next')  # IMPORTANT: ADD EVENTS TO NEXT MEASUREMENT
+    seq.add_events_from_pandas(group_events, how = 'previous')  # IMPORTANT: ADD EVENTS TO NEXT MEASUREMENT
     seqs.append(seq)
 
 # parameters for sequence generation
@@ -80,4 +82,4 @@ for seq in tqdm(seqs):
             sequences_checkup.append(seq_sub)
 
 # save sequences to file to avoid recomputing
-sequences.save_sequences_to_dataframe(os.path.join(workspace_dir, 'sequences.csv'), sequences_checkup)
+sequences.save_sequences_to_dataframe(os.path.join(workspace_dir, 'sequence_data/sequences.csv'), sequences_checkup)

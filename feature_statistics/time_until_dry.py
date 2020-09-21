@@ -25,7 +25,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     DAYS = 30
     REGIONS = ["S", "N", "I", "T"]
     FLUIDS = ["3", "4"]
-    DATA_POINTS = ["study_date", "total_fluid", "total_injections", "cur_va_rounded", "next_va"]
+    DATA_POINTS = ["study_date", "total_fluid", "injections", "cur_va_rounded", "next_va"]
     META_DATA = ["patient_id", "laterality", "diagnosis"]
     SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
 
@@ -45,6 +45,9 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         self.six_month_effect = treatment_dict["six_month"]
         self.fluid_change_injections = treatment_dict["fluid_coef_injection"]
         self.fluid_change_no_injections = treatment_dict["fluid_coef_no_injection"]
+        self.first_visit = self.time_line[1]["study_date"]
+        self.last_visit = self.time_line[list(self.time_line.keys())[-1]]["study_date"]
+        self.date_of_first_injection = self.get_date_of_first_injection
 
     @classmethod
     def from_record(cls, record_table):
@@ -65,7 +68,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2))
 
         # add total injections
-        record_table = get_total_number_of_injections(table = record_table)
+        # record_table = get_total_number_of_injections(table = record_table)
 
         # assign items to time line
         for data_point in MeasureSeqTimeUntilDry.DATA_POINTS:
@@ -102,6 +105,15 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                    time_until_dry_injection = time_injection,
                    number_of_injections = number_of_injections,
                    treatment_dict = treatment_dict)
+
+    @property
+    def get_date_of_first_injection(self):
+        month_with_injections = [month for month in self.time_line.keys() if self.time_line[month]["injections"] > 0]
+        if month_with_injections:
+            month_ = min(month_with_injections)
+            return self.time_line[month_]["study_date"]
+        else:
+            return None
 
     @property
     def time_series(self):
@@ -222,7 +234,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         # zip joins x and y coordinates in pairs
         for x, y in zip(xs, ys):
             if not self.time_line[x + 1]['cur_va_rounded'] is np.nan:
-                label = f"Inj: {self.time_line[x + 1]['total_injections']} \n VA: {self.time_line[x + 1]['cur_va_rounded']}"
+                label = f"Inj: {self.time_line[x + 1]['injections']} \n VA: {self.time_line[x + 1]['cur_va_rounded']}"
             else:
                 label = ""
             ax.text(x, y + 1000, label, fontdict = font)
@@ -267,7 +279,7 @@ if __name__ == "__main__":
     # load sequences
     seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data", 'sequences.csv'))
 
-    PATIENT_ID = 1557  # 2005
+    PATIENT_ID = 18  # 2005
     LATERALITY = "R"
 
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
@@ -279,7 +291,7 @@ if __name__ == "__main__":
     for patient, lat in tqdm(unique_records.itertuples(index = False)):
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
         time_until_dry.append(MeasureSeqTimeUntilDry.from_record(record_pd))
-        time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
+        # time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
         # time_until_dry[-1].dump_segmentation_map(11)
 
     time_serie_log = {"patient_id": [],
@@ -295,7 +307,18 @@ if __name__ == "__main__":
                       "naive": [],
                       "fluid_change_injections": [],
                       "fluid_change_no_injections": []}
-
+    '''
+    time_serie_log = {"patient_id": [],
+                      "laterality": [],
+                      "number_of_injections": [],
+                      "number_of_months": [],
+                      "diagnosis": [],
+                      "number_of_visits": [],
+                      "naive": [],
+                      "date_of_first_injection": [],
+                      "first_visit": [],
+                      "last_visit": []}
+    '''
     for measurem in time_until_dry:
         for key in time_serie_log.keys():
             time_serie_log[key].append(measurem.__dict__[key])
