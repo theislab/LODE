@@ -2,9 +2,13 @@ import os
 import glob
 import pandas as pd
 import random
-from feature_segmentation.config import WORK_SPACE, EMBEDD_DIR
+import sys
+from pathlib import Path
 
+path = Path(os.getcwd())
+sys.path.append(str(path.parent.parent))
 
+from config import WORK_SPACE, EMBEDD_DIR
 class FileManager:
     def __init__(self, annotated_file):
         self.annotated_file = annotated_file
@@ -38,11 +42,14 @@ class FileManager:
         if use_cache:
             unannotated_paths = pd.read_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"))["0"].tolist()
         else:
-            unannotated_paths = glob.glob(EMBEDD_DIR + "/*")
-            pd.DataFrame(unannotated_paths).to_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"), index = 0)
-        return unannotated_paths
-
-    def get_annotated_embedding_paths(self, unannotated_paths):
+            print("starting os")
+            unannotated_ids = os.listdir(EMBEDD_DIR)
+            print("starting concat")
+            UAP_pd = EMBEDD_DIR + "/" + pd.DataFrame(unannotated_ids) 
+            UAP_pd.to_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"), index = 0)
+        return UAP_pd[0].values.tolist()
+    
+    def get_annotated_paths(self, unannotated_paths):
         annotated_paths = list(filter(lambda x: x.split("/")[-1].split("_")[0] in self.annotated_patients,
                                       unannotated_paths))
         return annotated_paths
@@ -58,9 +65,9 @@ if __name__ == "__main__":
     args = Args(number_to_search = 10)
 
     # get record paths
-    unannotated_embeddings_paths = file_manager.unannotated_records(use_cache = True)
-    annotated_embeddings_paths = file_manager.get_annotated_embedding_paths(unannotated_embeddings_paths)
-    unannotated_embeddings_paths = random.sample(unannotated_embeddings_paths, args.number_to_search)
+    unannotated_paths = file_manager.unannotated_records(use_cache = False)
+    annotated_paths = file_manager.get_annotated_paths(unannotated_paths)
+    unannotated_paths = random.sample(unannotated_paths, args.number_to_search)
 
-    print("number of embedded volumes", len(unannotated_embeddings_paths))
-    print("number of annotated embedded volumes", len(annotated_embeddings_paths))
+    print("number of embedded volumes", len(unannotated_paths))
+    print("number of annotated embedded volumes", len(annotated_paths))
