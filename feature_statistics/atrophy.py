@@ -1,7 +1,9 @@
 import math
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+from pydicom import read_file
+
 from utils.time_utils import TimeUtils
-from feature_statistics.config import WORK_SPACE, SEG_DIR
+from feature_statistics.config import WORK_SPACE, SEG_DIR, DICOM_DIR
 import os
 import pandas as pd
 import datetime
@@ -13,6 +15,7 @@ from utils.pandas_utils import sum_etdrs_columns, get_total_number_of_injections
 from utils.util_functions import nan_helper, SeqUtils
 from utils.plotting_utils import plot_segmentation_map, color_mappings
 import datetime
+import cv2
 import itertools
 from tqdm import tqdm
 import matplotlib.cm as cm
@@ -141,7 +144,7 @@ class MeasureSeqAtrophy(SeqUtils):
         date_field = study_date.replace("-", "")
         return f"*{self.patient_id}_{date_field}_{self.laterality}_*"
 
-    def dump_segmentation_map(self, month):
+    def dump_segmentation_map(self):
         """
         takes all maps from month and writed to disk
         @param month: month
@@ -149,20 +152,25 @@ class MeasureSeqAtrophy(SeqUtils):
         @return: None
         @rtype:
         """
-        if self.time_line[month]["study_date"] is np.nan:
-            print("No segmentation map exists for this month")
-            pass
-        else:
-            date = self.time_line[month]["study_date"].replace("-", "")
-            path = list(filter(lambda k: (date.replace("-", "") in k), self.segmentation_paths))[0]
-            map = np.load(path)
+        for month in self.time_line.keys():
+            if self.time_line[month]["study_date"] is not np.nan:
+                date = self.time_line[month]["study_date"].replace("-", "")
+                path = list(filter(lambda k: (date.replace("-", "") in k), self.segmentation_paths))[0]
+                map = np.load(path)
 
-            indices = np.linspace(0, map.shape[0] - 1, map.shape[0] - 1, dtype = np.int32)
-            for idx in indices:
-                plot_segmentation_map(map[idx, :, :], show = False,
-                                      save_path = os.path.join(WORK_SPACE,
-                                                               f"dump/2d_segmentations/{self.patient_id}/{date}"),
-                                      img_name = f"{idx}.png")
+                dicom_subpath = f"{self.patient_id}/{self.laterality}eft/{date}"
+                dicom_path = glob.glob(os.path.join(DICOM_DIR, dicom_subpath)+"/*")[0]
+                oct_vol = read_file(dicom_path).pixel_array
+
+                indices = np.linspace(0, map.shape[0] - 1, map.shape[0] - 1, dtype = np.int32)
+                for idx in indices:
+                    month_save_path = os.path.join(WORK_SPACE, f"dump/2d_segmentations/{self.patient_id}/{date}")
+                    plot_segmentation_map(map[idx, :, :], show = False,
+                                          save_path = month_save_path,
+                                          img_name = f"{dicom_subpath.replace('/', '_')}_{idx}_segmenation.png")
+
+                    cv2.imwrite(os.path.join(WORK_SPACE, f"{month_save_path}/{dicom_subpath.replace('/', '_')}_{idx}.png"),
+                                oct_vol[idx, :, :])
 
     def add_segmentation_to_timeline(self):
         """
@@ -183,7 +191,7 @@ class MeasureSeqAtrophy(SeqUtils):
                 indices = np.linspace(0, map.shape[0] - 1, MeasureSeqAtrophy.NUM_SEGMENTATIONS, dtype = np.int32)
                 self.time_line[month]["segmentation_maps"] = map[indices, :, :]
 
-    def show_time_series(self, show_segmentations=False, show=False, save_fig=False, colors=None):
+    def show_time_series(self, show_segmentations=False, show=False, save_fig=False, colors=None, interpolate=False):
         """
         @param show_segmentations: whether to show segmentations
         @type show_segmentations: bool
@@ -195,39 +203,45 @@ class MeasureSeqAtrophy(SeqUtils):
         @rtype:
         """
         font = {'family': 'serif',
-                'color': 'darkorange',
                 'weight': 'normal',
-                'size': 10}
+                'size': 12}
+
+        plt.rc('font', **font)
 
         if show_segmentations:
             seg_cmap, seg_norm, bounds = color_mappings()
             self.add_segmentation_to_timeline()
 
-        plt.style.use('ggplot')
+        plt.style.use('seaborn-whitegrid')
 
         darkred_patch = mpatches.Patch(color = 'darkorange', label = 'injections')
         time_series = self.time_series
 
-        ts_length = len(self.time_series[list(self.time_series.keys())[0]])
+        if interpolate:
+            reg_months = [key for key in self.time_line.keys()]
+            ts_length = len(reg_months)
+        else:
+            reg_months = [key for key in self.time_line.keys() if self.time_line[key]["study_date"] is not np.nan]
+            ts_length = len(reg_months)
 
-        fig, ax = plt.subplots(figsize = (ts_length, 10))
+        time_series = [time_series["avg_atrophy"][int(y) - 1] for y in reg_months]
+
+        fig, ax = plt.subplots(figsize = (ts_length, 5))
         fig.subplots_adjust(bottom = 0.4)
 
         y_max = 1.0
         y_min = 0
 
-        xs = np.arange(0, ts_length, 1)
-        ys = [0.01]*ts_length
+        xs = [x - 1 for x in reg_months]
+        ys = [x + 0.02 for x in time_series]
 
         colors_iter = itertools.cycle([ "b", "r", "g", "y", "orange", "darkblue", "peru", "pink", "purple"])
-        for feature in self.time_series.keys():
-            # plot points
-            ax.plot(xs, time_series[feature], "bo-", label = feature, color=next(colors_iter))
+        ax.plot(xs, time_series, "bo-", label = "avg_atrophy", color=next(colors_iter))
 
         x_offset = 0
-        xy_box = {0: (x_offset, y_max // 5),
-                  1: (x_offset, (y_max // 5) * 2),
-                  2: (x_offset, (y_max // 5) * 3)}
+        xy_box = {0: (x_offset, y_max / 5),
+                  1: (x_offset, (y_max / 5) * 2),
+                  2: (x_offset, (y_max / 5) * 3)}
 
         # set image zoom by time series length
         zoom = 1.5 / self.number_of_visits
@@ -238,7 +252,7 @@ class MeasureSeqAtrophy(SeqUtils):
                 label = f"Inj: {self.time_line[x + 1]['total_injections']} \n VA: {self.time_line[x + 1]['cur_va_rounded']}"
             else:
                 label = ""
-            ax.text(x, y, label, fontdict = font)
+            # ax.text(x, y, label, fontdict = font)
 
             if show_segmentations & (self.time_line[x + 1]["study_date"] is not np.nan):
                 for i in range(MeasureSeqAtrophy.NUM_SEGMENTATIONS):
@@ -281,11 +295,11 @@ if __name__ == "__main__":
     # load sequences
     seq_pd = pd.read_csv(os.path.join(WORK_SPACE, 'sequence_data/sequences.csv'))
 
-    PATIENT_ID = 709  # 2005
+    PATIENT_ID = 93552  # 2005
     LATERALITY = "L"
 
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
-    # seq_pd = seq_pd.loc[filter_]
+    seq_pd = seq_pd.loc[filter_]
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates() # .iloc[0:10]
 
@@ -294,7 +308,7 @@ if __name__ == "__main__":
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
         time_until_dry.append(MeasureSeqAtrophy.from_record(record_pd))
         time_until_dry[-1].show_time_series(show_segmentations = False, show = False, save_fig = True, colors = colors)
-        time_until_dry[-1].dump_segmentation_map(11)
+        # time_until_dry[-1].dump_segmentation_map()
 
     time_serie_log = {"patient_id": [], "laterality": [], "number_of_injections": [],
                       "three_month_effect": [], "six_month_effect": [], "number_of_months": [],

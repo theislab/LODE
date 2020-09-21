@@ -279,7 +279,7 @@ if __name__ == "__main__":
     for patient, lat in tqdm(unique_records.itertuples(index = False)):
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
         time_until_dry.append(MeasureSeqTimeUntilDry.from_record(record_pd))
-        # time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
+        time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
         # time_until_dry[-1].dump_segmentation_map(11)
 
     time_serie_log = {"patient_id": [],
