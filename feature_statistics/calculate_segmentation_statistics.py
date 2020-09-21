@@ -12,6 +12,7 @@ print(f"number of cores {num_cores} set to paralell process")
 feature_pd = None
 
 '''
+
 if __name__ == "__main__":
     filename = "709_20160808_L_482412001.npy"
     for i, filename in tqdm(enumerate(os.listdir(SEG_DIR))):

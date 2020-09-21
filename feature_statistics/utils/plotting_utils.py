@@ -49,10 +49,13 @@ def plot_segmentation_map(cls, show=False, save_path=None, img_name = None):
     tick_loc_list = tick_loc_array.tolist()
 
     tick_list = np.arange(len(bounds) - 1).tolist()
-    c_bar = plt.colorbar(colorbar_im, cmap = seg_cmap, norm = seg_norm, boundaries = bounds)
+    #c_bar = plt.colorbar(colorbar_im, cmap = seg_cmap, norm = seg_norm, boundaries = bounds)
     # set ticks
-    c_bar.set_ticks(tick_loc_list)
-    c_bar.ax.set_yticklabels(tick_list)
+    #c_bar.set_ticks(tick_loc_list)
+    #c_bar.ax.set_yticklabels(tick_list)
+    plt.grid("off")
+    plt.axis("off")
+    plt.tight_layout()
 
     if show:
         plt.show()

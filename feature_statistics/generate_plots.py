@@ -80,7 +80,7 @@ def time_until_dry(table):
     # Plot formatting
     plt.legend(prop = {'size': 12})
     plt.title('time until dry')
-    plt.xlabel('time')
+    plt.xlabel('time in months')
     plt.ylabel('number of sequences')
     plt.savefig(os.path.join(SAVE_DIR, f"time_until_dry.png"))
     plt.close()
@@ -126,16 +126,62 @@ def fluid_distribution(table):
     plt.savefig(os.path.join(SAVE_DIR, f"fluid_distribution.png"))
     plt.close()
 
+def atrophy_delta_distribution(table):
+    sns.distplot(table.atrophy_delta, kde=False, label="atrophy delta all")
+    sns.distplot(table.atrophy_delta.loc[table.naive], kde=False, label="atrophy delta naive")
+
+    # Plot formatting
+    plt.legend(prop = {'size': 12})
+    plt.title(f'atrophy delta distribution')
+    plt.xlabel(f'atrophy delta')
+    plt.ylabel('number of sequences')
+    plt.savefig(os.path.join(SAVE_DIR, f"number_of_atrophy_delta.png"))
+    plt.close()
+
+def atrophy_wrt_injections_table(table):
+    log = {}
+    injections_levels = [0, 1, 2, 3, 4]
+    for inj_lev in injections_levels:
+        inj_lev_bool = table.number_of_injections == inj_lev
+        inj_level_stat = table.atrophy_delta.loc[inj_lev_bool]
+        log[inj_lev] = [np.mean(inj_level_stat), np.std(inj_level_stat)]
+
+    inj_lev_bool = table.number_of_injections >= 5
+    inj_level_stat = table.atrophy_delta.loc[inj_lev_bool]
+    log[5] = [np.mean(inj_level_stat), np.std(inj_level_stat)]
+
+
+def fluid_wrt_injections_table(table):
+    log = {}
+    injections_levels = [0, 1, 2, 3, 4]
+    for inj_lev in injections_levels:
+        inj_lev_bool = table.number_of_injections == inj_lev
+        inj_level_stat = table.total_fluid.loc[inj_lev_bool]
+        log[inj_lev] = [np.mean(inj_level_stat), np.std(inj_level_stat)]
+
+    inj_lev_bool = table.number_of_injections >= 5
+    inj_level_stat = table.total_fluid.loc[inj_lev_bool]
+    log[5] = [np.mean(inj_level_stat), np.std(inj_level_stat)]
+
+
+'''
+# sequence data
+'''
 
 SAVE_DIR = os.path.join(WORK_SPACE, "plots")
-time_until_dry_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"), index_col = 0)
+
+statistics_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data/statistics.csv"), index_col = 0)
+#time_until_dry_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"), index_col = 0)
+
+#fluid_wrt_injections_table(time_until_dry_pd)
+'''
+atrophy_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data/atrophy.csv"), index_col = 0)
 segmentation_pd = pd.read_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"), index_col = 0)
 
 # add total fluid to data frame
 fluid_columns = list(filter(lambda x: ("3" in x) or ("4" in x), segmentation_pd.columns.tolist()))
 segmentation_pd["total_fluid"] = segmentation_pd[fluid_columns].sum(1)
 
-# sequence data
 n_of_visits(time_until_dry_pd, variable = "visits")
 n_of_visits(time_until_dry_pd, variable = "months")
 n_of_diseases(table = time_until_dry_pd)
@@ -143,3 +189,11 @@ time_until_dry(table = time_until_dry_pd)
 fluid_distribution(segmentation_pd)
 treatment_coefficient(table = time_until_dry_pd, naive = True)
 treatment_coefficient(table = time_until_dry_pd, naive = False)
+atrophy_delta_distribution(atrophy_pd)
+'''
+print("stop")
+
+atrophy_deltas = []
+for l_ in statistics_pd.atrophy_deltas_treated:
+    for elem in l_:
+        atrophy_deltas.append(elem)

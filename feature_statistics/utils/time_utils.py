@@ -60,7 +60,7 @@ class TimeUtils:
                     time_line[k].update({item: self.table[item].iloc[idx_select]})
 
                     # if adding injections, assign close by removed studies to neighbouring visits
-                    if item == "total_injections":
+                    if item == "injections":
                         # remove selected candidate
                         candidates.remove(min_diff)
 
@@ -68,9 +68,9 @@ class TimeUtils:
                         for candidate in candidates:
                             idx_not_select = np.where(time_delta == candidate)[0][0]
                             if candidate.days > 0:
-                                add_to_next_injections = self.table["total_injections"].iloc[idx_not_select]
+                                add_to_next_injections = self.table["injections"].iloc[idx_not_select]
                             else:
-                                add_to_prev_injections = self.table["total_injections"].iloc[idx_not_select]
+                                add_to_prev_injections = self.table["injections"].iloc[idx_not_select]
 
                             # update neighbouring time lines
                             for month in time_line.keys():
@@ -89,10 +89,11 @@ class TimeUtils:
                             except:
                                 print("stop")
 
-                elif not candidates:
+                elif (not candidates) & (k != list(time_line.keys())[-1]):
                     time_line[k].update({item: np.nan})
                     continue
-                else:
+
+                elif candidates:
                     idx_select = np.where(time_delta == candidates[0])[0][0]
                     time_line[k].update({item: self.table[item].iloc[idx_select]})
         return time_line
