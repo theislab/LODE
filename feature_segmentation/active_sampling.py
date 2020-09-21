@@ -60,7 +60,6 @@ if __name__ == '__main__':
     unannotated_embeddings_paths = file_manager.unannotated_records
     annotated_embeddings_paths = file_manager.get_annotated_embedding_paths()
     unannotated_embeddings_paths = random.sample(unannotated_embeddings_paths, args.number_to_search)
-    
 
     print("number of embedded volumes", len(unannotated_embeddings_paths))
     print("number of annotated embedded volumes", len(annotated_embeddings_paths))
