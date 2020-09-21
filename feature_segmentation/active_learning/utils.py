@@ -1,19 +1,17 @@
-import glob
-
 import numpy as np
-import umap
-from sklearn import decomposition
 import pandas as pd
-import shutil
 from pydicom import read_file
 import cv2
-from tqdm import tqdm
-from active_learning.kcenter_greedy_nalu import kCenterGreedy
-from feature_segmentation.config import OCT_DIR, WORK_SPACE, EMBEDD_DIR
 import os
+from pathlib import Path
+import sys
 
+path = Path(os.getcwd())
+sys.path.append(str(path.parent))
+sys.path.append(str(path.parent.parent))
 
-
+from kcenter_greedy_nalu import kCenterGreedy
+from config import OCT_DIR, WORK_SPACE, EMBEDD_DIR
 
 def to_three_channel(img):
     return np.stack((img,) * 3, axis = -1)
@@ -78,3 +76,7 @@ class Args():
 
 
 args = Args(number_to_search = 11)
+
+if __name__ == "__main__":
+    print("import works")
+    pass
