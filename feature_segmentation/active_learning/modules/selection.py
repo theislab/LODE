@@ -11,8 +11,8 @@ from pathlib import Path
 import sys
 
 path = Path(os.getcwd())
+sys.path.append(str(path))
 sys.path.append(str(path.parent))
-sys.path.append(str(path.parent.parent))
 
 from file_manager import FileManager
 from utils import args
@@ -99,8 +99,6 @@ class OCTEmbeddings:
 
 class Filter():
     def __init__(self, ft_paths, ae_paths, uae_paths):
-        self.annotated_patients = [i.split("/")[-1].split("_")[0] for i in ae_paths]
-
         # set paths to instances
         self.feature_table_paths = ft_paths
         self.ae_paths = ae_paths
@@ -191,10 +189,15 @@ if __name__ == "__main__":
     # get record paths
     unannotated_paths, annotated_paths = file_manager.unannotated_records(use_cache = False)
     unannotated_paths = random.sample(unannotated_paths, args.number_to_search)
+       
+    print("done with path extraction")
+
 
     filter = Filter(file_manager.feature_table_paths, annotated_paths, unannotated_paths)
 
     features_table = filter.selection_table()
+    
+    print("done with selection table")
     features_filtered_pd = filter.filter_paths(filter.uae_paths, args.sampling_rate, filter_ = True)
 
     pprint(features_table.head(5))

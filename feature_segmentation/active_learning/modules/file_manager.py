@@ -58,7 +58,6 @@ class FileManager:
             # extract patients
             patients = uap_pd[0].str.split("/", expand = True).iloc[:, -1].str.split("_", expand = True).iloc[:, 0]
             
-            print(patients.shape)
             # filter already selected
             ap_pd = uap_pd[patients.isin(self.annotated_patients)]
             uap_filtered_pd = uap_pd[~patients.isin(self.annotated_patients)]
