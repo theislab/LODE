@@ -2,7 +2,14 @@ import os
 import glob
 import pandas as pd
 import random
-from feature_segmentation.config import WORK_SPACE, EMBEDD_DIR
+from pathlib import Path
+import sys
+
+path = Path(os.getcwd())
+sys.path.append(str(path.parent))
+sys.path.append(str(path.parent.parent))
+
+from config import WORK_SPACE, EMBEDD_DIR
 
 
 class FileManager:
@@ -12,12 +19,13 @@ class FileManager:
 
     @property
     def feature_table_paths(self):
-        return glob.glob(os.path.join(WORK_SPACE, "segmentation/feature_tables/*"))
+        return glob.glob(os.path.join(WORK_SPACE, "feature_segmentation/segmentation/feature_tables/*"))
 
     @property
     def annotated_patients(self):
-        embeddings = pd.read_csv(os.path.join(WORK_SPACE, f"feature_segmentation/active_learning/{self.annotated_file}"),
-                                    ).dropna()["0"].tolist()
+        embeddings = \
+        pd.read_csv(os.path.join(WORK_SPACE, f"feature_segmentation/active_learning/{self.annotated_file}"),
+                    ).dropna()["0"].tolist()
 
         # extract patient ids from first column
         ids = list(map(lambda x: str(x).split("_")[0], embeddings))
@@ -51,9 +59,11 @@ class FileManager:
 if __name__ == "__main__":
     file_manager = FileManager("annotated_files.csv")
 
+
     class Args():
         def __init__(self, number_to_search):
             self.number_to_search = number_to_search
+
 
     args = Args(number_to_search = 10)
 
