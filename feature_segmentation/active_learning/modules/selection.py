@@ -189,8 +189,7 @@ if __name__ == "__main__":
     file_manager = FileManager("annotated_files.csv")
 
     # get record paths
-    unannotated_paths = file_manager.unannotated_records(use_cache = True)
-    annotated_paths = file_manager.get_annotated_embedding_paths(unannotated_paths)
+    unannotated_paths, annotated_paths = file_manager.unannotated_records(use_cache = False)
     unannotated_paths = random.sample(unannotated_paths, args.number_to_search)
 
     filter = Filter(file_manager.feature_table_paths, annotated_paths, unannotated_paths)
@@ -201,5 +200,10 @@ if __name__ == "__main__":
     pprint(features_table.head(5))
     pprint(features_filtered_pd.head(5))
 
+    print("number of unfiltered samples are:", features_table.shape)
+    print("number of filtered samples are:", features_filtered_pd.shape)
+
+    assert np.sum(features_filtered_pd.patient_id.isin(filter.annotated_patients)) == 0, \
+        "allready selected patient choosen"
     assert features_table is not None, "returning None"
     assert features_filtered_pd is not None, "returning None"
