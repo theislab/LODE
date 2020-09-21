@@ -11,7 +11,7 @@ inputs = tqdm(os.listdir(SEG_DIR))
 print(f"number of cores {num_cores} set to paralell process")
 feature_pd = None
 
-
+'''
 if __name__ == "__main__":
     filename = "709_20160808_L_482412001.npy"
     for i, filename in tqdm(enumerate(os.listdir(SEG_DIR))):
@@ -44,4 +44,4 @@ if __name__ == "__main__":
     processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs)
     features_pd = pd.DataFrame.from_dict(processed_list)
     features_pd.to_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"))
-'''
+
