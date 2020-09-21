@@ -60,11 +60,11 @@ class FileManager:
             
             print(patients.shape)
             # filter already selected
-            uap_pd = uap_pd[~patients.isin(self.annotated_patients)]
             ap_pd = uap_pd[patients.isin(self.annotated_patients)]
+            uap_filtered_pd = uap_pd[~patients.isin(self.annotated_patients)]
 
-            uap_pd.to_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"), index = 0)
-        return uap_pd[0].values.tolist(), ap_pd[0].values.tolist()
+            uap_filtered_pd.to_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"), index = 0)
+        return uap_filtered_pd[0].values.tolist(), ap_pd[0].values.tolist()
 
 
 if __name__ == "__main__":
