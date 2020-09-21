@@ -53,10 +53,12 @@ class FileManager:
         else:
             unannotated_ids = os.listdir(EMBEDD_DIR)
             uap_pd = EMBEDD_DIR + "/" + pd.DataFrame(unannotated_ids)
-
+            
+            print(uap_pd.shape)
             # extract patients
             patients = uap_pd[0].str.split("/", expand = True).iloc[:, -1].str.split("_", expand = True).iloc[:, 0]
-
+            
+            print(patients.shape)
             # filter already selected
             uap_pd = uap_pd[~patients.isin(self.annotated_patients)]
             ap_pd = uap_pd[patients.isin(self.annotated_patients)]
