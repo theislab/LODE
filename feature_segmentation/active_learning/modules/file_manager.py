@@ -48,19 +48,21 @@ class FileManager:
             os.makedirs(self.cache_dir)
 
         if use_cache:
-            unannotated_paths = pd.read_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"))["0"].tolist()
+            ua_paths = pd.read_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"))["0"].tolist()
+            return ua_paths
         else:
-            print("starting os")
             unannotated_ids = os.listdir(EMBEDD_DIR)
-            print("starting concat")
-            UAP_pd = EMBEDD_DIR + "/" + pd.DataFrame(unannotated_ids) 
-            UAP_pd.to_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"), index = 0)
-        return UAP_pd[0].values.tolist()
-    
-    def get_annotated_paths(self, unannotated_paths):
-        annotated_paths = list(filter(lambda x: x.split("/")[-1].split("_")[0] in self.annotated_patients,
-                                      unannotated_paths))
-        return annotated_paths
+            uap_pd = EMBEDD_DIR + "/" + pd.DataFrame(unannotated_ids)
+
+            # extract patients
+            patients = uap_pd[0].str.split("/", expand = True).iloc[:, -1].str.split("_", expand = True).iloc[:, 0]
+
+            # filter already selected
+            uap_pd = uap_pd[~patients.isin(self.annotated_patients)]
+            ap_pd = uap_pd[patients.isin(self.annotated_patients)]
+
+            uap_pd.to_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"), index = 0)
+        return uap_pd[0].values.tolist(), ap_pd[0].values.tolist()
 
 
 if __name__ == "__main__":
@@ -75,8 +77,7 @@ if __name__ == "__main__":
     args = Args(number_to_search = 10)
 
     # get record paths
-    unannotated_paths = file_manager.unannotated_records(use_cache = False)
-    annotated_paths = file_manager.get_annotated_paths(unannotated_paths)
+    unannotated_paths, annotated_paths = file_manager.unannotated_records(use_cache = False)
     unannotated_paths = random.sample(unannotated_paths, args.number_to_search)
 
     print("number of embedded volumes", len(unannotated_paths))
