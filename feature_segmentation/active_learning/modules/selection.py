@@ -11,8 +11,8 @@ from pathlib import Path
 import sys
 
 path = Path(os.getcwd())
-sys.path.append(str(path))
 sys.path.append(str(path.parent))
+sys.path.append(str(path.parent.parent))
 
 from file_manager import FileManager
 from utils import args
@@ -98,11 +98,7 @@ class OCTEmbeddings:
 
 
 class Filter():
-<<<<<<< HEAD
-    def __init__(self, ft_paths, ae_paths, uae_paths):
-=======
     def __init__(self, ft_paths, uae_paths):
->>>>>>> 225d6cbeadb57906e8fd508f3726d02a8d611d92
         # set paths to instances
         self.feature_table_paths = ft_paths
         self.uae_paths = uae_paths
@@ -137,30 +133,16 @@ if __name__ == "__main__":
     file_manager = FileManager("annotated_files.csv")
 
     # get record paths
-<<<<<<< HEAD
-    unannotated_paths, annotated_paths = file_manager.unannotated_records(use_cache = False)
-    unannotated_paths = random.sample(unannotated_paths, args.number_to_search)
-       
-    print("done with path extraction")
-
-=======
     unannotated_pd, annotated_pd = file_manager.unannotated_records(use_cache = False)
     # unannotated_pd = unannotated_pd.sample(args.number_to_search)
->>>>>>> 225d6cbeadb57906e8fd508f3726d02a8d611d92
 
     filter = Filter(file_manager.feature_table_paths, unannotated_pd)
 
     features_table = filter.selection_table()
-<<<<<<< HEAD
-    
-    print("done with selection table")
-    features_filtered_pd = filter.filter_paths(filter.uae_paths, args.sampling_rate, filter_ = True)
-=======
 
     keys = ["patient_id", "laterality", "study_date"]
     features_table_pd = pd.merge(unannotated_pd, features_table, left_on = keys, right_on = keys, how = "left")
     features_ffiltered_pd = filter.filter_paths(features_table_pd)
->>>>>>> 225d6cbeadb57906e8fd508f3726d02a8d611d92
 
     pprint(features_table.head(5))
     pprint(features_ffiltered_pd.head(5))
@@ -171,8 +153,4 @@ if __name__ == "__main__":
     assert sum(unannotated_pd.patient_id.isin(annotated_pd.patient_id.values)) == 0, "patient overlap"
     assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
-<<<<<<< HEAD
-    assert features_filtered_pd is not None, "returning None"
-=======
     assert features_ffiltered_pd is not None, "returning None"
->>>>>>> 225d6cbeadb57906e8fd508f3726d02a8d611d92

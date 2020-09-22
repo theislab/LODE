@@ -79,4 +79,3 @@ args = Args(number_to_search = 11)
 
 if __name__ == "__main__":
     print("import works")
-    pass

@@ -49,13 +49,6 @@ class FileManager:
         else:
             unannotated_ids = os.listdir(EMBEDD_DIR)
             uap_pd = EMBEDD_DIR + "/" + pd.DataFrame(unannotated_ids)
-<<<<<<< HEAD
-            
-            print(uap_pd.shape)
-            # extract patients
-            patients = uap_pd[0].str.split("/", expand = True).iloc[:, -1].str.split("_", expand = True).iloc[:, 0]
-            
-=======
 
             # rename columns
             uap_pd = uap_pd.rename(columns={0: "path"})
@@ -70,7 +63,6 @@ class FileManager:
             uap_pd["study_date"] = study_date
             uap_pd["laterality"] = laterality
 
->>>>>>> 225d6cbeadb57906e8fd508f3726d02a8d611d92
             # filter already selected
             ap_pd = uap_pd[patients.isin(self.annotated_patients)]
             uap_filtered_pd = uap_pd[~patients.isin(self.annotated_patients)]
