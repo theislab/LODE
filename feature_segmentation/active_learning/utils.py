@@ -7,10 +7,9 @@ from pathlib import Path
 import sys
 
 path = Path(os.getcwd())
+sys.path.append(str(path))
 sys.path.append(str(path.parent))
-sys.path.append(str(path.parent.parent))
 
-from kcenter_greedy_nalu import kCenterGreedy
 from config import OCT_DIR, WORK_SPACE, EMBEDD_DIR
 
 def to_three_channel(img):
@@ -30,11 +29,7 @@ def move_selected_octs(selected_pd, dst_dir):
         print(row.laterality)
         dicom_file_path = os.path.join(OCT_DIR, str(row.patient_id), 
                 laterality, str(row.study_date), row.dicom)
-        
-        print("#"*100)
-        print(dicom_file_path)
-        # dicom_file_path = os.path.join(OCT_DIR, row.dicom)
-        # load dicom file if not empty
+
         dc = read_file(dicom_file_path)
         vol = dc.pixel_array
         oct_ = vol[int(row.frame), :, :]
@@ -67,15 +62,16 @@ def move_selected_octs(selected_pd, dst_dir):
     pd.DataFrame(dicom_paths).to_csv(os.path.join(dst_dir, "dicom_paths.csv"))
 
 
-class Args():
-    def __init__(self, number_to_search):
-        self.number_to_search = number_to_search
-        self.budget = 10
+class Args:
+    def __init__(self):
+        self.number_to_search = 78
+        self.budget = 15
         self.chunk_size = 1
         self.sampling_rate = 49
+        self.name = "test"
 
 
-args = Args(number_to_search = 11)
+args = Args()
 
 if __name__ == "__main__":
     print("import works")

@@ -1,37 +1,58 @@
-from pprint import pprint
-import pandas as pd
+import argparse
 import os
+import pandas as pd
 from pathlib import Path
 import sys
-
-path = Path(os.getcwd())
-sys.path.append(str(path.parent))
-sys.path.append(str(path.parent.parent))
-
-for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
-    sys.path.append(str(child_dir))
-
-from kcenter_greedy_nalu import kCenterGreedy
-
-class Select():
-    def __init__(self, budget):
-        self.budget = budget
-
-    def select_batch(self, embeddings):
-        kcenters = kCenterGreedy(embeddings)
-        # select new indices
-        [ind_to_label, min_dist] = kcenters.select_batch_(already_selected = kcenters.already_selected, N = self.budget)
-        return [ind_to_label, min_dist]
+from pprint import pprint
 
 
-if __name__ == "__main__":
-    import os
-    from pathlib import Path
-    import sys
+'''
+Program to perform active learning on a pool of unannotated OCT files.
+
+Assumes ./active_learning/config.py file with
+
+PROJ_DIR: project dir of project
+WORK_SPACE: path to directory storing
+- active_learning/path_files
+OCT_DIR: path where OCT are stored
+EMBEDD_DIR: path where embeddings are stored
+
+workspace directory expected to contain:
+
+workspace
+└── feature_segmentation/active_learning
+    ├── annotated_files.csv - record names of all annotated octs so far
+   
+Description: 
+This module uses the the output of segment.py, i.e. the embeddings and feature statistics to sample more images of
+features of interest (foi). The foi are currently set manully in the active_learning/utils.py (to be upgraded).
+
+In short, the program uses the core set approach to maximize the information in the new samples while focusing
+on foi as well as only sampling from different patients.
+
+The input of this program relies on the output of segment.py in the workspace/segmentation directory as well as
+annotated_files.csv (see above) containing the records annotated so far. 
+
+the output is saved in DST_DIR set in active_learning/config.py. It saved the selected scan as well as as the whole 
+OCT volume for reference. 
+'''
+
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser()
+    parser.add_argument("budget", help = "number of images to select",
+                        type = int, default = 100)
+    parser.add_argument("chunk_size", help = "which of the different sub .csv files to read from ",
+                        type = int, default = 100)
+    
+    parser.add_argument("number_to_search", help="number of images to search", type =int, default=10000)
+    parser.add_argument("sampling_rate", help = "which of the different sub .csv files to read from", type = int, default = 49)
+    parser.add_argument("name", help = "name of iteration to save results under", type = str,
+                        default = "test")
+
+    args = parser.parse_args()
 
     path = Path(os.getcwd())
     sys.path.append(str(path.parent))
-    sys.path.append(str(path.parent.parent))
 
     # add children paths
     for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
@@ -40,8 +61,8 @@ if __name__ == "__main__":
     from file_manager import FileManager
     from filter import Filter
     from embeddings import OCTEmbeddings
-    from utils import args, move_selected_octs
-    from kcenter_greedy_nalu import kCenterGreedy
+    from selection import Select
+    from utils import move_selected_octs
     from config import WORK_SPACE, EMBEDD_DIR
 
     file_manager = FileManager("annotated_files.csv")
@@ -71,7 +92,7 @@ if __name__ == "__main__":
     assert features_table is not None, "returning None"
     assert features_ffiltered_pd is not None, "returning None"
     assert (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (
-                args.chunk_size > 1), "chunk size to large"
+            args.chunk_size > 1), "chunk size to large"
 
     embedding = OCTEmbeddings()
 
@@ -110,3 +131,6 @@ if __name__ == "__main__":
 
     selected_path = os.path.join(DST_DIR, f"records_selected_{args.name}.csv")
     selected_scans_pd.to_csv(selected_path)
+
+    print("move the selected volumes to selected dir")
+    move_selected_octs(selected_scans_pd, DST_DIR)
