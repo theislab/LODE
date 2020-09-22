@@ -5,20 +5,6 @@ import umap
 from sklearn import decomposition
 import pandas as pd
 from tqdm import tqdm
-import os
-import random
-from pathlib import Path
-import sys
-
-path = Path(os.getcwd())
-sys.path.append(str(path.parent))
-sys.path.append(str(path.parent.parent))
-
-from file_manager import FileManager
-from utils import args
-
-FEATURE_COLUMNS = ['patient_id', 'study_date', 'laterality', '0', '1', '10', '11', '12',
-                   '13', '14', '15', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
 class OCTEmbeddings:
@@ -38,6 +24,7 @@ class OCTEmbeddings:
     @staticmethod
     def apply_umap(feature_vector):
         # first run faster PCA before final UMAP
+
         try:
             n_components = min(len(feature_vector), 30)
             pca = decomposition.PCA(n_components = n_components)
@@ -45,7 +32,7 @@ class OCTEmbeddings:
             X = pca.transform(np.array(feature_vector))
             res = umap.UMAP(metric = 'correlation').fit_transform(X)
         except:
-            res = None
+            res = np.array([])
         return res
 
     def reduce_dim_annotated(self, embedding_paths):
@@ -67,15 +54,13 @@ class OCTEmbeddings:
             for ep in ec:
                 features_ep = table[table.embedding_path == ep]
                 embedding = self.load_volume(ep)
-                embedding_frames = np.round(np.linspace(0, 48, embedding.shape[0]))
+                embedding_frames = features_ep.frame.tolist()
 
                 # add all embeddings in volume
-                for iter_ in features_ep.frame.tolist():
-                    embed_loc = np.where(embedding_frames == iter_)[0][0]
-
+                for frame in embedding_frames:
                     # extract id and embedding array
-                    id_ = features_ep[features_ep.frame == iter_].id.iloc[0]
-                    embedding_array = embedding[embed_loc, :]
+                    id_ = features_ep[features_ep.frame == frame].id.iloc[0]
+                    embedding_array = embedding[frame, :]
 
                     assert isinstance(id_, str), "id value must be string"
                     assert type(embedding_array) is not np.array, "embedding vector must be numpy array"
@@ -88,48 +73,31 @@ class OCTEmbeddings:
                     embeddings[1].append(embedding_array)
 
             umap_ = self.apply_umap(embeddings[1].copy())
-            if not umap_:
+
+            # if umap is empty, then continue
+            if umap_.size == 0:
                 continue
 
-            umap_embeddings = umap_embeddings.append(
-                pd.DataFrame([embeddings[0].copy(), umap_]).T.rename(columns = {0: "id", 1: "embedding"}))
+            umap_pd = pd.DataFrame([embeddings[0].copy(), umap_]).T.rename(columns = {0: "id", 1: "embedding"})
+            umap_embeddings = umap_embeddings.append(umap_pd)
         print("--- unannotated images embedded ---")
         return umap_embeddings
 
 
-class Filter():
-    def __init__(self, ft_paths, uae_paths):
-        # set paths to instances
-        self.feature_table_paths = ft_paths
-        self.uae_paths = uae_paths
-
-    def selection_table(self):
-        """
-        @return: joined feature table dataframes
-        @rtype: DataFrame
-        """
-        feature_table = pd.DataFrame(columns = FEATURE_COLUMNS)
-        for path in self.feature_table_paths:
-            table = pd.read_csv(path, index_col = 0)
-            feature_table = feature_table.append(table)
-
-        feature_table.study_date = feature_table.study_date.astype(str)
-        feature_table.patient_id = feature_table.patient_id.astype(str)
-        return feature_table
-
-    def filter_paths(self, features_table):
-        """
-        @param features_table:
-        @type features_table:
-        @return:
-        @rtype:
-        """
-        fibrosis_bool = features_table["13"] > 50
-        features_table_filtered = features_table[fibrosis_bool]
-        return features_table_filtered
-
-
 if __name__ == "__main__":
+    import os
+    import random
+    from pathlib import Path
+    import sys
+
+    path = Path(os.getcwd())
+    sys.path.append(str(path.parent))
+    sys.path.append(str(path.parent.parent))
+
+    from file_manager import FileManager
+    from filter import Filter
+    from utils import args
+
     file_manager = FileManager("annotated_files.csv")
 
     # get record paths
@@ -154,3 +122,14 @@ if __name__ == "__main__":
     assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
     assert features_ffiltered_pd is not None, "returning None"
+    assert (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (args.chunk_size > 1), "chunk size to large"
+
+    embedding = OCTEmbeddings()
+
+    # embedding
+    ua_embeddings = embedding.reduce_dim_unannotated(features_ffiltered_pd, chunk = args.chunk_size)
+
+    assert embedding.reduce_dim_unannotated(pd.DataFrame(columns = features_ffiltered_pd.columns.values.tolist()),
+                                            chunk = args.chunk_size).size == 0, "function does not handle empty DF"
+
+    assert ua_embeddings.shape[0] == features_ffiltered_pd.shape[0], "not all filtered oct were embedded"
