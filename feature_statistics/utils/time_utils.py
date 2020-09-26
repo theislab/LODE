@@ -18,7 +18,46 @@ class TimeUtils:
     def set_number_of_months(self):
         months = pd.to_datetime(self.table.study_date)
         time_span = months.iloc[-1] - months.iloc[0]
-        return math.ceil(time_span.days / 30)
+
+        time_divisor = math.ceil(time_span.days / 30)
+        if time_divisor == 1:
+            return 2
+        else:
+            return time_divisor
+
+
+    def first_corner_case(self, time_line):
+        # edge case, injections given in candidate range of first visit
+        candidate_dates = pd.to_datetime(self.table["study_date"].iloc[1:])
+        time_delta = candidate_dates - pd.to_datetime(time_line[1]["study_date"])
+        candidates = [td for td in time_delta if (td.days < 15) & (td.days > -15)]
+
+        if candidates:
+            closest_idx = np.argwhere(time_delta == candidates[0])[0][0]
+            injections_ = self.table.iloc[closest_idx + 1]["injections"]
+
+            # if injections in first neighbour is more than zero, assign to first date
+            if injections_ > 0:
+                time_line[1]["injections"] = injections_
+
+        return time_line
+
+    def last_corner_case(self, time_line):
+        # edge case, injections given in candidate range of first visit
+        candidate_dates = pd.to_datetime(self.table["study_date"].iloc[:-1])
+        time_delta = candidate_dates - pd.to_datetime(time_line[max(time_line.keys())]["study_date"])
+        candidates = [td for td in time_delta if (td.days < 15) & (td.days > -15)]
+
+        if candidates:
+            closest_idx = np.argwhere(time_delta == candidates[0])[0][0]
+            injections_ = self.table.iloc[closest_idx + 1]["injections"]
+
+            # if injections in first neighbour is more than zero, assign to first date
+            if injections_ > 0:
+                time_line[1]["injections"] = injections_
+
+        return time_line
+
 
     def assign_to_timeline(self, time_line, item):
         """
@@ -34,6 +73,11 @@ class TimeUtils:
         # assign first & last observation
         time_line[1].update({item: self.table[item].iloc[0]})
         time_line[self.NUMBER_OF_MONTHS].update({item: self.table[item].iloc[-1]})
+        time_line[self.NUMBER_OF_MONTHS]["injections"] = self.table.iloc[-1].injections
+
+        # control injection logging for filtered candidate months close to first and last
+        time_line = self.first_corner_case(time_line)
+        time_line = self.last_corner_case(time_line)
 
         __start__ = datetime.datetime.strptime(self.table["study_date"].iloc[0], '%Y-%m-%d')
         __end__ = datetime.datetime.strptime(self.table["study_date"].iloc[-1], '%Y-%m-%d')
@@ -53,7 +97,7 @@ class TimeUtils:
                 add_to_prev_injections = 0
 
                 time_delta = candidate_dates - date
-                candidates = [td for td in time_delta if (td.days < 15) & (td.days > -15)]
+                candidates = [td for td in time_delta if (td.days < 15) & (td.days >= -15)]
                 if len(candidates) > 1:
                     min_diff = np.min(candidates)
                     idx_select = np.where(time_delta == min_diff)[0][0]
