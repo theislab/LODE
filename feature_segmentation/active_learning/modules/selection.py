@@ -8,7 +8,6 @@ path = Path(os.getcwd())
 sys.path.append(str(path.parent))
 sys.path.append(str(path.parent.parent))
 
-# add children paths
 for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
     sys.path.append(str(child_dir))
 
