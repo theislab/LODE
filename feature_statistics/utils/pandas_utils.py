@@ -38,18 +38,26 @@ def avg_etdrs_columns(record_table, rings, regions, features, foveal_region, new
     record_table.insert(10, new_column_name, avg_values.values.tolist(), True)
     return record_table
 
+'''
+def get_total_number_of_injections(table):
+    """
+    @param table: record table with clinical information for sequence
+    @type table: DataFrame
+    @return: total injections, i.e. number of injections of all types at visit, added as column
+    @rtype: int
+    """
+    return sum(table.injections)
+'''
+
 
 def get_total_number_of_injections(table):
     """
     @param table: record table with clinical information for sequence
     @type table: DataFrame
-    @return: DataFrame with total injections, i.e. number of injections of all types at visit, added as column
-    @rtype: DataFrame
+    @return: total injections, i.e. number of injections of all types at visit, added as column
+    @rtype: int
     """
-    total_injections = [np.sum(list(map(lambda x: int(x), row))) for row in table.injections.str.split(", ")]
-    table.insert(loc = 10, column = "total_injections", value = pd.Series(total_injections),
-                 allow_duplicates = True)
-    return table
+    return sum(table.injections)
 
 
 def interpolate_numeric_field(time_line, item):

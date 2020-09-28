@@ -6,8 +6,8 @@ import numpy as np
 import os
 from pydicom import read_file
 import keras.backend as K
-from utils.im_processing import resize
-from utils.utils import Params, Logging, TrainOps
+from feature_segmentation.utils.im_processing import resize
+from feature_segmentation.utils.utils import Params, Logging, TrainOps
 
 
 def load_config(model_directory):
@@ -167,7 +167,7 @@ class EvalBScan():
         self.segmented_oct = self.segment_oct()
         self.feature_dict = {"id": [], "0": [], "1": [], "2": [], "3": [], "4": [],
                              "5": [], "6": [], "7": [], "8": [], "9": [], "10": [],
-                             "11": []}
+                             "11": [], "12": [], "13": [], "14": [], "15": []}
 
     def resize(self, im):
         desired_size = self.params.img_shape

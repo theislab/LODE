@@ -1,5 +1,4 @@
 from copy import deepcopy
-
 import numpy as np
 
 
@@ -179,3 +178,79 @@ def nan_helper(y):
     """
 
     return np.isnan(y), lambda z: z.nonzero()[0]
+
+
+def get_total_number_of_injections(table):
+    """
+    @param table: record table with clinical information for sequence
+    @type table: DataFrame
+    @return: total injections, i.e. number of injections of all types at visit, added as column
+    @rtype: int
+    """
+    return sum(table.injections)
+
+def get_first_month_injection(time_line):
+    """
+    @param time_line: LODE time line dict with all measurements over time line
+    @type table: DataFrame
+    @return: total injections, i.e. number of injections of all types at visit, added as column
+    @rtype: int
+    """
+    month_with_injections = [month for month in time_line.keys() if time_line[month]["injections"] > 0]
+    if month_with_injections:
+        month_ = min(month_with_injections)
+        return time_line[month_]["study_date"], month_
+    else:
+        return None, None
+
+
+def get_treatment_time_line(time_line, first_month):
+    """
+    - iterate through time line
+
+    extract fluid, date from month 1, 4, 7, 13
+
+    Warning: function assumes injection is assigned to previous time point.
+
+    for month 1:
+    set injection_since_last = 0
+    total_injections = 0
+
+    for month 4:
+    set injection_since_last = sum(injection) | month = [1, 2, 3]
+    total injections = total_injections[month = 1] + injections_since_last
+
+    for month 7:
+    set injection_since_last = sum(injection) | month = [4, 5, 6]
+    total injections = total_injections[month = 1] + total_injections[month = 4] + injections_since_last
+
+    for month 13:
+    set injection_since_last = sum(injection) | month = [7, 8, 8, 10, 12]
+    total injections = total_injections[month = 1] + total_injections[month = 4] + total_injections[month = 7] + injections_since_last
+    """
+    fluid_time_time = {}
+
+    time_points = [first_month, first_month + 3,
+                   first_month + 6, first_month + 12]
+
+    # fill fluid time line
+    for k, time_point in enumerate(time_points, 1):
+        if time_point in time_line.keys():
+
+            # if first time point
+            if k == 1:
+                num_injection_since_last = 0
+                total_injections = 0
+            else:
+                injections_since_last = [time_line[i]["injections"] for i in range(time_points[prev_time_point - 1],
+                                                                                   time_points[prev_time_point - 1] + 3)]
+                num_injection_since_last = np.nansum(injections_since_last)
+                total_injections = fluid_time_time[str(prev_time_point)]["total_injections"] + num_injection_since_last
+
+            fluid_time_time[str(k)] = {"month": time_point,
+                                       "study_date": time_line[time_point]["study_date"],
+                                       "injection_since_last": int(num_injection_since_last),
+                                       "total_injections": int(total_injections),
+                                       "total_fluid": time_line[time_point]["total_fluid"]}
+        prev_time_point = k
+    return fluid_time_time

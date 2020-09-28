@@ -1,7 +1,14 @@
+import os
+from copy import deepcopy
+
 import numpy as np
 import matplotlib.pyplot as plt
+from pydicom import read_file
 from skimage.measure import moments
 from utils.plotting_utils import plot_segmentation_map
+import cv2
+import scipy
+
 
 def plot_bool_mask(mask):
     from tvtk.api import tvtk
@@ -39,7 +46,7 @@ tissues = {"1": "epiratinal_membrane",
 etdrs_regions = ["C0", "S2", "S1", "N1", "N2", "I1", "I2", "T1", "T2"]
 
 # labels to exclude from thickness
-thickness_exclusion = [0, 9, 10, 11, 12, 14, 15]
+thickness_exclusion = [0, 1,  9, 10, 11, 12, 14, 15]
 
 
 def volume_spatial_grid(volume):
@@ -55,7 +62,39 @@ def volume_spatial_grid(volume):
     return volume_container
 
 
+def thickness_spatial_grid(map, interpolate=False):
+    """
+    @param map: thickness vectors
+    @type map: arry
+    @param interpolate: if to interpolate accross thickness grid
+    @type interpolate: bool
+    @return: 256,256 sized thickness grid
+    @rtype: array
+    """
+    thickness_map = np.zeros([256, 256])
+
+    # get B-scan locations
+    b_locations = np.round(np.linspace(0, 256 - 1, 49)).astype(int)
+
+    # create square sized oct volume
+    for k, b_loc in enumerate(b_locations):
+        thickness_map[b_loc, :] = map[k, :, 0]
+
+    if interpolate:
+        for j in range(thickness_map.shape[1]):
+            thickness_map[:, j][thickness_map[:, j] == 0] = np.nan
+            nans, x = np.isnan(thickness_map[:, j]), lambda z: z.nonzero()[0]
+            thickness_map[:, j][nans] = np.interp(x(nans), x(~nans), thickness_map[:, j][~nans])
+    return thickness_map
+
+
 def thickness_profiler(volume):
+    """
+    @param vol:
+    @type vol:
+    @return:
+    @rtype:
+    """
     # set labels to zero
     volume[np.isin(volume, thickness_exclusion)] = 0
 
@@ -63,7 +102,7 @@ def thickness_profiler(volume):
     volume[~np.isin(volume, thickness_exclusion)] = 1
 
     # create thickness map
-    thickness_map = np.zeros([volume.shape[0], 1, volume.shape[2]])
+    thickness_map = np.zeros([volume.shape[0], volume.shape[2], 1])
 
     # get thickness vectors
     for i in range(volume.shape[0]):
@@ -77,7 +116,7 @@ def thickness_profiler(volume):
             thickness = np.abs(bottom - top)
 
             # assign to map
-            thickness_map[i, :, j] = thickness
+            thickness_map[i, j, :] = thickness
     return thickness_map
 
 
@@ -119,9 +158,68 @@ def rpe_profiler(volume):
     return rpe_map
 
 
+def laterality_string_frormatting(laterality):
+    """
+    @param laterality: left or right eye
+    @type laterality: str
+    @return: laterality written as Left ör Right
+    @rtype: str
+    """
+    if laterality == "L":
+        laterality = "Left"
+    elif laterality == "R":
+        laterality = "Right"
+    else:
+        laterality = laterality
+    return laterality
+
+
+def get_dicom_pixel_measurement(dc):
+    """
+    @param dc:
+    @type dc:
+    @return:
+    @rtype:
+    """
+    shared = dc.SharedFunctionalGroupsSequence[0][("0028", "9110")][0]
+
+    y_resolution = shared.PixelSpacing[0]
+    x_resolution = shared.PixelSpacing[1]
+    slice_thickness = shared.SliceThickness
+    return y_resolution, x_resolution, slice_thickness
+
+
+def get_pixel_2_volume_factors(dicom_path):
+    """
+    @param dicom_path:
+    @type dicom_path:
+    @return:
+    @rtype:
+    """
+
+    # factor to resize networks output size
+    B_SCAN_RESIZE_FACTOR = 2
+
+    # load dicom header
+    dicom_file = os.listdir(dicom_path)[0]
+    dc = read_file(os.path.join(dicom_path, dicom_file), stop_before_pixels = True)
+
+    # get resolution attribution
+    y_resolution, x_resolution, slice_thickness = get_dicom_pixel_measurement(dc)
+
+    pixel_2_volume_mm3 = B_SCAN_RESIZE_FACTOR * y_resolution * x_resolution * slice_thickness
+    pixel_height_2_mm = B_SCAN_RESIZE_FACTOR * y_resolution
+    return pixel_2_volume_mm3, pixel_height_2_mm
+
+
 class ETDRSUtils:
-    def __init__(self, path):
+    def __init__(self, path, dicom_path):
         self.path = path
+        self.record = path.split("/")[-1]
+        self.patient = self.record.split("_")[0]
+        self.study_date = self.record.split("_")[1]
+        self.laterality = laterality_string_frormatting(self.record.split("_")[2])
+        self.dicom_path = os.path.join(dicom_path, self.patient, self.laterality, self.study_date)
         self.width = None
         self.height = None
         self.scans = None
@@ -193,6 +291,8 @@ class ETDRSUtils:
         # load segmentation
         volume = np.load(self.path)
 
+        pixel_2_volume_mm3, pixel_height_2_mm = get_pixel_2_volume_factors(self.dicom_path)
+
         # get dim
         self.scans, self.height, self.width = volume.shape
 
@@ -207,10 +307,7 @@ class ETDRSUtils:
         thickness_map = thickness_profiler(np.copy(volume))
 
         # distribute maps across oct grid
-        thickness_spatial = volume_spatial_grid(thickness_map)
-
-        # reshape to 2d
-        thickness_spatial = thickness_spatial.reshape(volume.shape[1], volume.shape[2])
+        thickness_spatial = thickness_spatial_grid(thickness_map)
 
         # get etdrs bool grid
         self.zones()
@@ -226,7 +323,7 @@ class ETDRSUtils:
             atrophy_segment = atrophy_map[bool_[0, :, :]]
 
             # log thickness feature
-            thickness_mean = np.mean(thickness_segment[np.nonzero(thickness_segment)])
+            thickness_mean = np.mean(thickness_segment[np.nonzero(thickness_segment)] * pixel_height_2_mm)
 
             # add all tissue types count for etdrs regions
             record_log[etdrs_region + "_" + "thickness_mean"] = thickness_mean
@@ -235,11 +332,13 @@ class ETDRSUtils:
             region_total = 0
             # get all tissue counts for all tissues
             for tissue in tissues.keys():
-                tissue_count = np.sum(region_segment == int(tissue))
-                record_log[etdrs_region + "_" + tissue] = tissue_count
+                tissue_pixel_count = np.sum(region_segment == int(tissue))
+                tissue_volume = tissue_pixel_count * pixel_2_volume_mm3
+
+                record_log[etdrs_region + "_" + tissue] = tissue_volume
 
                 if tissue not in [9, 10]:
-                    region_total += tissue_count
+                    region_total += tissue_volume
 
             # add all tissue types count for etdrs regions
             record_log[etdrs_region + "_" + "total"] = region_total
