@@ -107,7 +107,7 @@ class EvalVolume():
 
     def segment_volume(self):
         predictions = np.zeros(shape = (49 // self.n_scan, 256, 256), dtype = np.uint8)
-        embeddings = np.zeros(shape = (49 // self.n_scan, 8, 8, 512), dtype = np.float32)
+        embeddings = np.zeros(shape = (49 // self.n_scan, 4, 4, 2), dtype = np.float32)
         for i in range(self.image.shape[0]):
             predictions[i, :, :], embeddings[i, :, :, :] = self.__predict_image(self.image[i, :, :, :])
 
