@@ -2,7 +2,7 @@ import math
 from copy import deepcopy
 
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
-from feature_statistics.config import WORK_SPACE, SEG_DIR
+from feature_statistics.config import WORK_SPACE, SEG_DIR, OCT_DIR
 import os
 import pandas as pd
 import datetime
@@ -12,51 +12,11 @@ import numpy as np
 from feature_statistics.utils.time_utils import TimeUtils
 from feature_statistics.utils.pandas_utils import sum_etdrs_columns, interpolate_numeric_field
 from feature_statistics.utils.util_functions import nan_helper, SeqUtils, get_total_number_of_injections, \
-    get_first_month_injection, get_treatment_time_line
+    get_first_month_injection, get_treatment_time_line, get_delta_logs
 from feature_statistics.utils.plotting_utils import plot_segmentation_map, color_mappings
 from tqdm import tqdm
 import glob
 import matplotlib.patches as mpatches
-
-
-def get_delta_logs(fluid_time_line):
-    """
-    function calculates absolute and relative fluid delta in fluid_time_line dict
-    @param fluid_time_line:
-    @type fluid_time_line:
-    @return: two dicts, with relative and absolute differences
-    @rtype: dict
-    """
-    if fluid_time_line:
-        fluid_len = len(fluid_time_line)
-        first_fluid = fluid_time_line[str(1)]["total_fluid"]
-
-        abs_dict = {"1-3abs": None, "1-6abs": None, "1-12abs": None}
-        rel_dict = {"1-3rel": None, "1-6rel": None, "1-12rel": None}
-        injection_dict = {"1-3inj": None, "1-6inj": None, "1-12inj": None}
-
-        time_deltas = [3, 6, 12]
-        for obs in range(1, fluid_len + 1):
-            next_month = fluid_time_line[str(obs + 1)]["month"]
-
-            current_fluid = fluid_time_line[str(obs)]["total_fluid"]
-            next_fluid = fluid_time_line[str(obs + 1)]["total_fluid"]
-
-            next_total_injections = fluid_time_line[str(obs + 1)]["total_injections"]
-
-            abs_delta = next_fluid - current_fluid
-            rel_delta = (next_fluid - first_fluid) / first_fluid
-
-            abs_dict[f"{1}-{time_deltas[obs - 1]}abs"] = abs_delta
-            rel_dict[f"{1}-{time_deltas[obs - 1]}rel"] = rel_delta
-            injection_dict[f"{1}-{time_deltas[obs - 1]}inj"] = next_total_injections
-
-            if obs + 1 == fluid_len:
-                break
-
-        return abs_dict, rel_dict, injection_dict
-    else:
-        return None, None, None
 
 
 class MeasureSeqTimeUntilDry(SeqUtils):
@@ -68,6 +28,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     DATA_POINTS = ["study_date", "total_fluid", "injections", "cur_va_rounded", "next_va"]
     META_DATA = ["patient_id", "laterality", "diagnosis"]
     SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
+    DICOM_PATHS = glob.glob(os.path.join(OCT_DIR, "*/*/*/*.dcm"))
 
     def __init__(self, meta_data, time_line, fluid_time_line, naive):
         self.patient_id = meta_data[MeasureSeqTimeUntilDry.META_DATA[0]]
@@ -141,9 +102,9 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     def time_series(self):
         time_series = []
         # iterate through months and retrieve measurement vector
-        months = list(self.time_line.keys())
+        months = list(self.fluid_time_line.keys())
         for month in months:
-            time_series.append(self.time_line[month]["total_fluid"])
+            time_series.append(self.fluid_time_line[month]["total_fluid"])
         return np.array(time_series)
 
     @property
@@ -153,6 +114,14 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         segmentation_files = list(
             filter(lambda k: (patient_cond in k) & (laterality_cond in k), MeasureSeqTimeUntilDry.SEG_PATHS))
         return segmentation_files
+
+    @property
+    def dicom_paths(self):
+        laterality_cond = self.laterality
+        patient_cond = str(self.patient_id)
+        dicom_files = list(
+            filter(lambda k: (patient_cond in k) & (laterality_cond in k), MeasureSeqTimeUntilDry.DICOM_PATHS))
+        return dicom_files
 
     def record_identifier(self, study_date):
         """
@@ -205,6 +174,25 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                 indices = np.linspace(0, map.shape[0] - 1, MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS, dtype = np.int32)
                 self.time_line[month]["segmentation_maps"] = map[indices, :, :]
 
+    def add_oct_to_timeline(self):
+        """
+        Assigns segmented oct volumes to time line
+        @return: None
+        @rtype:
+        """
+        months = list(self.time_line.keys())
+        for month in months:
+            if self.time_line[month]["study_date"] is np.nan:
+                self.time_line[month]["segmentation_maps"] = np.nan
+                continue
+            else:
+                date = self.time_line[month]["study_date"].replace("-", "")
+                path = list(filter(lambda k: (date.replace("-", "") in k), self.dicom_paths))[0]
+                map = np.load(path)
+
+                indices = np.linspace(0, map.shape[0] - 1, MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS, dtype = np.int32)
+                self.time_line[month]["segmentation_maps"] = map[indices, :, :]
+
     def show_time_series(self, show_segmentations=False, show=False, save_fig=False):
         """
         @param show_segmentations: whether to show segmentations
@@ -230,16 +218,15 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         darkred_patch = mpatches.Patch(color = 'darkorange', label = 'injections')
         time_series = self.time_series
 
-        # set y axis params
-        if np.max(time_series) < 50000:
-            y_max = 50000
+        if max(time_series) < 1:
+            y_max = 1
         else:
-            y_max = np.max(time_series)
+            y_max = 3
 
-        fig, ax = plt.subplots(figsize = (int(time_series.shape[0]), 10))
-        fig.subplots_adjust(bottom = 0.4)
+        fig, ax = plt.subplots(figsize = (int(time_series.shape[0]), 2))
+        fig.subplots_adjust(top = 0.4)
 
-        xs = np.arange(0, time_series.shape[0], 1)
+        xs = [1, 3, 6, 12]
         ys = time_series
 
         # plot points
@@ -250,29 +237,26 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                   1: (x_offset, (y_max // 5) * 2),
                   2: (x_offset, (y_max // 5) * 3)}
 
-        # set image zoom by time series length
-        zoom = 1.5 / self.number_of_visits
-
         # zip joins x and y coordinates in pairs
         for x, y in zip(xs, ys):
             if not self.time_line[x + 1]['cur_va_rounded'] is np.nan:
                 label = f"Inj: {self.time_line[x + 1]['injections']} \n VA: {self.time_line[x + 1]['cur_va_rounded']}"
             else:
                 label = ""
-            ax.text(x, y + 1000, label, fontdict = font)
+            ax.text(x, y + 0.01, label, fontdict = font)
 
             if show_segmentations & (self.time_line[x + 1]["study_date"] is not np.nan):
                 for i in range(MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS):
                     imagebox = OffsetImage(self.time_line[x + 1]["segmentation_maps"][i, :, :],
-                                           zoom = zoom, cmap = seg_cmap, norm = seg_norm)
+                                            cmap = seg_cmap, norm = seg_norm)
                     imagebox.image.axes = ax
                     ab = AnnotationBbox(imagebox, (x, 0), xybox = (x + xy_box[i][0], 0 - xy_box[i][1]),
                                         frameon = False)
                     ax.add_artist(ab)
 
-        plt.ylim(-100, y_max)
+        plt.ylim(-y_max, y_max)
         plt.xlabel("month")
-        plt.ylabel("total fluid")
+        plt.ylabel("effect")
         plt.legend(handles = [darkred_patch])
 
         title_ = f"{self.patient_id}_{self.laterality}"
@@ -301,11 +285,11 @@ if __name__ == "__main__":
     # load sequences
     seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data", 'sequences.csv'))
 
-    PATIENT_ID = 53686 # 2005
-    LATERALITY = "L"
+    PATIENT_ID = 1570  # 2005
+    LATERALITY = "R"
 
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
-    # seq_pd = seq_pd.loc[filter_]
+    seq_pd = seq_pd.loc[filter_]
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()  # .iloc[0:10]
 
@@ -314,7 +298,7 @@ if __name__ == "__main__":
         print(patient, lat)
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
         time_until_dry.append(MeasureSeqTimeUntilDry.from_record(record_pd))
-        # time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
+        time_until_dry[-1].show_time_series(show_segmentations = False, show = True, save_fig = True)
         # time_until_dry[-1].dump_segmentation_map(11)
 
     time_serie_log = {"patient_id": [],
@@ -349,5 +333,5 @@ if __name__ == "__main__":
             for key in time_serie_log.keys():
                 time_serie_log[key].append(measurem.__dict__[key])
 
-    time_until_dry_pd = pd.DataFrame(time_serie_log)
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"))
+    # time_until_dry_pd = pd.DataFrame(time_serie_log)
+    # time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"))

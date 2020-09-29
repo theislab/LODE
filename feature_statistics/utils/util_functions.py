@@ -254,3 +254,43 @@ def get_treatment_time_line(time_line, first_month):
                                        "total_fluid": time_line[time_point]["total_fluid"]}
         prev_time_point = k
     return fluid_time_time
+
+
+def get_delta_logs(fluid_time_line):
+    """
+    function calculates absolute and relative fluid delta in fluid_time_line dict
+    @param fluid_time_line:
+    @type fluid_time_line:
+    @return: two dicts, with relative and absolute differences
+    @rtype: dict
+    """
+    if fluid_time_line:
+        fluid_len = len(fluid_time_line)
+        first_fluid = fluid_time_line[str(1)]["total_fluid"]
+
+        abs_dict = {"1-3abs": None, "1-6abs": None, "1-12abs": None}
+        rel_dict = {"1-3rel": None, "1-6rel": None, "1-12rel": None}
+        injection_dict = {"1-3inj": None, "1-6inj": None, "1-12inj": None}
+
+        time_deltas = [3, 6, 12]
+        for obs in range(1, fluid_len + 1):
+            next_month = fluid_time_line[str(obs + 1)]["month"]
+
+            current_fluid = fluid_time_line[str(obs)]["total_fluid"]
+            next_fluid = fluid_time_line[str(obs + 1)]["total_fluid"]
+
+            next_total_injections = fluid_time_line[str(obs + 1)]["total_injections"]
+
+            abs_delta = next_fluid - current_fluid
+            rel_delta = (next_fluid - first_fluid) / first_fluid
+
+            abs_dict[f"{1}-{time_deltas[obs - 1]}abs"] = abs_delta
+            rel_dict[f"{1}-{time_deltas[obs - 1]}rel"] = rel_delta
+            injection_dict[f"{1}-{time_deltas[obs - 1]}inj"] = next_total_injections
+
+            if obs + 1 == fluid_len:
+                break
+
+        return abs_dict, rel_dict, injection_dict
+    else:
+        return None, None, None
