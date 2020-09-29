@@ -199,13 +199,20 @@ def get_pixel_2_volume_factors(dicom_path):
 
     # factor to resize networks output size
     B_SCAN_RESIZE_FACTOR = 2
+    try:
+        # load dicom header
+        dicom_file = os.listdir(dicom_path)[0]
 
-    # load dicom header
-    dicom_file = os.listdir(dicom_path)[0]
-    dc = read_file(os.path.join(dicom_path, dicom_file), stop_before_pixels = True)
+        dc = read_file(os.path.join(dicom_path, dicom_file), stop_before_pixels = True)
 
-    # get resolution attribution
-    y_resolution, x_resolution, slice_thickness = get_dicom_pixel_measurement(dc)
+        # get resolution attribution
+        y_resolution, x_resolution, slice_thickness = get_dicom_pixel_measurement(dc)
+    
+    except:
+        print("no dicom or resolution data available, setting to default")
+        y_resolution = 0.003872
+        x_resolution = 0.012034
+        slice_thickness = 0.128197
 
     pixel_2_volume_mm3 = B_SCAN_RESIZE_FACTOR * y_resolution * x_resolution * slice_thickness
     pixel_height_2_mm = B_SCAN_RESIZE_FACTOR * y_resolution
