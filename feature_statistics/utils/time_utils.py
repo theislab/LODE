@@ -25,7 +25,6 @@ class TimeUtils:
         else:
             return time_divisor
 
-
     def first_corner_case(self, time_line):
         # edge case, injections given in candidate range of first visit
         candidate_dates = pd.to_datetime(self.table["study_date"].iloc[1:])

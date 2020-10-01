@@ -2,6 +2,8 @@ import math
 from copy import deepcopy
 
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
+from pydicom import read_file
+
 from feature_statistics.config import WORK_SPACE, SEG_DIR, OCT_DIR
 import os
 import pandas as pd
@@ -19,9 +21,12 @@ import glob
 import matplotlib.patches as mpatches
 
 
+deltas = ["1-3", "1-6", "1-12", "3-6", "6-12"]
+
+
 class MeasureSeqTimeUntilDry(SeqUtils):
     NUMBER_OF_MONTHS = 13
-    NUM_SEGMENTATIONS = 3
+    NUM_SEGMENTATIONS = 4
     DAYS = 30
     REGIONS = ["S", "N", "I", "T"]
     FLUIDS = ["3", "4"]
@@ -39,17 +44,8 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         self.naive = naive
 
         if self.fluid_time_line:
-            abs_, rel_, inj_ = get_delta_logs(self.fluid_time_line)
+            self.abs_, self.inj_ = get_delta_logs(self.fluid_time_line, deltas)
 
-            self.abs1_3 = abs_["1-3abs"]
-            self.abs1_6 = abs_["1-6abs"]
-            self.abs1_12 = abs_["1-12abs"]
-            self.rel1_3 = rel_["1-3rel"]
-            self.rel1_6 = rel_["1-6rel"]
-            self.rel1_12 = rel_["1-12rel"]
-            self.inj1_3 = inj_["1-3inj"]
-            self.inj1_6 = inj_["1-6inj"]
-            self.inj1_12 = inj_["1-12inj"]
 
     @classmethod
     def from_record(cls, record_table):
@@ -183,15 +179,15 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         months = list(self.time_line.keys())
         for month in months:
             if self.time_line[month]["study_date"] is np.nan:
-                self.time_line[month]["segmentation_maps"] = np.nan
+                self.time_line[month]["octs"] = np.nan
                 continue
             else:
                 date = self.time_line[month]["study_date"].replace("-", "")
                 path = list(filter(lambda k: (date.replace("-", "") in k), self.dicom_paths))[0]
-                map = np.load(path)
+                oct_ = read_file(path).pixel_array
 
-                indices = np.linspace(0, map.shape[0] - 1, MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS, dtype = np.int32)
-                self.time_line[month]["segmentation_maps"] = map[indices, :, :]
+                indices = np.linspace(0, oct_.shape[0] - 1, MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS, dtype = np.int32)
+                self.time_line[month]["octs"] = oct_[indices, :, :]
 
     def show_time_series(self, show_segmentations=False, show=False, save_fig=False):
         """
@@ -212,6 +208,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         if show_segmentations:
             seg_cmap, seg_norm, bounds = color_mappings()
             self.add_segmentation_to_timeline()
+            self.add_oct_to_timeline()
 
         plt.style.use('ggplot')
 
@@ -285,53 +282,46 @@ if __name__ == "__main__":
     # load sequences
     seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data", 'sequences.csv'))
 
-    PATIENT_ID = 1570  # 2005
+    PATIENT_ID = 1557  # 2005
     LATERALITY = "R"
 
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
-    seq_pd = seq_pd.loc[filter_]
+    # seq_pd = seq_pd.loc[filter_]
 
-    unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()  # .iloc[0:10]
+    unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()
 
     time_until_dry = []
     for patient, lat in tqdm(unique_records.itertuples(index = False)):
         print(patient, lat)
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
         time_until_dry.append(MeasureSeqTimeUntilDry.from_record(record_pd))
-        time_until_dry[-1].show_time_series(show_segmentations = False, show = True, save_fig = True)
+        # time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
         # time_until_dry[-1].dump_segmentation_map(11)
 
-    time_serie_log = {"patient_id": [],
-                      "laterality": [],
-                      "abs1_3": [], "abs1_6": [],
-                      "abs1_12": [], "rel1_3": [],
-                      "rel1_6": [], "rel1_12": [],
-                      "inj1_3": [], "inj1_6": [],
-                      "inj1_12": []}
-    '''
-    time_serie_log = {"patient_id": [],
-                      "laterality": [],
-                      "number_of_injections": [],
-                      "number_of_months": [],
-                      "diagnosis": [],
-                      "number_of_visits": [],
-                      "naive": [],
-                      "date_of_first_injection": [],
-                      "first_visit": [],
-                      "last_visit": []}
-    '''
+    time_series_log = {"patient_id": [],
+                       "laterality": []}
+
+    # add the
+    for delta in deltas:
+        time_series_log[delta + "abs"] = []
+        time_series_log[delta + "inj"] = []
+
     for measurem in time_until_dry:
-        key_in_measurement = True
-        for query_key in time_serie_log.keys():
-            if query_key not in measurem.__dict__.keys():
-                print(f"patient {measurem.__dict__['patient_id']}s quarey key {query_key} "
-                      f"is not in measurement, continuing to next sample")
-                key_in_measurement = False
-                break
+        if "abs_" in measurem.__dict__.keys():
+            for key in list(time_series_log.keys())[0:2]:
+                time_series_log[key].append(measurem.__dict__[key])
 
-        if key_in_measurement:
-            for key in time_serie_log.keys():
-                time_serie_log[key].append(measurem.__dict__[key])
+            # extract dictionaries
+            abs_dict = measurem.__dict__["abs_"]
+            inj_dict = measurem.__dict__["inj_"]
 
-    # time_until_dry_pd = pd.DataFrame(time_serie_log)
-    # time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"))
+            # add delta values
+            for key in abs_dict.keys():
+                time_series_log[key].append(abs_dict[key])
+
+            for key in inj_dict.keys():
+                time_series_log[key].append(inj_dict[key])
+
+
+    time_until_dry_pd = pd.DataFrame(time_series_log)
+    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"))

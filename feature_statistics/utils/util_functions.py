@@ -189,6 +189,7 @@ def get_total_number_of_injections(table):
     """
     return sum(table.injections)
 
+
 def get_first_month_injection(time_line):
     """
     @param time_line: LODE time line dict with all measurements over time line
@@ -233,6 +234,7 @@ def get_treatment_time_line(time_line, first_month):
     time_points = [first_month, first_month + 3,
                    first_month + 6, first_month + 12]
 
+    deltas = [1, 3, 6, 12]
     # fill fluid time line
     for k, time_point in enumerate(time_points, 1):
         if time_point in time_line.keys():
@@ -242,21 +244,28 @@ def get_treatment_time_line(time_line, first_month):
                 num_injection_since_last = 0
                 total_injections = 0
             else:
-                injections_since_last = [time_line[i]["injections"] for i in range(time_points[prev_time_point - 1],
-                                                                                   time_points[prev_time_point - 1] + 3)]
-                num_injection_since_last = np.nansum(injections_since_last)
-                total_injections = fluid_time_time[str(prev_time_point)]["total_injections"] + num_injection_since_last
+                injections_since_last = [time_line[i]["injections"] for i in range(prev_time_point, time_point)]
 
-            fluid_time_time[str(k)] = {"month": time_point,
-                                       "study_date": time_line[time_point]["study_date"],
-                                       "injection_since_last": int(num_injection_since_last),
-                                       "total_injections": int(total_injections),
-                                       "total_fluid": time_line[time_point]["total_fluid"]}
-        prev_time_point = k
+                num_injection_since_last = np.nansum(injections_since_last)
+                total_injections = fluid_time_time[str(deltas[k - 2])]["total_injections"] + num_injection_since_last
+
+            fluid_time_time[str(deltas[k - 1])] = {"month": time_point,
+                                                   "study_date": time_line[time_point]["study_date"],
+                                                   "injection_since_last": int(num_injection_since_last),
+                                                   "total_injections": int(total_injections),
+                                                   "total_fluid": time_line[time_point]["total_fluid"]}
+
+        else:
+            fluid_time_time[str(deltas[k - 1])] = {"month": None,
+                                                   "study_date": None,
+                                                   "injection_since_last": None,
+                                                   "total_injections": None,
+                                                   "total_fluid": None}
+        prev_time_point = time_point
     return fluid_time_time
 
 
-def get_delta_logs(fluid_time_line):
+def get_delta_logs(fluid_time_line, deltas):
     """
     function calculates absolute and relative fluid delta in fluid_time_line dict
     @param fluid_time_line:
@@ -265,32 +274,29 @@ def get_delta_logs(fluid_time_line):
     @rtype: dict
     """
     if fluid_time_line:
-        fluid_len = len(fluid_time_line)
-        first_fluid = fluid_time_line[str(1)]["total_fluid"]
+        abs_dict = dict([(delta + "abs", None) for delta in deltas])
+        injection_dict = dict([(delta + "inj", None) for delta in deltas])
 
-        abs_dict = {"1-3abs": None, "1-6abs": None, "1-12abs": None}
-        rel_dict = {"1-3rel": None, "1-6rel": None, "1-12rel": None}
-        injection_dict = {"1-3inj": None, "1-6inj": None, "1-12inj": None}
+        for abs_delta in abs_dict.keys():
+            months = abs_delta.replace("abs", "")
 
-        time_deltas = [3, 6, 12]
-        for obs in range(1, fluid_len + 1):
-            next_month = fluid_time_line[str(obs + 1)]["month"]
+            current_month = months.split("-")[0]
+            next_month = months.split("-")[1]
 
-            current_fluid = fluid_time_line[str(obs)]["total_fluid"]
-            next_fluid = fluid_time_line[str(obs + 1)]["total_fluid"]
+            current_fluid = fluid_time_line[current_month]["total_fluid"]
+            next_fluid = fluid_time_line[next_month]["total_fluid"]
 
-            next_total_injections = fluid_time_line[str(obs + 1)]["total_injections"]
+            # if time series ended early
+            if next_fluid is not None:
+                fluid_delta = next_fluid - current_fluid
+                next_total_injections = fluid_time_line[next_month]["total_injections"]
+            else:
+                fluid_delta = None
+                next_total_injections = None
 
-            abs_delta = next_fluid - current_fluid
-            rel_delta = (next_fluid - first_fluid) / first_fluid
+            abs_dict[abs_delta] = fluid_delta
+            injection_dict[abs_delta.replace("abs", "inj")] = next_total_injections
 
-            abs_dict[f"{1}-{time_deltas[obs - 1]}abs"] = abs_delta
-            rel_dict[f"{1}-{time_deltas[obs - 1]}rel"] = rel_delta
-            injection_dict[f"{1}-{time_deltas[obs - 1]}inj"] = next_total_injections
-
-            if obs + 1 == fluid_len:
-                break
-
-        return abs_dict, rel_dict, injection_dict
+        return abs_dict, injection_dict
     else:
         return None, None, None
