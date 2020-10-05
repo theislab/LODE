@@ -12,6 +12,8 @@ class TimeUtils:
         self.table = record_table
         self.NUMBER_OF_MONTHS = self.set_number_of_months
         self.time_line = dict((k, {}) for k in range(1, self.NUMBER_OF_MONTHS + 1))
+        self.excluded_months = []
+        self.cut_time_series = False
         self.DAYS = 30
 
     @property
@@ -32,12 +34,14 @@ class TimeUtils:
         candidates = [td for td in time_delta if (td.days < 15) & (td.days > -15)]
 
         if candidates:
-            closest_idx = np.argwhere(time_delta == candidates[0])[0][0]
-            injections_ = self.table.iloc[closest_idx + 1]["injections"]
+            # go through all possible candidates
+            for candidate in candidates:
+                closest_idx = np.argwhere(time_delta == candidate)[0][0]
+                injections_ = self.table.iloc[closest_idx + 1]["injections"]
 
-            # if injections in first neighbour is more than zero, assign to first date
-            if injections_ > 0:
-                time_line[1]["injections"] = injections_
+                # if injections in first neighbour is more than zero, assign to first date
+                if injections_ > 0:
+                    time_line[1]["injections"] = injections_
 
         return time_line
 

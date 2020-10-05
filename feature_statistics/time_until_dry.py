@@ -1,19 +1,13 @@
-import math
-from copy import deepcopy
-
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
 from pydicom import read_file
-
 from feature_statistics.config import WORK_SPACE, SEG_DIR, OCT_DIR
 import os
 import pandas as pd
-import datetime
 import matplotlib.pyplot as plt
-from datetime import timedelta
 import numpy as np
 from feature_statistics.utils.time_utils import TimeUtils
 from feature_statistics.utils.pandas_utils import sum_etdrs_columns, interpolate_numeric_field
-from feature_statistics.utils.util_functions import nan_helper, SeqUtils, get_total_number_of_injections, \
+from feature_statistics.utils.util_functions import SeqUtils, get_total_number_of_injections, \
     get_first_month_injection, get_treatment_time_line, get_delta_logs
 from feature_statistics.utils.plotting_utils import plot_segmentation_map, color_mappings
 from tqdm import tqdm
@@ -34,6 +28,8 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     META_DATA = ["patient_id", "laterality", "diagnosis"]
     SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
     DICOM_PATHS = glob.glob(os.path.join(OCT_DIR, "*/*/*/*.dcm"))
+    EXCLUDED_MONTHS = []
+    NUMBER_OF_CUT_SERIES = []
 
     def __init__(self, meta_data, time_line, fluid_time_line, naive):
         self.patient_id = meta_data[MeasureSeqTimeUntilDry.META_DATA[0]]
@@ -45,7 +41,6 @@ class MeasureSeqTimeUntilDry(SeqUtils):
 
         if self.fluid_time_line:
             self.abs_, self.inj_ = get_delta_logs(self.fluid_time_line, deltas)
-
 
     @classmethod
     def from_record(cls, record_table):
@@ -323,5 +318,5 @@ if __name__ == "__main__":
                 time_series_log[key].append(inj_dict[key])
 
 
-    time_until_dry_pd = pd.DataFrame(time_series_log)
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"))
+    # time_until_dry_pd = pd.DataFrame(time_series_log)
+    # time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"))
