@@ -2,7 +2,7 @@ import pickle
 from datetime import datetime
 import numpy as np
 from copy import deepcopy
-from datasets import IOVar
+from LSTM.datasets import IOVar
 import os
 from tqdm import tqdm
 import pandas as pd
@@ -15,7 +15,7 @@ def save_sequences_to_pickle(fname, sequences):
 
 
 def save_sequences_to_dataframe(fname, sequences):
-    """Serialize sequences to pickle format"""
+    """convert sequences to dataframe format"""
     d = [seq.to_dataframe() if isinstance(seq, MeasurementSequence) else seq for seq in sequences]
 
     main_dataframe = d[0]
@@ -117,7 +117,7 @@ def check_features(workspace_dir, longitudinal_data):
     longitudinal_data: DataFrame with long. data
     """
     feature_names = None
-    segmentation_feature_path = os.path.join(workspace_dir, "segmentation_statistics.csv")
+    segmentation_feature_path = os.path.join(workspace_dir, "sequence_data/segmentation_statistics_vol.csv")
     if os.path.exists(segmentation_feature_path):
         # if feature stat table exists load here
         segmented_data = pd.read_csv(segmentation_feature_path, index_col = 0)
@@ -166,13 +166,14 @@ class Measurement:
         self.delta_t = None
         self.next_va = None
         self.injections = [0 for _ in Measurement.MEDS]
+        self.injection_dates = [np.nan for _ in Measurement.MEDS]
+
 
         # if features are available, C0_total is example feature
         if "C0_total" in table.index.tolist():
             self.features = [table[feature] for feature in Measurement.FEATURES]
         else:
             self.features = 0
-        self.injection_dates = []
         self.lens_surgery = False
         self.seq_id = seq_id
 
@@ -251,10 +252,16 @@ class Measurement:
             'cur_va': self.cur_va,
             'delta_t': self.delta_t,
             'next_va': self.next_va,
-            'injections': ", ".join(list(map(str, self.injections))),
+            'injections': sum(self.injections),
             'lens_surgery': self.lens_surgery,
             'seq_id': self.seq_id,
         }
+
+        # add all injections
+        for k, med in enumerate(Measurement.MEDS):
+            d[f"injection_{med}"] = self.injections[k]
+            #for j in range(self.injections[k] + k):
+            #    d[f"injection_date_{med}"] = self.injection_dates[j]
 
         # add all clinical features
         for i, feature in enumerate(Measurement.FEATURES):
@@ -269,6 +276,7 @@ class MeasurementSequence:
         self.measurements = measurements
         self.patient_id = patient_id
         self.laterality = laterality
+        self.injections_before_oct = 0
 
         # properties (calculated)
         self.__num_cur_va = None
@@ -373,8 +381,8 @@ class MeasurementSequence:
                     self.measurements[mmt_id].add_event_from_pandas(evt)
             if how == 'previous':
                 if mmt_id == 0:
-                    # event happened before first measurement: disregard it
-                    pass
+                    # event happened before first measurement: add it to count
+                    self.injections_before_oct += 1
                 else:
                     self.measurements[mmt_id - 1].add_event_from_pandas(evt)
             evt_id += 1
@@ -509,7 +517,6 @@ class MeasurementSequence:
 
     def to_dataframe(self):
         d = [mmt.to_dataframe() for mmt in self.measurements]
-        # d contains sequence
         if d:
             s = pd.DataFrame(columns = list(d[0].keys()))
 
