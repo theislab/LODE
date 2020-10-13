@@ -289,7 +289,7 @@ if __name__ == "__main__":
     atrophy_keys = ["atrophy_delta", "atrophy_delta_treated"]
     fluid_keys = ["fluid_delta", "fluid_delta_treated"]
 
-    # get fluid distribution
+    # devget fluid distribution
     delta_plot(delta_dict, atrophy_keys, "atrophy_distribution")
     delta_plot(delta_dict, fluid_keys, "fluid_distribution")
 
