@@ -1,73 +1,35 @@
-import math
-from copy import deepcopy
-
 from matplotlib.offsetbox import AnnotationBbox, OffsetImage
-from feature_statistics.config import WORK_SPACE, SEG_DIR
+from pydicom import read_file
+from feature_statistics.config import WORK_SPACE, SEG_DIR, OCT_DIR
 import os
 import pandas as pd
-import datetime
 import matplotlib.pyplot as plt
-from datetime import timedelta
 import numpy as np
 from feature_statistics.utils.time_utils import TimeUtils
 from feature_statistics.utils.pandas_utils import sum_etdrs_columns, interpolate_numeric_field
-from feature_statistics.utils.util_functions import nan_helper, SeqUtils, get_total_number_of_injections, \
-    get_first_month_injection, get_treatment_time_line
+from feature_statistics.utils.util_functions import SeqUtils, get_total_number_of_injections, \
+    get_first_month_injection, get_treatment_time_line, get_delta_logs
 from feature_statistics.utils.plotting_utils import plot_segmentation_map, color_mappings
 from tqdm import tqdm
 import glob
 import matplotlib.patches as mpatches
 
 
-def get_delta_logs(fluid_time_line):
-    """
-    function calculates absolute and relative fluid delta in fluid_time_line dict
-    @param fluid_time_line:
-    @type fluid_time_line:
-    @return: two dicts, with relative and absolute differences
-    @rtype: dict
-    """
-    if fluid_time_line:
-        fluid_len = len(fluid_time_line)
-        first_fluid = fluid_time_line[str(1)]["total_fluid"]
-
-        abs_dict = {"1-3abs": None, "1-6abs": None, "1-12abs": None}
-        rel_dict = {"1-3rel": None, "1-6rel": None, "1-12rel": None}
-        injection_dict = {"1-3inj": None, "1-6inj": None, "1-12inj": None}
-
-        time_deltas = [3, 6, 12]
-        for obs in range(1, fluid_len + 1):
-            next_month = fluid_time_line[str(obs + 1)]["month"]
-
-            current_fluid = fluid_time_line[str(obs)]["total_fluid"]
-            next_fluid = fluid_time_line[str(obs + 1)]["total_fluid"]
-
-            next_total_injections = fluid_time_line[str(obs + 1)]["total_injections"]
-
-            abs_delta = next_fluid - current_fluid
-            rel_delta = (next_fluid - first_fluid) / first_fluid
-
-            abs_dict[f"{1}-{time_deltas[obs - 1]}abs"] = abs_delta
-            rel_dict[f"{1}-{time_deltas[obs - 1]}rel"] = rel_delta
-            injection_dict[f"{1}-{time_deltas[obs - 1]}inj"] = next_total_injections
-
-            if obs + 1 == fluid_len:
-                break
-
-        return abs_dict, rel_dict, injection_dict
-    else:
-        return None, None, None
+deltas = ["1-3", "1-6", "1-12", "3-6", "6-12"]
 
 
 class MeasureSeqTimeUntilDry(SeqUtils):
     NUMBER_OF_MONTHS = 13
-    NUM_SEGMENTATIONS = 3
+    NUM_SEGMENTATIONS = 4
     DAYS = 30
     REGIONS = ["S", "N", "I", "T"]
     FLUIDS = ["3", "4"]
     DATA_POINTS = ["study_date", "total_fluid", "injections", "cur_va_rounded", "next_va"]
     META_DATA = ["patient_id", "laterality", "diagnosis"]
     SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
+    DICOM_PATHS = glob.glob(os.path.join(OCT_DIR, "*/*/*/*.dcm"))
+    EXCLUDED_MONTHS = []
+    NUMBER_OF_CUT_SERIES = []
 
     def __init__(self, meta_data, time_line, fluid_time_line, naive):
         self.patient_id = meta_data[MeasureSeqTimeUntilDry.META_DATA[0]]
@@ -78,17 +40,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         self.naive = naive
 
         if self.fluid_time_line:
-            abs_, rel_, inj_ = get_delta_logs(self.fluid_time_line)
-
-            self.abs1_3 = abs_["1-3abs"]
-            self.abs1_6 = abs_["1-6abs"]
-            self.abs1_12 = abs_["1-12abs"]
-            self.rel1_3 = rel_["1-3rel"]
-            self.rel1_6 = rel_["1-6rel"]
-            self.rel1_12 = rel_["1-12rel"]
-            self.inj1_3 = inj_["1-3inj"]
-            self.inj1_6 = inj_["1-6inj"]
-            self.inj1_12 = inj_["1-12inj"]
+            self.abs_, self.inj_ = get_delta_logs(self.fluid_time_line, deltas)
 
     @classmethod
     def from_record(cls, record_table):
@@ -141,9 +93,9 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     def time_series(self):
         time_series = []
         # iterate through months and retrieve measurement vector
-        months = list(self.time_line.keys())
+        months = list(self.fluid_time_line.keys())
         for month in months:
-            time_series.append(self.time_line[month]["total_fluid"])
+            time_series.append(self.fluid_time_line[month]["total_fluid"])
         return np.array(time_series)
 
     @property
@@ -153,6 +105,14 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         segmentation_files = list(
             filter(lambda k: (patient_cond in k) & (laterality_cond in k), MeasureSeqTimeUntilDry.SEG_PATHS))
         return segmentation_files
+
+    @property
+    def dicom_paths(self):
+        laterality_cond = self.laterality
+        patient_cond = str(self.patient_id)
+        dicom_files = list(
+            filter(lambda k: (patient_cond in k) & (laterality_cond in k), MeasureSeqTimeUntilDry.DICOM_PATHS))
+        return dicom_files
 
     def record_identifier(self, study_date):
         """
@@ -205,6 +165,25 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                 indices = np.linspace(0, map.shape[0] - 1, MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS, dtype = np.int32)
                 self.time_line[month]["segmentation_maps"] = map[indices, :, :]
 
+    def add_oct_to_timeline(self):
+        """
+        Assigns segmented oct volumes to time line
+        @return: None
+        @rtype:
+        """
+        months = list(self.time_line.keys())
+        for month in months:
+            if self.time_line[month]["study_date"] is np.nan:
+                self.time_line[month]["octs"] = np.nan
+                continue
+            else:
+                date = self.time_line[month]["study_date"].replace("-", "")
+                path = list(filter(lambda k: (date.replace("-", "") in k), self.dicom_paths))[0]
+                oct_ = read_file(path).pixel_array
+
+                indices = np.linspace(0, oct_.shape[0] - 1, MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS, dtype = np.int32)
+                self.time_line[month]["octs"] = oct_[indices, :, :]
+
     def show_time_series(self, show_segmentations=False, show=False, save_fig=False):
         """
         @param show_segmentations: whether to show segmentations
@@ -224,22 +203,22 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         if show_segmentations:
             seg_cmap, seg_norm, bounds = color_mappings()
             self.add_segmentation_to_timeline()
+            self.add_oct_to_timeline()
 
         plt.style.use('ggplot')
 
         darkred_patch = mpatches.Patch(color = 'darkorange', label = 'injections')
         time_series = self.time_series
 
-        # set y axis params
-        if np.max(time_series) < 50000:
-            y_max = 50000
+        if max(time_series) < 1:
+            y_max = 1
         else:
-            y_max = np.max(time_series)
+            y_max = 3
 
-        fig, ax = plt.subplots(figsize = (int(time_series.shape[0]), 10))
-        fig.subplots_adjust(bottom = 0.4)
+        fig, ax = plt.subplots(figsize = (int(time_series.shape[0]), 2))
+        fig.subplots_adjust(top = 0.4)
 
-        xs = np.arange(0, time_series.shape[0], 1)
+        xs = [1, 3, 6, 12]
         ys = time_series
 
         # plot points
@@ -250,29 +229,26 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                   1: (x_offset, (y_max // 5) * 2),
                   2: (x_offset, (y_max // 5) * 3)}
 
-        # set image zoom by time series length
-        zoom = 1.5 / self.number_of_visits
-
         # zip joins x and y coordinates in pairs
         for x, y in zip(xs, ys):
             if not self.time_line[x + 1]['cur_va_rounded'] is np.nan:
                 label = f"Inj: {self.time_line[x + 1]['injections']} \n VA: {self.time_line[x + 1]['cur_va_rounded']}"
             else:
                 label = ""
-            ax.text(x, y + 1000, label, fontdict = font)
+            ax.text(x, y + 0.01, label, fontdict = font)
 
             if show_segmentations & (self.time_line[x + 1]["study_date"] is not np.nan):
                 for i in range(MeasureSeqTimeUntilDry.NUM_SEGMENTATIONS):
                     imagebox = OffsetImage(self.time_line[x + 1]["segmentation_maps"][i, :, :],
-                                           zoom = zoom, cmap = seg_cmap, norm = seg_norm)
+                                            cmap = seg_cmap, norm = seg_norm)
                     imagebox.image.axes = ax
                     ab = AnnotationBbox(imagebox, (x, 0), xybox = (x + xy_box[i][0], 0 - xy_box[i][1]),
                                         frameon = False)
                     ax.add_artist(ab)
 
-        plt.ylim(-100, y_max)
+        plt.ylim(-y_max, y_max)
         plt.xlabel("month")
-        plt.ylabel("total fluid")
+        plt.ylabel("effect")
         plt.legend(handles = [darkred_patch])
 
         title_ = f"{self.patient_id}_{self.laterality}"
@@ -301,13 +277,13 @@ if __name__ == "__main__":
     # load sequences
     seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data", 'sequences.csv'))
 
-    PATIENT_ID = 53686 # 2005
-    LATERALITY = "L"
+    PATIENT_ID = 1557  # 2005
+    LATERALITY = "R"
 
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
     # seq_pd = seq_pd.loc[filter_]
 
-    unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()  # .iloc[0:10]
+    unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()
 
     time_until_dry = []
     for patient, lat in tqdm(unique_records.itertuples(index = False)):
@@ -317,37 +293,30 @@ if __name__ == "__main__":
         # time_until_dry[-1].show_time_series(show_segmentations = True, show = True, save_fig = True)
         # time_until_dry[-1].dump_segmentation_map(11)
 
-    time_serie_log = {"patient_id": [],
-                      "laterality": [],
-                      "abs1_3": [], "abs1_6": [],
-                      "abs1_12": [], "rel1_3": [],
-                      "rel1_6": [], "rel1_12": [],
-                      "inj1_3": [], "inj1_6": [],
-                      "inj1_12": []}
-    '''
-    time_serie_log = {"patient_id": [],
-                      "laterality": [],
-                      "number_of_injections": [],
-                      "number_of_months": [],
-                      "diagnosis": [],
-                      "number_of_visits": [],
-                      "naive": [],
-                      "date_of_first_injection": [],
-                      "first_visit": [],
-                      "last_visit": []}
-    '''
+    time_series_log = {"patient_id": [],
+                       "laterality": []}
+
+    # add the
+    for delta in deltas:
+        time_series_log[delta + "abs"] = []
+        time_series_log[delta + "inj"] = []
+
     for measurem in time_until_dry:
-        key_in_measurement = True
-        for query_key in time_serie_log.keys():
-            if query_key not in measurem.__dict__.keys():
-                print(f"patient {measurem.__dict__['patient_id']}s quarey key {query_key} "
-                      f"is not in measurement, continuing to next sample")
-                key_in_measurement = False
-                break
+        if "abs_" in measurem.__dict__.keys():
+            for key in list(time_series_log.keys())[0:2]:
+                time_series_log[key].append(measurem.__dict__[key])
 
-        if key_in_measurement:
-            for key in time_serie_log.keys():
-                time_serie_log[key].append(measurem.__dict__[key])
+            # extract dictionaries
+            abs_dict = measurem.__dict__["abs_"]
+            inj_dict = measurem.__dict__["inj_"]
 
-    time_until_dry_pd = pd.DataFrame(time_serie_log)
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"))
+            # add delta values
+            for key in abs_dict.keys():
+                time_series_log[key].append(abs_dict[key])
+
+            for key in inj_dict.keys():
+                time_series_log[key].append(inj_dict[key])
+
+
+    # time_until_dry_pd = pd.DataFrame(time_series_log)
+    # time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/time_until_dry.csv"))
