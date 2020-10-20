@@ -27,6 +27,8 @@ class DataGenerator(keras.utils.Sequence):
 
         self.is_training = is_training
         self.augment_box = get_augmentations(params)[params.aug_strategy]
+        self.val_aug_box = get_augmentations(params)["light"]
+
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -73,12 +75,12 @@ class DataGenerator(keras.utils.Sequence):
 
     def example_record(self):
         record_idx = random.randint(0, len(self.list_IDs))
-
+        print("number of ids are: ", len(self.list_IDs))
         # load samples
-        im_path = glob.glob(os.path.join(self.image_path, self.list_IDs[record_idx - 1].replace(".png", "*")))[0]
-        lbl_path = glob.glob(os.path.join(self.label_path, self.list_IDs[record_idx - 1].replace(".png", "*")))[0]    
-        #im_path = os.path.join(self.image_path, self.list_IDs[record_idx - 1])
-        #lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1])
+        #im_path = os.path.join(self.image_path, self.list_IDs[record_idx - 1].replace(".png", "*"))
+        #lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1].replace(".png", "*"))    
+        im_path = os.path.join(self.image_path, self.list_IDs[record_idx - 1])
+        lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1])
         image, label = read_resize(im_path, lbl_path, self.shape)
 
         image, label = self.__pre_process(image, label)
@@ -93,6 +95,10 @@ class DataGenerator(keras.utils.Sequence):
 
         if self.is_training:
             aug = self.augment_box(image = train_im.astype(np.uint8), mask = label_im.astype(np.uint8))
+            train_im = aug['image']
+            label_im = aug['mask']
+        else:
+            aug = self.val_aug_box(image = train_im.astype(np.uint8), mask = label_im.astype(np.uint8))
             train_im = aug['image']
             label_im = aug['mask']
 

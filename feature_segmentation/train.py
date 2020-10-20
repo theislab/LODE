@@ -20,6 +20,8 @@ params.data_path = TRAIN_DATA_PATH
 ids = os.listdir(os.path.join(params.data_path, "images"))
 train_ids, validation_ids, test_ids = data_split(ids, params)
 
+print("number of training examples are: ", len(train_ids))
+
 if TRAIN_DATA_PATH.split("/")[-1] == "first_examples":
     train_ids = train_ids + test_ids
     pretraining = True
@@ -56,11 +58,11 @@ for model_config in model_configs:
     pd.DataFrame(test_ids).to_csv(os.path.join(logging.model_directory + "/test_ids.csv"))
 
     # plot examples
-    for k in range(2):
-        train_generator.example_record()
+    #for k in range(2):
+    #    train_generator.example_record()
 
-    for k in range(len(test_ids)):
-        test_generator.example_record()
+    #for k in range(len(test_ids)):
+    #    test_generator.example_record()
 
     # get model
     model = get_model(params)

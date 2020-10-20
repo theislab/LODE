@@ -1,4 +1,3 @@
-from keras.engine.saving import load_model
 import os
 import sys
 from pathlib import Path
@@ -10,7 +9,6 @@ sys.path.insert(0, str(path_variable.parent.parent))
 
 from keras.optimizers import adam
 from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet, cluster_unet
-import segmentation_models as sm
 
 
 def get_model(params):
@@ -37,7 +35,7 @@ def get_model(params):
     '''Compile model'''
     model.compile(optimizer=adam(lr=params.learning_rate),
                   loss="sparse_categorical_crossentropy",
-                  metrics=['accuracy', sm.metrics.iou_score])
+                  metrics=['accuracy'])
 
     if params.continue_training:
         print("loaded already trained model")
