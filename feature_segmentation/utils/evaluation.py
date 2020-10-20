@@ -12,7 +12,7 @@ from pprint import pprint
 # select model to be evaluated
 from plotting import plot_model_run_images
 
-model_directory = "./logs/21"
+model_directory = "./logs/36"
 
 # load utils classes
 params = Params(os.path.join(model_directory, "config.json"))
@@ -84,7 +84,13 @@ for lp in labels_present:
     
 
 ious = jaccard_score(all_labels, all_predictions, average=None)
+clf_report = classification_report(all_labels, all_predictions, target_names=target_names, output_dict=1)
+
 print(classification_report(all_labels, all_predictions, target_names=target_names))
 
 pprint(f"The class ious are: {ious}")
 pprint(f"The mIOU is {np.mean(ious)}")
+
+
+np.savetxt(model_directory + "/ious.txt", ious)
+pd.DataFrame(clf_report).to_csv(model_directory + "clf_report.csv")

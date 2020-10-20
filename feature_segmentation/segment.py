@@ -7,7 +7,7 @@ from keras import Model
 from pydicom import read_file
 import matplotlib
 from tqdm import tqdm
-from segmentation_config import WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
+from config import WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
 from segmentation.utils import EvalVolume, load_config
 import argparse
 matplotlib.use('agg')
@@ -51,17 +51,21 @@ if __name__ == "__main__":
                         type = str, default = "model_v1")
     parser.add_argument("filename", help = "which of the different sub .csv files to read from ",
                         type = str, default = "test")
+
+    parser.add_argument("save_id", help = "which of the different sub .csv files to read from ",
+                                    type = str, default = "test")
     args = parser.parse_args()
 
     # select model to be evaluated
-    model_directory = os.path.join(WORK_SPACE, f"segmentation/{args.model}")
+    model_directory = os.path.join(WORK_SPACE, f"feature_segmentation/segmentation/{args.model}")
     params, logging, trainops = load_config(model_directory)
 
     file_name = args.filename
     print(os.path.join(WORK_SPACE, "segmentation/path_files", file_name + ".csv"))
-    test_ids = pd.read_csv(os.path.join(WORK_SPACE, "segmentation/path_files",
+    test_ids = pd.read_csv(os.path.join(WORK_SPACE, "feature_segmentation/segmentation/path_files",
                                         file_name + ".csv"))["PATH"].dropna().tolist()
-
+    
+    file_name = file_name + "_{}".format(args.save_id)
     # copy remaining ids
     remaining_ids = test_ids.copy()
 
@@ -82,8 +86,8 @@ if __name__ == "__main__":
                    '4', '5', '6', '7', '8', '9', '10', '11', '12', '13', '14', '15'})
 
     # set save paths
-    feature_save_path = os.path.join(WORK_SPACE, f"segmentation/feature_tables/feature_statistics_{file_name}.csv")
-    progress_save_path = os.path.join(WORK_SPACE, f"segmentation/to_be_completed_{file_name}.csv")
+    feature_save_path = os.path.join(WORK_SPACE, f"feature_segmentation/segmentation/feature_tables/feature_statistics_{file_name}.csv")
+    progress_save_path = os.path.join(WORK_SPACE, f"feature_segmentation/segmentation/to_be_completed_{file_name}.csv")
 
     image_iter = 0
     start = time.time()
@@ -98,7 +102,7 @@ if __name__ == "__main__":
                                         mode = "test",
                                         volume_save_path = VOL_SAVE_PATH,
                                         embedd_save_path = EMBEDD_SAVE_PATH,
-                                        save_volume = True,
+                                        save_volume = False,
                                         save_embedding = True,
                                         n_scan = 1)
 

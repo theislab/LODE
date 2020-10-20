@@ -370,7 +370,7 @@ def data_split(ids, params):
     @rtype: list
     """
     if not params.load_train_records:
-        shuffle(ids)
+        # shuffle(ids)
         n_records = len(ids)
 
         test_ids = ids[int(n_records * 0.9):-1]
