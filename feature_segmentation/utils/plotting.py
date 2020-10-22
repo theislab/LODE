@@ -154,3 +154,58 @@ def plot_model_run_images(records, model_dir, mode, filename):
     plt.savefig(os.path.join(model_dir, mode + "_records", filename))
     plt.close()
 
+
+def plot_image_predictions(records, model_dir, mode, filename):
+    """
+    :param records: list containing numpy array of image and prediction
+    :param model_dir: directory of model where to save images
+    :param mode: str: train or test
+    :param filename: str: filename of image
+    :return: save images in directory for inspection
+    """
+
+    # set prediction to black if not given
+    if len(records) < 3:
+        records.append(np.zeros(records[0].shape))
+
+    seg_cmap, seg_norm, bounds = color_mappings()
+    fig = plt.figure(figsize=(16, 4))
+
+    gs = gridspec.GridSpec(nrows=1,
+                           ncols=2,
+                           figure=fig,
+                           width_ratios=[1, 1],
+                           height_ratios=[1],
+                           wspace=0.3,
+                           hspace=0.3)
+
+    # turn image to 3 channel
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.imshow(records[0])
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+    ax1.set_title("oct")
+
+    ax3 = fig.add_subplot(gs[0, 1])
+    colorbar_im = ax3.imshow(records[1], cmap=seg_cmap, norm=seg_norm)
+    ax3.set_xticks([])
+    ax3.set_yticks([])
+    ax3.set_title("prediction")
+
+    # set colorbar ticks
+    tick_loc_array = np.arange(len(bounds)) + 0.5
+    tick_loc_list = tick_loc_array.tolist()
+    tick_list = np.arange(len(bounds)).tolist()
+    c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
+
+    # set ticks
+    c_bar.set_ticks(tick_loc_list)
+    c_bar.ax.set_yticklabels(tick_list)
+
+    if not os.path.exists(os.path.join(model_dir, mode + "_img_pred_records")):
+        os.makedirs(os.path.join(model_dir, mode + "_img_pred_records"))
+
+    plt.savefig(os.path.join(model_dir, mode + "_img_pred_records", filename))
+    plt.close()
+
+
