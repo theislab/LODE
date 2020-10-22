@@ -7,7 +7,7 @@ sys.path.insert(0, os.path.join(path_variable, "networks"))
 sys.path.insert(0, str(path_variable.parent))
 sys.path.insert(0, str(path_variable.parent.parent))
 
-from keras.optimizers import adam
+from keras.optimizers import Adam
 from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet, cluster_unet
 
 
@@ -33,7 +33,7 @@ def get_model(params):
         model = cluster_unet.unet(params)
 
     '''Compile model'''
-    model.compile(optimizer=adam(lr=params.learning_rate),
+    model.compile(optimizer=Adam(lr=params.learning_rate),
                   loss="sparse_categorical_crossentropy",
                   metrics=['accuracy'])
 

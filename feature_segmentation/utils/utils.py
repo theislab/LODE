@@ -3,6 +3,7 @@ import os
 import sys
 from pathlib import Path
 import pandas as pd
+
 path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable))
 sys.path.insert(0, str(path_variable.parent))
@@ -25,6 +26,7 @@ from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, T
 from pydicom import read_file
 from loss_functions import dice_loss, gen_dice
 from plotting import color_mappings
+from scipy.stats import entropy
 
 
 class Params():
@@ -48,7 +50,7 @@ class Params():
     def save(self, json_path):
         """Saves parameters to json file"""
         with open(json_path, 'w') as f:
-            json.dump(self.__dict__, f, indent = 4)
+            json.dump(self.__dict__, f, indent=4)
 
     def update(self, json_path):
         """Loads parameters from json file"""
@@ -158,7 +160,7 @@ class Logging():
         with open(json_path, 'w') as f:
             # We need to convert the values to float for json (it doesn't accept np.array, np.float, )
             d = {k: str(v) for k, v in self.params.dict.items()}
-            json.dump(d, f, indent = 4)
+            json.dump(d, f, indent=4)
 
 
 class Evaluation():
@@ -173,9 +175,9 @@ class Evaluation():
         self.image, self.label = self.__load_test_image()
         self.prediction = self.__predict_image()
         self.seg_cmap, self.seg_norm, self.bounds = color_mappings()
-        self.jaccard = jaccard_score(self.label.flatten(), self.prediction.flatten(), average = None)
+        self.jaccard = jaccard_score(self.label.flatten(), self.prediction.flatten(), average=None)
         self.choroid = choroid
-    
+
     def resize(self, im):
         desired_size = self.params.img_shape
         im = Image.fromarray(im)
@@ -211,14 +213,14 @@ class Evaluation():
 
         # if image grey scale, make 3 channel
         if len(im_resized.shape) == 2:
-            im_resized = np.stack((im_resized,) * 3, axis = -1)
+            im_resized = np.stack((im_resized,) * 3, axis=-1)
 
         lbl_resized = self.resize(lbl)
 
         # convert choroid to background
         # lbl_resized[lbl_resized == 10] = 0
 
-        im_scaled = np.divide(im_resized, 255., dtype = np.float32)
+        im_scaled = np.divide(im_resized, 255., dtype=np.float32)
 
         self.image = im_resized
         return im_scaled, lbl_resized.astype(int)
@@ -228,6 +230,153 @@ class Evaluation():
         pred = self.model.predict(self.image.reshape(self.model_input_shape))
 
         return np.argmax(pred, -1)[0, :, :].astype(int)
+
+
+class EvaluationEnsemble:
+
+    def __init__(self, params, filename, ensemble, mode, choroid):
+        self.params = params
+        self.model_dir = params.model_directory
+        self.mode = mode
+        self.ensemble = ensemble
+        self.model_input_shape = (1, params.img_shape, params.img_shape, 3)
+        self.filename = filename
+        self.image, self.label = self.__load_test_image()
+        self.model_segmentations, self.entropy_stats, self.prediction = self.__predict_image()
+        self.seg_cmap, self.seg_norm, self.bounds = color_mappings()
+        self.jaccard = jaccard_score(self.label.flatten(), self.prediction.flatten(), average=None)
+        self.choroid = choroid
+
+    def resize(self, im):
+        desired_size = self.params.img_shape
+        im = Image.fromarray(im)
+
+        old_size = im.size  # old_size[0] is in (width, height) format
+
+        ratio = float(desired_size) / max(old_size)
+        new_size = tuple([int(x * ratio) for x in old_size])
+
+        im = im.resize(new_size, Image.NEAREST)
+        # create a new image and paste the resized on it
+
+        new_im = Image.new("L", (desired_size, desired_size))
+        new_im.paste(im, ((desired_size - new_size[0]) // 2,
+                          (desired_size - new_size[1]) // 2))
+
+        return np.array(new_im)
+
+    def __load_test_image(self):
+        # load samples
+        im = Image.open(os.path.join(self.params.data_path, "images", self.filename))
+
+        if self.params.choroid_latest:
+            lbl = Image.open(os.path.join(self.params.data_path, "masks_choroid", self.filename))
+        else:
+            lbl = Image.open(os.path.join(self.params.data_path, "masks", self.filename))
+
+        im = np.array(im)
+        lbl = np.array(lbl)
+
+        # resize samples
+        im_resized = self.resize(im)
+
+        # if image grey scale, make 3 channel
+        if len(im_resized.shape) == 2:
+            im_resized = np.stack((im_resized,) * 3, axis=-1)
+
+        lbl_resized = self.resize(lbl)
+
+        # convert choroid to background
+        # lbl_resized[lbl_resized == 10] = 0
+
+        im_scaled = np.divide(im_resized, 255., dtype=np.float32)
+
+        self.image = im_resized
+        return im_scaled, lbl_resized.astype(int)
+
+    def __predict_image(self):
+        model_segmentations = {}
+
+        predictions = []
+        for k, model in enumerate(self.ensemble):
+            # get probability map
+            pred = self.ensemble[model].predict(self.image.reshape(self.model_input_shape))
+
+            predictions.append(pred)
+            model_segmentations[k] = np.argmax(pred, -1)[0, :, :].astype(int)
+
+        pred_array = np.array(predictions)
+        pred_array[pred_array == 0] = 0.00001
+        entropy_stats = np.mean(entropy(pred_array), axis=(0, 1, 2))
+        ensemble_prediction = np.mean(np.array(predictions), 0)
+        return model_segmentations, entropy_stats, np.argmax(ensemble_prediction, -1)[0, :, :].astype(int)
+
+
+class InferEnsemble:
+
+    def __init__(self, params, filename, ensemble, mode, choroid):
+        self.params = params
+        self.model_dir = params.model_directory
+        self.mode = mode
+        self.ensemble = ensemble
+        self.model_input_shape = (1, params.img_shape, params.img_shape, 3)
+        self.filename = filename
+        self.image = self.__load_test_image()
+        self.model_segmentations, self.entropy_stats, self.prediction = self.__predict_image()
+        self.seg_cmap, self.seg_norm, self.bounds = color_mappings()
+        self.choroid = choroid
+
+    def resize(self, im):
+        desired_size = self.params.img_shape
+        im = Image.fromarray(im)
+
+        old_size = im.size  # old_size[0] is in (width, height) format
+
+        ratio = float(desired_size) / max(old_size)
+        new_size = tuple([int(x * ratio) for x in old_size])
+
+        im = im.resize(new_size, Image.NEAREST)
+
+        # create a new image and paste the resized on it
+        new_im = Image.new("L", (desired_size, desired_size))
+        new_im.paste(im, ((desired_size - new_size[0]) // 2,
+                          (desired_size - new_size[1]) // 2))
+
+        return np.array(new_im)
+
+    def __load_test_image(self):
+        # load samples
+        im = Image.open(os.path.join(self.params.data_path, self.filename))
+        im = np.array(im)
+
+        im[im > 250] = 0
+        # resize samples
+        im_resized = self.resize(im)
+
+        # if image grey scale, make 3 channel
+        if len(im_resized.shape) == 2:
+            im_resized = np.stack((im_resized,) * 3, axis=-1)
+
+        im_scaled = np.divide(im_resized, 255., dtype=np.float32)
+        self.image = im_resized
+        return im_scaled
+
+    def __predict_image(self):
+        model_segmentations = {}
+
+        predictions = []
+        for k, model in enumerate(self.ensemble):
+            # get probability map
+            pred = self.ensemble[model].predict(self.image.reshape(self.model_input_shape))
+
+            predictions.append(pred)
+            model_segmentations[k] = np.argmax(pred, -1)[0, :, :].astype(int)
+
+        pred_array = np.array(predictions)
+        pred_array[pred_array == 0] = 0.00001
+        entropy_stats = np.mean(entropy(pred_array), axis=(0, 1, 2))
+        ensemble_prediction = np.mean(np.array(predictions), 0)
+        return model_segmentations, entropy_stats, np.argmax(ensemble_prediction, -1)[0, :, :].astype(int)
 
 
 class TrainOps():
@@ -263,20 +412,20 @@ class TrainOps():
         '''callbacks'''
         lr_scheduler = LearningRateScheduler(self.lr_schedule)
 
-        checkpoint = ModelCheckpoint(filepath = self.params.model_directory + "/weights.hdf5",
-                                     monitor = 'val_accuracy',
-                                     save_best_only = True,
-                                     verbose = 1,
-                                     mode = 'max',
-                                     save_weights_only = False)
+        checkpoint = ModelCheckpoint(filepath=self.params.model_directory + "/weights.hdf5",
+                                     monitor='val_accuracy',
+                                     save_best_only=True,
+                                     verbose=1,
+                                     mode='max',
+                                     save_weights_only=False)
 
-        tb = TensorBoard(log_dir = self.params.model_directory + "/tensorboard")
+        tb = TensorBoard(log_dir=self.params.model_directory + "/tensorboard")
 
-        csv_logger = CSVLogger(filename = self.params.model_directory + '/history.csv',
-                               append = True,
-                               separator = ",")
+        csv_logger = CSVLogger(filename=self.params.model_directory + '/history.csv',
+                               append=True,
+                               separator=",")
 
-        es = EarlyStopping(monitor = 'val_accuracy', patience = 300)
+        es = EarlyStopping(monitor='val_accuracy', patience=300)
 
         return [lr_scheduler, checkpoint, tb, csv_logger]
 
@@ -319,16 +468,16 @@ class EvalVolume():
     def load_volume(self):
 
         vol = read_file(self.path).pixel_array
-        resized_vol = np.zeros(shape = (vol.shape[0], 256, 256, 3), dtype = np.float32)
+        resized_vol = np.zeros(shape=(vol.shape[0], 256, 256, 3), dtype=np.float32)
         for i in range(vol.shape[0]):
             # resize samples
             im_resized = self.resize(vol[i, :, :])
 
             # if image grey scale, make 3 channel
             if len(im_resized.shape) == 2:
-                im_resized = np.stack((im_resized,) * 3, axis = -1)
+                im_resized = np.stack((im_resized,) * 3, axis=-1)
 
-            im_scaled = np.divide(im_resized, 255., dtype = np.float32)
+            im_scaled = np.divide(im_resized, 255., dtype=np.float32)
             resized_vol[i, :, :, :] = im_scaled
         return resized_vol
 
@@ -338,7 +487,7 @@ class EvalVolume():
         return np.argmax(pred, -1)[0, :, :].astype(int)
 
     def segment_volume(self):
-        predictions = np.zeros(shape = (49, 256, 256), dtype = np.uint8)
+        predictions = np.zeros(shape=(49, 256, 256), dtype=np.uint8)
         for i in range(self.image.shape[0]):
             predictions[i, :, :] = self.__predict_image(self.image[i, :, :, :])
         self.plot_record(self.image[25, :, :, :], predictions[25, :, :])
@@ -349,7 +498,7 @@ class EvalVolume():
             map_ = self.segmented_volume[i, :, :]
 
             # count features
-            map_counts = np.unique(map_, return_counts = True)
+            map_counts = np.unique(map_, return_counts=True)
 
             # add do dict
             for k, feature in enumerate(self.feature_dict.keys()):
@@ -361,6 +510,7 @@ class EvalVolume():
                     else:
                         self.feature_dict[feature].append(0)
         return self.feature_dict
+
 
 def data_split(ids, params):
     """
@@ -381,6 +531,7 @@ def data_split(ids, params):
         validation_ids = pd.read_csv(os.path.join(params.pretrained_model, "validation_ids.csv"))["0"].tolist()
         test_ids = pd.read_csv(os.path.join(params.pretrained_model, "test_ids.csv"))["0"].tolist()
     return train_ids, validation_ids, test_ids
+
 
 if __name__ == "__main__":
     print("successfully run")

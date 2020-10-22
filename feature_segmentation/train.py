@@ -34,10 +34,10 @@ else:
     from generators.generator_2d import DataGenerator
 
 # Generators
-train_generator = DataGenerator(train_ids, params = params, is_training = True, 
-        pretraining = False, choroid_latest = params.choroid_latest)
-test_generator = DataGenerator(validation_ids, params = params, is_training = False, 
-        pretraining = False, choroid_latest = params.choroid_latest)
+train_generator = DataGenerator(train_ids, params=params, is_training=True,
+                                pretraining=False, choroid_latest=params.choroid_latest)
+test_generator = DataGenerator(validation_ids, params=params, is_training=False,
+                               pretraining=False, choroid_latest=params.choroid_latest)
 
 # set model tries
 model_configs = ["volumeNet"]
@@ -58,22 +58,22 @@ for model_config in model_configs:
     pd.DataFrame(test_ids).to_csv(os.path.join(logging.model_directory + "/test_ids.csv"))
 
     # plot examples
-    #for k in range(2):
+    # for k in range(2):
     #    train_generator.example_record()
 
-    #for k in range(len(test_ids)):
+    # for k in range(len(test_ids)):
     #    test_generator.example_record()
 
     # get model
     model = get_model(params)
-    history = model.fit_generator(generator = train_generator,
-                                  steps_per_epoch = int(len(train_ids) / (params.batch_size * 1)),
-                                  epochs = params.num_epochs,
-                                  validation_data = test_generator,
-                                  validation_steps = int(len(validation_ids) / 1),
-                                  callbacks = trainops.callbacks_(),
-                                  use_multiprocessing = False,
-                                  workers = 4)
+    history = model.fit_generator(generator=train_generator,
+                                  steps_per_epoch=int(len(train_ids) / (params.batch_size * 1)),
+                                  epochs=params.num_epochs,
+                                  validation_data=test_generator,
+                                  validation_steps=int(len(validation_ids) / 1),
+                                  callbacks=trainops.callbacks_(),
+                                  use_multiprocessing=False,
+                                  workers=4)
 
     if K.backend() == 'tensorflow':
         K.clear_session()
