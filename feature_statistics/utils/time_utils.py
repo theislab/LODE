@@ -285,7 +285,6 @@ class TimeUtils:
         self.time_line[1]["injections"] = treatment_table.iloc[0].cumsum_injections
         self.time_line[1]["insertion_type"] = None
 
-
         # get 3, 6, 12, 24 time stamps for structured time series
         treatment_stamps = self.get_structured_timestamps(first_treatment_date)
 
