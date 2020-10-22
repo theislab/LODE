@@ -9,6 +9,7 @@ import cv2
 import numpy as np
 import PIL.Image
 import pandas as pd
+import matplotlib.pyplot as plt
 from utility_files.postprocessing import post_processing
 from utility_files.fibrosis_record_changes import fibrosis_swap
 import shutil
@@ -28,7 +29,7 @@ def labelfiles_to_output(label_files, out_dir, class_name_to_id, lq_records,
             # set iteration specific base
             if "7" in iteration:
                 base = label_file.split("/")[-1].replace(".json", "").replace(".png", "")
-            # if base in "58253_L_20140506":
+            # if base in "41018_Left_20170321_527788001":
             if base.replace(".json", "").replace(".png", "") in lq_records:
                 print("remove low quality record")
                 continue
@@ -123,11 +124,11 @@ def main():
     iter_one_json_files = glob.glob(os.path.join(iter_one_dir, "*.json"))
 
     # iteration 2
-    iter_two_dir = "/home/olle/PycharmProjects/feature_segmentation-master/data/versions/iteration_2"
-    iter_two_json_files = glob.glob(os.path.join(PROJ_DIR, iter_two_dir, "*/*.json"))
+    iter_two_dir = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation/data/versions/iteration_2/final_iteration"
+    iter_two_json_files = glob.glob(os.path.join(iter_two_dir, "*.json"))
 
     # iteration 3
-    iter_three_dir = "data/versions/iteration_3/iteration_3_3/final_iteration"
+    iter_three_dir = "data/versions/iteration_3/final_iteration"
     iter_three_json_files = glob.glob(os.path.join(PROJ_DIR, iter_three_dir + f"/*/*{annotatio_file}*"))
 
     # iteration 4
@@ -172,7 +173,7 @@ def main():
     # create out dir
     class_name_to_id = set_outdir(out_dir, labels_file)
 
-    files_to_process = iter_eight_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files + iter_seven_json_files
+    files_to_process = iter_nine_json_files # iter_eight_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files + iter_seven_json_files
     labelfiles_to_output(files_to_process, out_dir, class_name_to_id, lq_records = lq_records, iteration = iteration,
                          with_choroid = choroid, fibrosis_change_log = fibrosis_change_log)
 

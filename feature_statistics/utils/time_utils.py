@@ -6,6 +6,8 @@ import datetime
 import pandas as pd
 from pprint import pprint
 
+from feature_statistics.utils.util_functions import nan_helper
+
 
 class TimeUtils:
     """
@@ -15,9 +17,9 @@ class TimeUtils:
 
     def __init__(self, record_table):
         self.table = record_table
-        self.time_steps = [0, 3, 6, 12, 24]
-        self.NUMBER_OF_MONTHS = max(self.time_steps) # self.set_number_of_months
-        self.time_line = dict((k, {}) for k in range(1, self.NUMBER_OF_MONTHS + 1))
+        self.time_steps = [1, 3, 6, 12, 24]
+        self.NUMBER_OF_MONTHS = max(self.time_steps)  # self.set_number_of_months
+        self.time_line = dict((k, {}) for k in self.time_steps)
         self.excluded_months = []
         self.cut_time_series = False
         self.DAYS = TimeUtils.DAYS
@@ -33,49 +35,217 @@ class TimeUtils:
         else:
             return time_divisor
 
-    def first_corner_case(self, time_line):
-        # edge case, injections given in candidate range of first visit
-        candidate_dates = pd.to_datetime(self.table["study_date"].iloc[1:])
-        time_delta = candidate_dates - pd.to_datetime(time_line[1]["study_date"])
-        candidates = [td for td in time_delta if (td.days < TimeUtils.DAYS / 2) & (td.days >= -TimeUtils.DAYS / 2)]
+    def interpolate_numeric_field(self, start_, end_, start_value, end_value):
+        """
+        Parameters
+        ----------
+        start_ :
+        end_ :
+        start_value :
+        end_value :
 
-        if candidates:
-            # go through all possible candidates
-            for candidate in candidates:
-                closest_idx = np.argwhere(time_delta == candidate)[0][0]
-                injections_ = self.table.iloc[closest_idx + 1]["injections"]
+        Returns
+        -------
 
-                # if injections in first neighbour is more than zero, assign to first date
-                if injections_ > 0:
-                    time_line[1]["injections"] = injections_
+        """
+        interp_vector = []
 
+        # iterate through months and retrieve measurement vector
+        for i in range(start_, end_ + 1):
+            if i == start_:
+                interp_vector.append(start_value)
+            elif i == end_:
+                interp_vector.append(end_value)
+            else:
+                interp_vector.append(np.nan)
+
+        # interpolate missing values
+        interp_array = np.array(interp_vector)
+        nans, x = nan_helper(interp_array)
+        interp_array[nans] = np.interp(x(nans), x(~nans), interp_array[~nans])
+        return interp_array
+
+    def interpolate(self, time_deltas, table, item="total_fluid"):
+        """
+
+        Parameters
+        ----------
+        table :
+        item :
+        time_deltas :
+
+        Returns
+        -------
+        interpolated feature value, time range, time span before and after time point
+        """
+
+        days = time_deltas.astype('timedelta64[D]').values.astype(int)
+        signs = np.sign(days)
+
+        date_idx_before = max(np.argwhere(signs == 1))
+        date_idx_after = min(np.argwhere(signs == -1))
+
+        data_before = table.iloc[date_idx_before]
+        data_after = table.iloc[date_idx_after]
+
+        date_0 = data_before.study_date.values[0]
+        date_1 = data_after.study_date.values[0]
+
+        delta_days = pd.to_datetime(date_1) - pd.to_datetime(date_0)
+        start_feature_value = table[item].iloc[date_idx_before].values[0]
+        end_feature_value = table[item].iloc[date_idx_after].values[0]
+
+        interpolated_vector = self.interpolate_numeric_field(start_ = 0, end_ = delta_days.days,
+                                                             start_value = start_feature_value,
+                                                             end_value = end_feature_value)
+
+        days_before = abs(days[date_idx_before[0]])
+        days_after = abs(days[date_idx_after[0]])
+        return interpolated_vector[days[date_idx_before[0]]], delta_days.days, days_before, days_after
+
+    def to_interpolate(self, time_deltas):
+        """
+        Return true if current time stamp has a study date before and after structure time point.
+        Parameters
+        ----------
+        time_deltas : array of time deltas
+
+        Returns
+        -------
+
+        """
+        signs = np.sign(time_deltas.values.astype(int))
+
+        if (1 in signs) and (-1 in signs):
+            return True
+        else:
+            return False
+
+    def to_carry_over(self, time_deltas):
+        """
+        Return true if current time stamp has a study date before and after structure time point.
+        Parameters
+        ----------
+        time_deltas : array of time deltas
+
+        Returns
+        -------
+
+        """
+        signs = np.sign(time_deltas.values.astype(int))
+
+        if not (-1 in signs):
+            return True
+        else:
+            return False
+
+    def set_exact_match(self, treatment_table, stamp, candidate_idx, time_line, item, k):
+        """
+
+        Parameters
+        ----------
+        time_line : dict; to assign values to
+        candidate_idx : int; index of which study matched with structured time point
+        treatment_table : DataFrame; table with meta & feature data from first injection
+        stamp : TimeStamp; structured time point for which to intepolate
+        item : str; name of numerical value to interpolate
+        k : int; counter for structured time point
+
+        Returns
+        -------
+
+        """
+
+        time_line[self.time_steps[k + 1]]["study_date"] = stamp
+        time_line[self.time_steps[k + 1]][item] = treatment_table.loc[candidate_idx][item]
+        time_line[self.time_steps[k + 1]]["time_range"] = None
+        time_line[self.time_steps[k + 1]]["time_range_before"] = None
+        time_line[self.time_steps[k + 1]]["time_range_after"] = None
+        time_line[self.time_steps[k + 1]]["injections"] = treatment_table.loc[candidate_idx].cumsum_injections
+        time_line[self.time_steps[k + 1]]["insertion_type"] = "match"
         return time_line
 
-    def last_corner_case(self, time_line):
-        # edge case, injections given in candidate range of first visit
-        candidate_dates = pd.to_datetime(self.table["study_date"].iloc[:-1])
-        time_delta = candidate_dates - pd.to_datetime(time_line[max(time_line.keys())]["study_date"])
-        candidates = [td for td in time_delta if (td.days < TimeUtils.DAYS / 2) & (td.days >= -TimeUtils.DAYS / 2)]
+    def carry_over_last(self, treatment_table, stamp, deltas, time_line, item, k):
+        """
+        Parameters
+        ----------
+        time_line : dict; to assign values to
+        deltas : Series; time delta values for structured time point
+        treatment_table : DataFrame; table with meta & feature data from first injection
+        stamp : TimeStamp; structured time point for which to intepolate
+        item : str; name of numerical value to interpolate
+        k : int; counter for structured time point
 
-        if candidates:
-            closest_idx = np.argwhere(time_delta == candidates[0])[0][0]
-            injections_ = self.table.iloc[closest_idx + 1]["injections"]
+        Returns
+        -------
 
-            # if injections in first neighbour is more than zero, assign to first date
-            if injections_ > 0:
-                time_line[1]["injections"] = injections_
+        """
+        last_study = treatment_table.iloc[-1]
 
+        time_line[self.time_steps[k + 1]]["study_date"] = stamp
+        time_line[self.time_steps[k + 1]]["time_range"] = deltas.iloc[-1].days
+        time_line[self.time_steps[k + 1]]["time_range_before"] = deltas.iloc[-1].days
+        time_line[self.time_steps[k + 1]]["time_range_after"] = None
+        time_line[self.time_steps[k + 1]]["injections"] = last_study.cumsum_injections
+        time_line[self.time_steps[k + 1]][item] = last_study[item]
+        time_line[self.time_steps[k + 1]]["insertion_type"] = "carry_over"
         return time_line
 
-    def get_marks(self, first_mark):
-        treatment_marks = []
+    def impute_interpolation(self, time_line, deltas, treatment_table, stamp, item, k):
+        """
+        Parameters
+        ----------
+        time_line : dict; to assign values to
+        deltas : Series; time delta values for structured time point
+        treatment_table : DataFrame; table with meta & feature data from first injection
+        stamp : TimeStamp; structured time point for which to intepolate
+        item : str; name of numerical value to interpolate
+        k : int; counter for structured time point
+
+        Returns
+        -------
+        time_line with assigned values
+        """
+        time_point = self.time_steps[k + 1]
+        interp_value, interp_time, days_before, days_after = self.interpolate(deltas, treatment_table, item = item)
+        time_line[time_point]["study_date"] = stamp
+        time_line[time_point]["time_range"] = interp_time
+        time_line[time_point]["time_range_before"] = days_before
+        time_line[time_point]["time_range_after"] = days_after
+        time_line[time_point][item] = interp_value
+
+        # assign num injection from time point before
+        time_line[time_point]["injections"] = treatment_table.iloc[np.argmin(abs(deltas)) - 1]["cumsum_injections"]
+
+        time_line[time_point]["insertion_type"] = "interpolation"
+        return time_line
+
+    def get_structured_timestamps(self, first_time_stamp):
+        """
+        Set set 3, 5, 12, 24 time stamp w.r.t. the first injection date.
+        Parameters
+        ----------
+        first_time_stamp :
+
+        Returns
+        -------
+
+        """
+        treatment_stamps = []
         for mark in self.time_steps[1:]:
-            time_mark = first_mark
+            time_mark = first_time_stamp
             time_mark += datetime.timedelta(days = int(TimeUtils.DAYS * mark))
-            treatment_marks.append(time_mark)
-        return treatment_marks
+            treatment_stamps.append(time_mark)
+        return treatment_stamps
 
     def treatment_table(self):
+        """
+        Gets all study dates with injections and filters the first.
+        Then filters table from first date.
+        resets index and return the table.
+        @return: DataFrame table filtered from first treatment date
+        @rtype: DataFrame
+        """
         first_injection_idx = min(np.argwhere(self.table["injections"] > 0))[0]
         treatment_table = self.table.iloc[first_injection_idx:]
 
@@ -84,29 +254,20 @@ class TimeUtils:
 
         return treatment_table
 
-    def get_first_time_point(self, item, time_line, treatment_table):
-        # assign data point to time line
-        first_point = treatment_table.index[0]
-        first_injection_date = treatment_table.iloc[0].study_date
-
-        # assign item to time line
-        time_line[first_point][item] = treatment_table.iloc[0][item]
-
-        # crate treatment marks
-        first_mark = pd.to_datetime(first_injection_date)
-        return first_mark, time_line
-
     def assign_to_timeline_str(self, time_line, item, total_number_injections):
         """
-        @param time_line: number of months in time period of patients visits
-        @type time_line: dict
-        @param table: data frame with all meta of patients visit
-        @type table: DataFrame
-        @param item: name of item to assign to correct month, e.g. total_fluid
-        @type item: str
-        @return: update timeline with added information from data frame
-        @rtype: dict
+
+        Parameters
+        ----------
+        time_line :
+        item :
+        total_number_injections :
+
+        Returns
+        -------
+
         """
+
         if total_number_injections > 0:
             treatment_table = self.treatment_table()
         else:
@@ -114,170 +275,35 @@ class TimeUtils:
             # reset index to start from 1
             treatment_table.index = treatment_table.index - treatment_table.index[0] + 1
 
-        first_mark, time_line = self.get_first_time_point(item, time_line, treatment_table)
-        treatment_marks = self.get_marks(first_mark)
+        # set up time stamp for structured time series
+        first_treatment_date = pd.to_datetime(treatment_table.iloc[0].study_date)
+        self.time_line[1]["study_date"] = first_treatment_date
+        self.time_line[1][item] = treatment_table.iloc[0][item]
+        self.time_line[1]["time_range"] = None
+        self.time_line[1]["time_range_before"] = None
+        self.time_line[1]["time_range_after"] = None
+        self.time_line[1]["injections"] = treatment_table.iloc[0].cumsum_injections
+        self.time_line[1]["insertion_type"] = None
 
-        for k, mark in enumerate(treatment_marks, 0):
-            deltas = mark - pd.to_datetime(treatment_table.study_date)
+
+        # get 3, 6, 12, 24 time stamps for structured time series
+        treatment_stamps = self.get_structured_timestamps(first_treatment_date)
+
+        for k, stamp in enumerate(treatment_stamps, 0):
+
+            # is there an exact match, then match
+            deltas = stamp - pd.to_datetime(treatment_table.study_date)
             candidate_idx = np.argmin(np.array(np.abs(deltas))) + 1
 
-            if deltas[candidate_idx].days <= TimeUtils.DAYS / 2:
-                time_line[self.time_steps[k + 1]][item] = treatment_table.loc[candidate_idx][item]
-            else:
-                # assign None to time line
-                time_line[self.time_steps[k + 1]][item] = None
-        return time_line
+            # check for -15 / 15 day match
+            if abs(deltas[candidate_idx].days) <= TimeUtils.DAYS / 2:
+                time_line = self.set_exact_match(treatment_table, stamp, candidate_idx, time_line, item, k)
 
-    def assign_date_to_timeline_dec(self, time_line, item, total_number_injections):
-        """
-        @param time_line: number of months in time period of patients visits
-        @type time_line: dict
-        @param table: data frame with all meta of patients visit
-        @type table: DataFrame
-        @param item: name of item to assign to correct month, e.g. total_fluid
-        @type item: str
-        @return: update timeline with added information from data frame
-        @rtype: dict
-        """
-        if total_number_injections > 0:
-            treatment_table = self.treatment_table()
-        else:
-            treatment_table = deepcopy(self.table)
-            # reset index to start from 1
-            treatment_table.index = treatment_table.index - treatment_table.index[0] + 1
+            # no match but date before and after, interpolate
+            elif self.to_interpolate(deltas):
+                time_line = self.impute_interpolation(time_line, deltas, treatment_table, stamp, item, k)
 
-        first_mark, time_line = self.get_first_time_point(item, time_line, treatment_table)
-        treatment_marks = self.get_marks(first_mark)
-
-        for k, mark in enumerate(treatment_marks, 0):
-            added_dates = [time_line[key]['study_date'] for key in time_line.keys() if
-                           'study_date' in time_line[key].keys()]
-
-            deltas = mark - pd.to_datetime(treatment_table.study_date)
-            candidate_idxs = treatment_table.study_date[deltas.values.astype("float") >= 0].tolist()
-
-            for added_date in added_dates:
-                if added_date is not None:
-                    if added_date in candidate_idxs:
-                        candidate_idxs.remove(added_date)
-
-            if candidate_idxs:
-                for date in candidate_idxs:
-                    item_value = treatment_table.loc[treatment_table.study_date == date][item].values[0]
-                    time_line[self.time_steps[k + 1]][item] = item_value
-            else:
-                # assign None to time line
-                time_line[self.time_steps[k + 1]][item] = None
-        return time_line
-
-    def assign_features_to_timeline_dec(self, time_line, item, total_number_injections):
-        """
-        @param time_line: number of months in time period of patients visits
-        @type time_line: dict
-        @param table: data frame with all meta of patients visit
-        @type table: DataFrame
-        @param item: name of item to assign to correct month, e.g. total_fluid
-        @type item: str
-        @return: update timeline with added information from data frame
-        @rtype: dict
-        """
-        if total_number_injections > 0:
-            treatment_table = self.treatment_table()
-        else:
-            treatment_table = deepcopy(self.table)
-            # reset index to start from 1
-            treatment_table.index = treatment_table.index - treatment_table.index[0] + 1
-
-        added_dates = [time_line[key]['study_date'] for key in time_line.keys() if
-                       'study_date' in time_line[key].keys()]
-
-        for date in added_dates:
-            item_value = treatment_table.loc[treatment_table.study_date == date][item].values[0]
-            dict_key = [key for key in time_line.keys() if time_line[key]["study_date"] == date]
-            time_line[dict_key][item] = item_value
-
-    def assign_to_timeline(self, time_line, item):
-        """
-        @param time_line: number of months in time period of patients visits
-        @type time_line: dict
-        @param table: data frame with all meta of patients visit
-        @type table: DataFrame
-        @param item: name of item to assign to correct month, e.g. total_fluid
-        @type item: str
-        @return: update timeline with added information from data frame
-        @rtype: dict
-        """
-        # assign first & last observation
-        time_line[1].update({item: self.table[item].iloc[0]})
-        time_line[self.NUMBER_OF_MONTHS].update({item: self.table[item].iloc[-1]})
-        time_line[self.NUMBER_OF_MONTHS]["injections"] = self.table.iloc[-1].injections
-
-        # control injection logging for filtered candidate months close to first and last
-        time_line = self.first_corner_case(time_line)
-        time_line = self.last_corner_case(time_line)
-
-        __start__ = datetime.datetime.strptime(self.table["study_date"].iloc[0], '%Y-%m-%d')
-        __end__ = datetime.datetime.strptime(self.table["study_date"].iloc[-1], '%Y-%m-%d')
-
-        one_month_timestamps = []
-        date_x = __start__
-        while date_x < __end__:
-            date_x += datetime.timedelta(days = TimeUtils.DAYS)
-            # if not (__end__ - date_x) < timedelta(days = MeasureSeqTimeUntilDry.DAYS):
-            one_month_timestamps.append(date_x)
-
-        anchor_dates = np.array(one_month_timestamps)
-        candidate_dates = pd.to_datetime(self.table["study_date"])
-        for k, date in enumerate(anchor_dates, 2):
-            if k <= self.NUMBER_OF_MONTHS:
-                add_to_next_injections = 0
-                add_to_prev_injections = 0
-
-                time_delta = candidate_dates - date
-                candidates = [td for td in time_delta if (td.days < TimeUtils.DAYS / 2) & (td.days >= -TimeUtils.DAYS / 2)]
-                if len(candidates) > 1:
-                    # assign closest of candidates
-                    min_diff = np.min(candidates)
-                    idx_select = np.where(time_delta == min_diff)[0][0]
-                    time_line[k].update({item: self.table[item].iloc[idx_select]})
-
-                    # if adding injections, assign close by removed studies to neighbouring visits
-                    if item == "injections":
-                        # remove selected candidate
-                        candidates.remove(min_diff)
-
-                        # if candidates are discarded, assign injection event to time line
-                        for candidate in candidates:
-                            idx_not_select = np.where(time_delta == candidate)[0][0]
-                            if candidate.days > 0:
-                                add_to_next_injections = self.table["injections"].iloc[idx_not_select]
-                            else:
-                                add_to_prev_injections = self.table["injections"].iloc[idx_not_select]
-
-                            # update neighbouring time lines
-
-                            # get last added month in time line
-                            for month in time_line.keys():
-                                if (time_line[month]["study_date"] is not np.nan) & (month < k):
-                                    last_added_month = month
-
-                            # add previous and/or next value with the skipped injection data point
-                            time_line[last_added_month][item] = time_line[last_added_month][item] \
-                                                                + add_to_prev_injections
-
-                            try:
-                                # if not last month add recorded injections
-                                if (idx_not_select + 1) < self.table.shape[0]:
-                                    self.table.loc[idx_not_select + 1, item] = self.table.loc[idx_not_select + 1, item] \
-                                                                               + add_to_next_injections
-                            except:
-                                print("stop")
-
-                elif (not candidates) & (k != list(time_line.keys())[-1]):
-                    time_line[k].update({item: np.nan})
-                    continue
-
-                elif candidates:
-                    idx_select = np.where(time_delta == candidates[0])[0][0]
-                    time_line[k].update({item: self.table[item].iloc[idx_select]})
+            # no match but date before carry last observation forward
+            elif self.to_carry_over(deltas):
+                time_line = self.carry_over_last(treatment_table, stamp, deltas, time_line, item, k)
         return time_line
