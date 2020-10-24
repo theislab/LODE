@@ -8,7 +8,7 @@ workspace
 **/label_conversion
 **/*config*
 eye_clinic_general
-
+**/segmentation_config.py
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
