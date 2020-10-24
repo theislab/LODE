@@ -2,7 +2,7 @@ from __future__ import print_function
 import os
 import numpy as np
 import matplotlib
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors, gridspec
 
@@ -125,6 +125,10 @@ def plot_model_run_images(records, model_dir, mode, filename):
     ax1.set_xticks([])
     ax1.set_yticks([])
     ax1.set_title("oct")
+
+    # check label shape
+    if len(records[1].shape) == 3:
+        records[1] = records[1][:, :, 0]
 
     ax2 = fig.add_subplot(gs[0, 1])
     ax2.imshow(records[1], cmap=seg_cmap, norm=seg_norm)

@@ -163,7 +163,18 @@ class Logging():
             json.dump(d, f, indent=4)
 
 
-def cast_params_types(params, model_directory):
+def cast_params_types(params, model_path):
+    """
+    function takes params object and casts all numeric types to float. Then save the config file again
+    Parameters
+    ----------
+    params : loaded config file
+    model_path : directory of model
+
+    Returns
+    -------
+    None
+    """
     # cast data types to numeric
     params = params.dict
     for k in params.keys():
@@ -178,9 +189,8 @@ def cast_params_types(params, model_directory):
             except ValueError:
                 print("Not an int or  float")
 
-    with open(os.path.join(model_directory, 'params.json'), 'w') as json_file:
+    with open(os.path.join(model_path, 'params.json'), 'w') as json_file:
         json.dump(params, json_file)
-    return params
 
 
 class EvaluationEnsemble:

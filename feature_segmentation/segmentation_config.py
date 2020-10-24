@@ -14,6 +14,6 @@ OCT_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmen
 
 VOL_SAVE_PATH = os.path.join(WORK_SPACE, "segmentation/segmented_volumes20200728")
 EMBEDD_SAVE_PATH = os.path.join(WORK_SPACE, "segmentation/embeddings20200728")
-TRAIN_DATA_PATH = os.path.join(WORK_SPACE, "segmentation/data/train_data/hq_exmaples")
+TRAIN_DATA_PATH = os.path.join(WORK_SPACE, "segmentation/data/train_data/hq_examples")
 
 

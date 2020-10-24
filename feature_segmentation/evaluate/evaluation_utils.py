@@ -1,68 +1,111 @@
+import os
+from pprint import pprint
+import pandas as pd
+import numpy as np
+from keras.engine.saving import load_model
+from segmentation_models.metrics import iou_score
+from sklearn.metrics import jaccard_score, classification_report
 
-class Evaluation():
+from feature_segmentation.generators.generator_utils.image_processing import read_resize
+from feature_segmentation.utils.utils import Params, cast_params_types
 
-    def __init__(self, params, filename, model, mode, choroid):
-        self.params = params
-        self.model_dir = params.model_directory
-        self.mode = mode
-        self.model = model
-        self.model_input_shape = (1, params.img_shape, params.img_shape, 3)
-        self.filename = filename
-        self.image, self.label = self.__load_test_image()
-        self.prediction = self.__predict_image()
-        self.seg_cmap, self.seg_norm, self.bounds = color_mappings()
-        self.jaccard = jaccard_score(self.label.flatten(), self.prediction.flatten(), average=None)
-        self.choroid = choroid
 
-    def resize(self, im):
-        desired_size = self.params.img_shape
-        im = Image.fromarray(im)
+def predict(model, img):
+    """
+    Parameters
+    ----------
+    model : keras model for segmentation
+    img : array, numpy array with preprocessed image to predict on
 
-        old_size = im.size  # old_size[0] is in (width, height) format
+    Returns
+    -------
+    integer label map from prediction and soft max scores for each class
+    """
 
-        ratio = float(desired_size) / max(old_size)
-        new_size = tuple([int(x * ratio) for x in old_size])
+    # check so shape is 4 channel
+    if len(img.shape) == 3:
+        img = img.reshape((1, img.shape[0], img.shape[1], img.shape[-1]))
 
-        im = im.resize(new_size, Image.NEAREST)
-        # create a new image and paste the resized on it
+    # get probability map
+    pred = model.predict(img)
+    return np.argmax(pred, -1)[0, :, :].astype(int), pred
 
-        new_im = Image.new("L", (desired_size, desired_size))
-        new_im.paste(im, ((desired_size - new_size[0]) // 2,
-                          (desired_size - new_size[1]) // 2))
 
-        return np.array(new_im)
+target_dict = {0: 'class 0', 1: 'class 1', 2: 'class 2',
+               3: 'class 3', 4: 'class 4', 5: 'class 5',
+               6: 'class 6', 7: 'class 7', 8: 'class 8',
+               9: 'class 9', 10: 'class 10', 11: 'class 11',
+               12: 'class 12', 13: 'class 13', 14: 'class 14',
+               15: 'class 15'}
 
-    def __load_test_image(self):
-        # load samples
-        im = Image.open(os.path.join(self.params.data_path, "images", self.filename))
 
-        if self.params.choroid_latest:
-            lbl = Image.open(os.path.join(self.params.data_path, "masks_choroid", self.filename))
-        else:
-            lbl = Image.open(os.path.join(self.params.data_path, "masks", self.filename))
+def present_targets(all_labels, all_predictions):
+    """
+    Parameters
+    ----------
+    all_labels : flatten list with all noted labels
+    all_predictions : flatten list with a noten predictions
 
-        im = np.array(im)
-        lbl = np.array(lbl)
+    Returns
+    -------
+    all the targets in dict to use for sklearn classification report
+    """
+    target_names = []
+    labels_present = np.unique(np.unique(all_labels).tolist() + np.unique(all_predictions).tolist())
+    for lp in labels_present:
+        target_names.append(target_dict[lp])
+    return target_names
 
-        # resize samples
-        im_resized = self.resize(im)
 
-        # if image grey scale, make 3 channel
-        if len(im_resized.shape) == 2:
-            im_resized = np.stack((im_resized,) * 3, axis=-1)
+def get_result_report(all_labels, all_predictions, model_directory):
+    """
+    Save the classification report and iou's for the model in its directory
+    Parameters
+    ----------
+    all_labels : flatten list with all noted labels
+    all_predictions : flatten list with a noten predictions
+    model_directory : path to model
 
-        lbl_resized = self.resize(lbl)
+    Returns
+    -------
+    None
+    """
+    target_names = present_targets(all_labels, all_predictions)
 
-        # convert choroid to background
-        # lbl_resized[lbl_resized == 10] = 0
+    ious = jaccard_score(all_labels, all_predictions, average = None)
+    clf_report = classification_report(all_labels, all_predictions, target_names = target_names, output_dict = 1)
 
-        im_scaled = np.divide(im_resized, 255., dtype=np.float32)
+    print(classification_report(all_labels, all_predictions, target_names = target_names))
 
-        self.image = im_resized
-        return im_scaled, lbl_resized.astype(int)
+    pprint(f"The class ious are: {ious}")
+    pprint(f"The mIOU is {np.mean(ious)}")
 
-    def __predict_image(self):
-        # get probability map
-        pred = self.model.predict(self.image.reshape(self.model_input_shape))
+    np.savetxt(model_directory + "/ious.txt", ious)
+    pd.DataFrame(clf_report).to_csv(model_directory + "/clf_report.csv")
 
-        return np.argmax(pred, -1)[0, :, :].astype(int)
+
+def load_test_config(model_path):
+    """
+    Parameters
+    ----------
+    model_path : path to specific model
+
+    Returns
+    -------
+    keras model, test ids for the model, params object with model config
+    """
+    # load utils classes
+    params = Params(os.path.join(model_path, "config.json"))
+
+    # cast all numeric types to float and save to json
+    cast_params_types(params, model_path)
+
+    params = Params(os.path.join(model_path, "params.json"))
+
+    # read test images from trained model
+    test_ids = pd.read_csv(os.path.join(model_path, "test_ids.csv"))["0"].tolist()
+
+    save_model_path = os.path.join(model_path, "weights.hdf5")
+
+    model = load_model(save_model_path, custom_objects = {'iou_score': iou_score})
+    return model, test_ids, params
