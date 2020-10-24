@@ -82,7 +82,7 @@ def read_resize(img_path, label_path, shape):
         im_resized = np.stack((im_resized,) * 3, axis = -1)
 
     # Store sample
-    image = im_resized.reshape(shape[0], shape[1], 3)
+    image = im_resized.reshape((shape[0], shape[1], 3))
     label = lbl_resized.reshape((shape[0], shape[1], 1))
     return image, label
 
