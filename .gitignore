@@ -6,6 +6,7 @@ raw_data
 workspace
 **/logs
 **/label_conversion
+**/*config*
 eye_clinic_general
 
 
