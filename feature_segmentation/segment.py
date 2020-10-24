@@ -10,7 +10,7 @@ from tqdm import tqdm
 from config import WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
 from segmentation.utils import EvalVolume, load_config
 import argparse
-matplotlib.use('Agg')
+# matplotlib.use('Agg')
 
 
 '''
