@@ -91,8 +91,8 @@ if __name__ == '__main__':
     assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
     assert features_ffiltered_pd is not None, "returning None"
-    assert (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (
-            args.chunk_size > 1), "chunk size to large"
+    #assert not (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (
+    #        args.chunk_size > 1), "chunk size to large"
 
     embedding = OCTEmbeddings()
 
@@ -126,8 +126,8 @@ if __name__ == '__main__':
     if not os.path.exists(DST_DIR):
         os.makedirs(DST_DIR)
 
-    assert selected_scans_pd.patient_id.drop_duplicates().shape[0] == selected_scans_pd.shape[0], \
-        "patients selected are not unique"
+    #assert selected_scans_pd.patient_id.drop_duplicates().shape[0] == selected_scans_pd.shape[0], \
+    #    "patients selected are not unique"
 
     selected_path = os.path.join(DST_DIR, f"records_selected_{args.name}.csv")
     selected_scans_pd.to_csv(selected_path)

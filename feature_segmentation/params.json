@@ -6,7 +6,7 @@
   "num_classes": 16,
   "continue_training": 1,
   "load_train_records": 0,
-  "dropout": 0.5,
+  "dropout": 0.2,
   "model": "deep_unet",
   "choroid_latest": 0,
   "n_scans": 1,
@@ -16,4 +16,4 @@
   "noise": 0.5,
   "elastic": 0.1,
   "aug_strategy": "medium",
-  "pretrained_model": "./logs/40"}
+  "pretrained_model": "./pretrained_models/deep_unet_first_examples"}
