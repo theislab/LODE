@@ -27,7 +27,7 @@ from pydicom import read_file
 from loss_functions import dice_loss, gen_dice
 from plotting import color_mappings
 from scipy.stats import entropy
-
+from segmentation_config import DATA_SPLIT_PATH
 
 class Params():
     """Class that loads hyperparameters from a json file.
@@ -117,7 +117,7 @@ class Logging():
         self.__create_main_directory()
 
         # remove emtpy directories
-        self.__remove_empty_directories()
+        # self.__remove_empty_directories()
 
         # get allready created directories
         existing_ = os.listdir(self.log_dir)
@@ -410,6 +410,13 @@ def data_split(ids, params):
         train_ids = pd.read_csv(os.path.join(params.pretrained_model, "train_ids.csv"))["0"].tolist()
         validation_ids = pd.read_csv(os.path.join(params.pretrained_model, "validation_ids.csv"))["0"].tolist()
         test_ids = pd.read_csv(os.path.join(params.pretrained_model, "test_ids.csv"))["0"].tolist()
+    
+    if params.load_prepared_split:
+        train_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "train_ids.csv"))["0"].tolist()
+        validation_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "validation_ids.csv"))["0"].tolist()
+        test_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "test_ids.csv"))["0"].tolist()
+
+    
     return train_ids, validation_ids, test_ids
 
 
