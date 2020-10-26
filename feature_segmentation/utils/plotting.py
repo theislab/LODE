@@ -6,6 +6,9 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors, gridspec
 
+from feature_segmentation.config import TRAIN_DATA_PATH
+from feature_segmentation.generators.generator_utils.image_processing import read_resize
+
 
 def color_mappings():
     color_palett = np.array([[148., 158., 167.],
@@ -76,6 +79,7 @@ def plot_data_processing(record, path):
         fig.add_subplot(rows, columns, i)
         if types[i - 1] != "image":
             colorbar_im = plt.imshow(img, cmap = seg_cmap, norm = seg_norm)
+
             # set colorbar ticks
             tick_loc_array = np.arange(len(bounds)) + 0.5
             tick_loc_list = tick_loc_array.tolist()
@@ -95,7 +99,7 @@ def plot_data_processing(record, path):
     plt.close()
 
 
-def plot_model_run_images(records, model_dir, mode, filename):
+def plot_image_label_prediction(records, model_dir, mode, filename):
     """
     :param records: list containing numpy array of image, label and prediction
     :param model_dir: directory of model where to save images
@@ -125,6 +129,10 @@ def plot_model_run_images(records, model_dir, mode, filename):
     ax1.set_xticks([])
     ax1.set_yticks([])
     ax1.set_title("oct")
+
+    # check label shape
+    if len(records[1].shape) == 3:
+        records[1] = records[1][:, :, 0]
 
     ax2 = fig.add_subplot(gs[0, 1])
     ax2.imshow(records[1], cmap=seg_cmap, norm=seg_norm)
@@ -207,5 +215,122 @@ def plot_image_predictions(records, model_dir, mode, filename):
 
     plt.savefig(os.path.join(model_dir, mode + "_img_pred_records", filename))
     plt.close()
+
+
+def get_max_min_uncertainty(all_uq_maps):
+    """
+    Parameters
+    ----------
+    all_uq_maps : dict with file names as keys and uq maps and values
+
+    Returns
+    -------
+    min and max uncertainty value as floats
+    """
+    min_value = 0
+    max_value = 0
+
+    for record in all_uq_maps.keys():
+        max_ = np.max(all_uq_maps[record])
+        min_ = np.min(all_uq_maps[record])
+
+
+        if min_ < min_value:
+            min_value = min_
+        if max_ > max_value:
+            max_value = max_
+    return max_value, min_value
+
+
+def get_feature_uncertainty_distribution(lbl, record_uq_map):
+    """
+    Parameters
+    ----------
+    lbl : label map
+    record_uq_map :uncertainty map
+
+    Returns
+    -------
+    dict with mean uncertainty for each label
+    """
+    labels = np.unique(lbl)
+
+    if len(lbl.shape) > 2:
+        lbl = lbl[:, :, 0]
+
+    uncertainty_log = {}
+    for label in labels:
+        if label not in [0, 14, 15]:
+            mask = lbl == label
+            uncertainty_log[label] = record_uq_map[mask].flatten()
+    return uncertainty_log
+
+
+def plot_uncertainty_statistics(all_uq_maps, ensemble_dir):
+    """
+    Plots the uncertainty box plot for the prediction
+    Parameters
+    ----------
+    all_uq_maps : dict with file names as keys and uq maps and values
+    ensemble_dir : directory to save output
+
+    Returns
+    -------
+    None
+    """
+    mode = "test"
+
+    max_value, min_value = get_max_min_uncertainty(all_uq_maps)
+
+    save_dir = os.path.join(ensemble_dir, mode + "_uncertainty_statistics")
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # plot uq maps
+    for record in all_uq_maps.keys():
+        record_uq_map = all_uq_maps[record]
+
+        img_path = os.path.join(TRAIN_DATA_PATH, "images", record)
+        label_path = os.path.join(TRAIN_DATA_PATH, "masks", record)
+        _, lbl = read_resize(img_path, label_path, record_uq_map.shape)
+
+        uncertainty_log = get_feature_uncertainty_distribution(lbl, record_uq_map)
+
+        labels, data = uncertainty_log.keys(), uncertainty_log.values()
+
+        plt.style.use('ggplot')
+        plt.boxplot(data, showfliers = False, )
+        plt.xticks(range(1, len(labels) + 1), labels)
+        plt.ylim([min_value, max_value])
+        plt.savefig(os.path.join(save_dir, record))
+        plt.close()
+
+
+def plot_uncertainty_heatmaps(all_uq_maps, ensemble_dir):
+    """
+    gets min and max values for uncertainties and then makes and saves heatmaps
+    Parameters
+    ----------
+    all_uq_maps : dict with file names as keys and uq maps and values
+    ensemble_dir : directory to save output
+
+    Returns
+    -------
+
+    """
+    mode = "test"
+    save_dir = os.path.join(ensemble_dir, mode + "uncertainty_records")
+    max_value, min_value = get_max_min_uncertainty(all_uq_maps)
+
+    if not os.path.exists(save_dir):
+        os.makedirs(save_dir)
+
+    # plot uq maps
+    for record in all_uq_maps.keys():
+        record_uq_map = all_uq_maps[record]
+        plt.imshow(record_uq_map, cmap = 'hot', interpolation = 'nearest', vmin = min_value, vmax = max_value)
+        plt.axis('off')
+        plt.savefig(os.path.join(save_dir, record))
+        plt.close()
 
 

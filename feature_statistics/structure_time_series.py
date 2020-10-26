@@ -13,13 +13,43 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     NUM_SEGMENTATIONS = 4
     REGIONS = ["S", "N", "I", "T"]
     FLUIDS = ["3", "4"]
-    DATA_POINTS = ["total_fluid", "cur_va_rounded", "next_va", "cumsum_injection"]
+
+    DATA_POINTS = ["total_fluid",
+                   "cur_va_rounded",
+                   "next_va",
+                   "cumsum_injections",
+                   'intra_retinal_fluid',
+                   'sub_retinal_fluid',
+                   'srhm',
+                   'fibrovascular_ped',
+                   'choroid',
+                   'drusen',
+                   'rpe',
+                   'epiretinal_membrane',
+                   'fibrosis']
+
     META_DATA = ["patient_id", "laterality", "diagnosis"]
     SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
     DICOM_PATHS = glob.glob(os.path.join(OCT_DIR, "*/*/*/*.dcm"))
     TIME_POINTS = [1, 3, 6, 12, 24]
-    FIELDS = ['study_date', 'total_fluid', 'time_range', 'time_range_before', 'time_range_after', 'insertion_type',
-              'cur_va_rounded', 'next_va']
+
+    FIELDS = ['study_date',
+              'total_fluid',
+              'time_range',
+              'time_range_before',
+              'time_range_after',
+              'insertion_type',
+              'cur_va_rounded',
+              'next_va',
+              'intra_retinal_fluid',
+              'sub_retinal_fluid',
+              'srhm',
+              'fibrovascular_ped',
+              'choroid',
+              'drusen',
+              'rpe',
+              'epiretinal_membrane',
+              'fibrosis']
 
     def __init__(self, meta_data, time_line):
         self.patient_id = meta_data[MeasureSeqTimeUntilDry.META_DATA[0]]
@@ -40,7 +70,6 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                                                          laterality = self.laterality,
                                                          time_line = time_line)
 
-
     @classmethod
     def create_log(cls, patient_id, laterality, time_line):
         log = {"sequence": f"{patient_id}_{laterality}"}
@@ -59,6 +88,24 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         record_table = sum_etdrs_columns(record_table, rings = [1, 2], regions = MeasureSeqTimeUntilDry.REGIONS,
                                          features = [3, 4], foveal_region = ["C0"], new_column_name = "total_fluid")
 
+        features = {"intra_retinal_fluid": 3,
+                    "sub_retinal_fluid": 4,
+                    "srhm": 5,
+                    "fibrovascular_ped": 7,
+                    "choroid": 10,
+                    "drusen": 8,
+                    "rpe": 6,
+                    "epiretinal_membrane": 1,
+                    "fibrosis": 13}
+
+        for feature in features.keys():
+            record_table = sum_etdrs_columns(record_table,
+                                             rings = [1, 2],
+                                             regions = MeasureSeqTimeUntilDry.REGIONS,
+                                             features = [features[feature]],
+                                             foveal_region = ["C0"],
+                                             new_column_name = feature)
+
         # round va
         record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2))
 
@@ -73,7 +120,8 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         # initalize sequence class
         super().__init__(SeqUtils, time_line = time_line)
 
-        if total_number_injections > 0:
+        # check so patient is treated with no lens surgery
+        if (total_number_injections > 0) and (sum(record_table.lens_surgery) == 0):
             for data_point in MeasureSeqTimeUntilDry.DATA_POINTS:
                 time_line = time_utils.assign_to_timeline_str(time_line = time_line, item = data_point,
                                                               total_number_injections = total_number_injections)

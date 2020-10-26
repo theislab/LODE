@@ -142,7 +142,7 @@ def check_features(workspace_dir, longitudinal_data):
 
 
 class Measurement:
-    MEDS = ['Avastin', 'Dexamethas', 'Eylea', 'Iluvien', 'Jetrea', 'Lucentis', 'Ozurdex', 'Triamcinol']
+    MEDS = ['Avastin', 'Dexamethas', 'Eylea', 'Iluvien', 'Jetrea', 'Lucentis', 'Ozurdex', 'Triamcinol', 'Unknown']
     FEATURES = None
 
     # -- Initializers --
@@ -167,7 +167,6 @@ class Measurement:
         self.next_va = None
         self.injections = [0 for _ in Measurement.MEDS]
         self.injection_dates = [np.nan for _ in Measurement.MEDS]
-
 
         # if features are available, C0_total is example feature
         if "C0_total" in table.index.tolist():
@@ -383,8 +382,10 @@ class MeasurementSequence:
                 if mmt_id == 0:
                     # event happened before first measurement: add it to count
                     self.injections_before_oct += 1
+                    self.measurements[mmt_id].add_event_from_pandas(evt)
                 else:
                     self.measurements[mmt_id - 1].add_event_from_pandas(evt)
+
             evt_id += 1
 
     def add_events_from_pandas_old(self, events_table):

@@ -7,6 +7,8 @@ import glob
 from generators.generator_utils.image_processing import resize, read_resize
 from generators.generator_utils.oct_augmentations import get_augmentations
 
+from feature_segmentation.generators.generator_utils.image_processing import read_resize_random_invert
+
 
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
@@ -28,7 +30,6 @@ class DataGenerator(keras.utils.Sequence):
         self.is_training = is_training
         self.augment_box = get_augmentations(params)[params.aug_strategy]
         self.val_aug_box = get_augmentations(params)["light"]
-
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -81,7 +82,7 @@ class DataGenerator(keras.utils.Sequence):
         #lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1].replace(".png", "*"))    
         im_path = os.path.join(self.image_path, self.list_IDs[record_idx - 1])
         lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1])
-        image, label = read_resize(im_path, lbl_path, self.shape)
+        image, label = read_resize_random_invert(im_path, lbl_path, self.shape)
 
         image, label = self.__pre_process(image, label)
 
@@ -97,6 +98,7 @@ class DataGenerator(keras.utils.Sequence):
             aug = self.augment_box(image = train_im.astype(np.uint8), mask = label_im.astype(np.uint8))
             train_im = aug['image']
             label_im = aug['mask']
+
         else:
             aug = self.val_aug_box(image = train_im.astype(np.uint8), mask = label_im.astype(np.uint8))
             train_im = aug['image']

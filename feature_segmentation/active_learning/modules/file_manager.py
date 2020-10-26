@@ -47,9 +47,12 @@ class FileManager:
             ua_paths = pd.read_csv(os.path.join(self.cache_dir, "unannotated_paths.csv"))["0"].tolist()
             return ua_paths
         else:
+            print("list available embeddings")
             unannotated_ids = os.listdir(EMBEDD_DIR)
-            uap_pd = EMBEDD_DIR + "/" + pd.DataFrame(unannotated_ids)
+            print("available embeddings listed")
 
+            uap_pd = EMBEDD_DIR + "/" + pd.DataFrame(unannotated_ids)
+            
             # rename columns
             uap_pd = uap_pd.rename(columns={0: "embedding_path"})
             record_ids = uap_pd.embedding_path.str.split("/", expand = True).iloc[:, -1]
@@ -71,7 +74,7 @@ class FileManager:
 
 if __name__ == "__main__":
     file_manager = FileManager("annotated_files.csv")
-
+    import time
 
     class Args():
         def __init__(self, number_to_search):
@@ -79,10 +82,12 @@ if __name__ == "__main__":
 
 
     args = Args(number_to_search = 10)
-
+    
+    start_ = time.time()
     # get record paths
     unannotated_pd, annotated_pd = file_manager.unannotated_records(use_cache = False)
     unannotated_pd = unannotated_pd.sample(args.number_to_search)
-
+    
+    print("The file procesing took: ", time.time() - start_)
     print("number of embedded volumes", unannotated_pd.shape[0])
     print("number of annotated embedded volumes", annotated_pd.shape[0])

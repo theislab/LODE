@@ -19,7 +19,7 @@ if __name__ == "__main__":
         sequences.Measurement.FEATURES = feature_names
 
     # events is a table containing injections and lens surgery events for each patient
-    events = pd.read_csv(os.path.join(workspace_dir, 'sequence_data/longitudinal_events.csv'), index_col = 0)
+    events = pd.read_csv(os.path.join(workspace_dir, 'sequence_data/longitudinal_events_ops.csv'), index_col = 0)
     events = events.sort_values('study_date')
     events.loc[:, 'visus?'] = False
     events.loc[:, 'oct?'] = False

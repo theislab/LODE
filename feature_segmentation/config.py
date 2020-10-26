@@ -9,7 +9,11 @@ EMBEDD_SAVE_PATH: path where to save embeddings
 """
 
 
+<<<<<<< HEAD
 PROJ_DIR = '/home/olle/PycharmProjects/LODE'
+=======
+PROJ_DIR = '/home/icb/olle.holmberg/projects/LODE'
+>>>>>>> 6823769523637e6a18dd7b9935806fd27ca67b16
 WORK_SPACE = '/home/olle/PycharmProjects/LODE/workspace'
 VOL_SAVE_PATH = os.path.join(WORK_SPACE, "feature_segmentation/segmentation/segmented_volumes20200822")
 EMBEDD_DIR = os.path.join(WORK_SPACE, "feature_segmentation/segmentation/embeddings20200822")
