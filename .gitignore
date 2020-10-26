@@ -9,6 +9,7 @@ workspace
 **/*config*
 eye_clinic_general
 **/segmentation_config.py
+**/results
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

@@ -42,9 +42,6 @@ for i in range(0, len(test_ids) - 1):
 
     img, lbl = read_resize(img_path, label_path, (params.img_shape, params.img_shape))
 
-    # pre process (255. divide) as when training
-    img = img / 255.
-
     # run prediction for each ensemble model
     model_predictions, ensemble_prediction, uq_map = ensemble_predict(ensemble_dict, img)
 
