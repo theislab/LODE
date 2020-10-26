@@ -66,6 +66,7 @@ if __name__ == "__main__":
                                         file_name + ".csv"))["PATH"].dropna().tolist()
     
     file_name = file_name + "_{}".format(args.save_id)
+
     # copy remaining ids
     remaining_ids = test_ids.copy()
 

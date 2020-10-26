@@ -2,12 +2,16 @@ import os
 from pprint import pprint
 import pandas as pd
 import numpy as np
+from keras import Model
 from keras.engine.saving import load_model
+from pydicom import read_file
 from segmentation_models.metrics import iou_score
 from sklearn.metrics import jaccard_score, classification_report
 
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
 from feature_segmentation.utils.utils import Params, cast_params_types
+
+SEGMENTED_CLASSES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
 
 def ensemble_vote(predictions):
@@ -69,6 +73,9 @@ def ensemble_predict(ensemble_dict, img):
     for ensemble_model in ensemble_dict.keys():
         model = ensemble_dict[ensemble_model]["model"]
 
+        # pre process (255. divide) as when training
+        img = img / 255.
+
         # get probability map
         pred = model.predict(img)
 
@@ -123,9 +130,59 @@ def predict(model, img):
     if len(img.shape) == 3:
         img = img.reshape((1, img.shape[0], img.shape[1], img.shape[-1]))
 
+    # pre process (255. divide) as when training
+    img = img / 255.
+
     # get probability map
     pred = model.predict(img)
     return np.argmax(pred, -1)[0, :, :].astype(int), pred
+
+
+def embedd(model, img):
+    """
+    Parameters
+    ----------
+    model : keras model for segmentation
+    img : array, numpy array with preprocessed image to predict on
+
+    Returns
+    -------
+    flattened embedding vector from bottle neck of segmenter
+    """
+
+    # check so shape is 4 channel
+    if len(img.shape) == 3:
+        img = img.reshape((1, img.shape[0], img.shape[1], img.shape[-1]))
+
+    # pre process (255. divide) as when training
+    img = img / 255.
+
+    return model.predict(img).flatten()
+
+
+def embedd_volume(model, volume):
+    """
+    Parameters
+    ----------
+    model : keras model for embedding
+    volume : volume of oct images
+
+    Returns
+    -------
+    array of embeddings
+    """
+
+    embeddings = []
+    for i in range(volume.shape[0]):
+        img = volume[i]
+
+        # check so shape is 4 channel
+        if len(img.shape) == 3:
+            img = img.reshape((1, img.shape[0], img.shape[1], img.shape[-1]))
+
+        embedding = embedd(model, img)
+        embeddings.append(embedding)
+    return np.array(embeddings)
 
 
 target_dict = {0: 'class 0', 1: 'class 1', 2: 'class 2',
@@ -206,3 +263,166 @@ def load_test_config(model_path):
 
     model = load_model(save_model_path, custom_objects = {'iou_score': iou_score})
     return model, test_ids, params
+
+
+def get_ensemble_dict(ensemble_models, models_directory):
+    """
+    Parameters
+    ----------
+    ensemble_models : list of model names (strings)
+
+    Returns
+    -------
+    dict, with each model and corresponding params and test ids
+    """
+    ensemble_dict = {}
+
+    # get ensemble config dict
+    for ensemble_model in ensemble_models:
+        model_path = os.path.join(models_directory, ensemble_model)
+
+        # load test configurations
+        model, test_ids, params = load_test_config(model_path)
+
+        ensemble_dict[ensemble_model] = {"model": model, "test_ids": test_ids, "params": params}
+    return ensemble_dict
+
+
+def save_volume(segmentation, save_path, record_name):
+    """
+    Parameters
+    ----------
+    segmentation : segmented oct
+    save_path : str; where to save
+
+    Returns
+    -------
+    None
+    """
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    np.save(save_path + f"/{record_name}.npy", segmentation)
+
+
+def save_embedding(embeding, save_path, record_name):
+    """
+    Parameters
+    ----------
+    embeding : embedded oct volume
+    save_path : str; where to save
+
+    Returns
+    -------
+    None
+    """
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    np.save(save_path + f"/{record_name}.npy", embeding)
+
+
+def segment_volume(oct_volume, ensemble_dict):
+    """
+    Parameters
+    ----------
+    save_path :
+    oct_volume : array of shape (n, 256, 256, 3) with all resized oct form a dicom
+    ensemble_dict : dict holding all models in ensemble
+    save_volume: boolean; if volume should be save
+    Returns
+    -------
+    array with segmented OCTs
+    """
+    segmented_octs = []
+    for i in range(oct_volume.shape[0]):
+        _, segmented_oct, _ = ensemble_predict(ensemble_dict, oct_volume[i])
+        segmented_octs.append(segmented_oct)
+
+    return np.array(segmented_octs)
+
+
+def initialize_volume_feature_dict():
+    """
+    Returns
+    -------
+    dict, with all features and id element.
+    """
+    return {"frame": [], "0": [], "1": [], "2": [], "3": [], "4": [],
+            "5": [], "6": [], "7": [], "8": [], "9": [], "10": [],
+            "11": [], "12": [], "13": [], "14": [], "15": []}
+
+
+def segmentation_to_vector(segmentation, feature_dict):
+    """
+    Parameters
+    ----------
+    segmentation : array, segmented oct
+    feature_dict : dict with counts for each feature
+
+    Returns
+    -------
+    feature dict with feature statistics for segmentation
+    """
+
+    # count features
+    feature_counts = np.unique(segmentation, return_counts = True)
+
+    # add do dict
+    for feature in SEGMENTED_CLASSES:
+        if int(feature) in feature_counts[0]:
+            feature_dict[str(feature)].append(feature_counts[1][feature_counts[0].tolist().index(int(feature))])
+        else:
+            feature_dict[str(feature)].append(0)
+    return feature_dict
+
+
+def get_feature_dict(dicom_path, segmented_volume):
+    """
+    Parameters
+    ----------
+    dicom_path : str, path to dicom
+    segmented_volume : array, segmented oct volume
+
+    Returns
+    -------
+    dict with all information from oct
+    """
+    dc_header = read_file(dicom_path, stop_before_pixels = True)
+
+    feature_dict = initialize_volume_feature_dict()
+
+    feature_dict["patient_id"] = dc_header.PatientID.replace("ps:", "")
+    feature_dict["study_date"] = dc_header.StudyDate
+    feature_dict["laterality"] = dc_header.ImageLaterality
+    feature_dict["dicom_path"] = dicom_path
+
+    for i in range(segmented_volume.shape[0]):
+        feature_dict["frame"].append(i)
+        feature_dict = segmentation_to_vector(segmented_volume[i], feature_dict)
+
+    return feature_dict
+
+
+def get_embedding_model(model_directory):
+    """
+    Parameters
+    ----------
+    model_directory : str; full path to model
+
+    Returns
+    -------
+    keras model to use for embedding the octs
+    """
+    save_model_path = os.path.join(model_directory, "weights.hdf5")
+    model = load_model(save_model_path, custom_objects = {'iou_score': iou_score})
+
+    # set up inference model
+    model_input = model.layers[0]
+    model_embedding = model.layers[len(model.layers) // 2]
+
+    # inference model
+    embedding_model = Model(inputs = model_input.output, outputs = [model_embedding.output])
+    return embedding_model
+
