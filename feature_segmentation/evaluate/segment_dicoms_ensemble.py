@@ -26,8 +26,7 @@ META_COLUMNS = ['id', 'patient_id', 'laterality', 'study_date', 'frame']
 feature_statistics = pd.DataFrame(columns = META_COLUMNS + SEGMENTED_CLASSES)
 
 # get batch of dicoms
-filename = "test"
-file_name = filename
+file_name = "test"
 
 csv_path = os.path.join(WORK_SPACE, "segmentation/path_files", file_name + ".csv")
 print(csv_path)

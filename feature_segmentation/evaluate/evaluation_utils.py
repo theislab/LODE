@@ -372,9 +372,9 @@ def segmentation_to_vector(segmentation, feature_dict):
     # add do dict
     for feature in SEGMENTED_CLASSES:
         if int(feature) in feature_counts[0]:
-            feature_dict[str(feature)].append(feature_counts[1][feature_counts[0].tolist().index(int(feature))])
+            feature_dict[feature].append(feature_counts[1][feature_counts[0].tolist().index(int(feature))])
         else:
-            feature_dict[str(feature)].append(0)
+            feature_dict[feature].append(0)
     return feature_dict
 
 
