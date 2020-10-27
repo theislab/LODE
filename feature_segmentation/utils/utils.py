@@ -3,6 +3,13 @@ import os
 import sys
 from pathlib import Path
 import pandas as pd
+import glob
+
+root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
+search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
+
+for sp in search_paths:
+        sys.path.append(sp)
 
 path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable))

@@ -6,10 +6,10 @@ import keras.backend as K
 from models.model import get_model
 import pandas as pd
 from random import shuffle
-from config import TRAIN_DATA_PATH
+from segmentation_config import TRAIN_DATA_PATH
 
 # load utils classes
-from utils.plotting import plot_model_run_images
+from utils.plotting import plot_image_label_prediction
 
 params = Params("params.json")
 logging = Logging("./logs", params)

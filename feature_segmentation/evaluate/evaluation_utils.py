@@ -1,6 +1,14 @@
 import os
 from pprint import pprint
 import pandas as pd
+
+import sys
+from pathlib import Path
+
+path_variable = Path(os.path.dirname(__file__))
+sys.path.insert(0, str(path_variable))
+sys.path.insert(0, str(path_variable.parent))
+
 import numpy as np
 from keras import Model
 from keras.engine.saving import load_model
@@ -8,8 +16,7 @@ from pydicom import read_file
 from segmentation_models.metrics import iou_score
 from sklearn.metrics import jaccard_score, classification_report
 
-from feature_segmentation.generators.generator_utils.image_processing import read_resize
-from feature_segmentation.utils.utils import Params, cast_params_types
+from utils.utils import Params, cast_params_types
 
 SEGMENTED_CLASSES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
@@ -349,9 +356,9 @@ def initialize_volume_feature_dict():
     -------
     dict, with all features and id element.
     """
-    return {"frame": [], "0": [], "1": [], "2": [], "3": [], "4": [],
-            "5": [], "6": [], "7": [], "8": [], "9": [], "10": [],
-            "11": [], "12": [], "13": [], "14": [], "15": []}
+    return {"frame": [], 0: [], 1: [], 2: [], 3: [], 4: [],
+            5: [], 6: [], 7: [], 8: [], 9: [], 10: [],
+            11: [], 12: [], 13: [], 14: [], 15: []}
 
 
 def segmentation_to_vector(segmentation, feature_dict):
@@ -372,9 +379,9 @@ def segmentation_to_vector(segmentation, feature_dict):
     # add do dict
     for feature in SEGMENTED_CLASSES:
         if int(feature) in feature_counts[0]:
-            feature_dict[str(feature)].append(feature_counts[1][feature_counts[0].tolist().index(int(feature))])
+            feature_dict[feature].append(feature_counts[1][feature_counts[0].tolist().index(int(feature))])
         else:
-            feature_dict[str(feature)].append(0)
+            feature_dict[feature].append(0)
     return feature_dict
 
 

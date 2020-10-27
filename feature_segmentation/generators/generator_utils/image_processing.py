@@ -4,7 +4,14 @@ import cv2
 from random import random;
 
 from pydicom import read_file
+import glob
+import os
+import sys
+root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
+search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
 
+for sp in search_paths:
+        sys.path.append(sp)
 
 def invert_camera_effect(img):
     # annotate camera artifact
