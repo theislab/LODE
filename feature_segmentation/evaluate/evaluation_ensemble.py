@@ -10,7 +10,7 @@ from feature_segmentation.utils.plotting import plot_image_label_prediction, plo
 models_directory = os.path.join(WORK_SPACE, "models")
 ensemble_models = ["49", "48"]
 
-ensemble_name = "test_ensemble"
+ensemble_name = "test2_ensemble"
 ensemble_dir = os.path.join(WORK_SPACE, ensemble_name)
 
 if not os.path.exists(ensemble_dir):
@@ -51,6 +51,11 @@ for i in range(0, len(test_ids) - 1):
 
     # plot all images and their labels/predictions
     plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode = "test", filename = test_ids[i])
+
+    for model in model_predictions.keys():
+        prediction = model_predictions[model]
+        plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode = f"test_{model}",
+                                    filename = test_ids[i])
 
 # plot all uq maps
 plot_uncertainty_heatmaps(all_uq_maps, ensemble_dir)

@@ -158,20 +158,20 @@ def plot_image_label_prediction(records, model_dir, mode, filename):
     ax2.set_title("ground truth")
 
     ax3 = fig.add_subplot(gs[0, 2])
-    colorbar_im = ax3.imshow(records[2], cmap=seg_cmap, norm=seg_norm)
+    #colorbar_im = ax3.imshow(records[2], cmap=seg_cmap, norm=seg_norm)
     ax3.set_xticks([])
     ax3.set_yticks([])
     ax3.set_title("prediction")
 
     # set colorbar ticks
-    tick_loc_array = np.arange(len(bounds)) + 0.5
-    tick_loc_list = tick_loc_array.tolist()
-    tick_list = np.arange(len(bounds)).tolist()
-    c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
+    #tick_loc_array = np.arange(len(bounds)) + 0.5
+    #tick_loc_list = tick_loc_array.tolist()
+    #tick_list = np.arange(len(bounds)).tolist()
+    #c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
 
     # set ticks
-    c_bar.set_ticks(tick_loc_list)
-    c_bar.ax.set_yticklabels(tick_list)
+    #c_bar.set_ticks(tick_loc_list)
+    #c_bar.ax.set_yticklabels(tick_list)
 
     if not os.path.exists(os.path.join(model_dir, mode + "_records")):
         os.makedirs(os.path.join(model_dir, mode + "_records"))
