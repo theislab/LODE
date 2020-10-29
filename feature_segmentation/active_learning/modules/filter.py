@@ -5,7 +5,7 @@ import os
 from pathlib import Path
 
 
-FEATURE_COLUMNS = ['patient_id', 'study_date', 'laterality', '0', '1', '10', '11', '12',
+FEATURE_COLUMNS = ['patient_id', 'study_date', 'laterality', 'frame', '0', '1', '10', '11', '12',
                    '13', '14', '15', '2', '3', '4', '5', '6', '7', '8', '9']
 
 
@@ -37,7 +37,12 @@ class Filter():
         @rtype:
         """
         fibrosis_bool = features_table["13"] > 50
-        features_table_filtered = features_table[fibrosis_bool]
+        drusen_bool = features_table["8"] > 50
+        srhm_bool = features_table["5"] > 50
+        fibro_vasc_bool = features_table["7"] > 50
+        
+        print(features_table.shape, sum(fibrosis_bool))
+        features_table_filtered = features_table[fibrosis_bool | drusen_bool | srhm_bool |fibro_vasc_bool]
 
         features_table_filtered["frame"] = features_table_filtered.frame.astype("int").copy()
         return features_table_filtered
@@ -51,20 +56,30 @@ if __name__ == "__main__":
     sys.path.append(str(path.parent.parent))
 
     from file_manager import FileManager
-    from utils import args
+    import utils
+    from utils import Args
+    
+    args = Args()
 
     file_manager = FileManager("annotated_files.csv")
 
     # get record paths
     unannotated_pd, annotated_pd = file_manager.unannotated_records(use_cache = False)
     # unannotated_pd = unannotated_pd.sample(args.number_to_search)
-
     filter = Filter(file_manager.feature_table_paths, unannotated_pd)
 
     features_table = filter.selection_table()
+    
+    print("#"*30) 
+    print(features_table.shape, sum(features_table["13"] > 50))
+    
+    print("#"*30)
+    print(unannotated_pd.columns)
 
     keys = ["patient_id", "laterality", "study_date"]
     features_table_pd = pd.merge(unannotated_pd, features_table, left_on = keys, right_on = keys, how = "left")
+    
+    print(features_table_pd.shape)
     features_ffiltered_pd = filter.filter_paths(features_table_pd)
 
     pprint(features_table.head(5))
@@ -72,9 +87,9 @@ if __name__ == "__main__":
 
     print("number of unfiltered samples are:", features_table.shape)
     print("number of filtered samples are:", features_ffiltered_pd.shape)
-
+    print("the columns listed are: ", features_ffiltered_pd.columns)
     assert sum(unannotated_pd.patient_id.isin(annotated_pd.patient_id.values)) == 0, "patient overlap"
-    assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
+    # assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
     assert features_ffiltered_pd is not None, "returning None"
     assert "embedding_path" in features_ffiltered_pd.columns.tolist(), "embedding path not in dataframe"

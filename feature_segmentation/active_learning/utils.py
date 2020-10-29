@@ -26,9 +26,8 @@ def move_selected_octs(selected_pd, dst_dir):
         else:
             laterality = row.laterality
         
-        print(row.laterality)
-        dicom_file_path = os.path.join(OCT_DIR, str(row.patient_id), 
-                laterality, str(row.study_date), row.dicom)
+        print(row)
+        dicom_file_path = row.dicom_path#os.path.join(OCT_DIR, str(row.patient_id), laterality, str(row.study_date), row.dicom)
 
         dc = read_file(dicom_file_path)
         vol = dc.pixel_array
@@ -60,8 +59,6 @@ def move_selected_octs(selected_pd, dst_dir):
 
     # save list to data frame
     pd.DataFrame(dicom_paths).to_csv(os.path.join(dst_dir, "dicom_paths.csv"))
-
-
 class Args:
     def __init__(self):
         self.number_to_search = 78
