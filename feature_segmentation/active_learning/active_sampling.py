@@ -88,7 +88,7 @@ if __name__ == '__main__':
     print("number of filtered samples are:", features_ffiltered_pd.shape)
 
     assert sum(unannotated_pd.patient_id.isin(annotated_pd.patient_id.values)) == 0, "patient overlap"
-    assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
+    # assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
     assert features_ffiltered_pd is not None, "returning None"
     #assert not (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (
@@ -117,17 +117,18 @@ if __name__ == '__main__':
     selected_scans_pd["id"] = selected_scans["id"]
 
     # add dicom name
-    selected_scans_pd = pd.merge(selected_scans_pd, features_ffiltered_pd[["dicom", "id"]],
+    selected_scans_pd = pd.merge(selected_scans_pd, features_ffiltered_pd[["dicom_path", "frame", "id"]],
                                  how = "left", left_on = "id", right_on = "id")
-
+    
+    print(selected_scans_pd.head(30))
     print("records to select for annotations are: ", selected_scans)
     DST_DIR = os.path.join(WORK_SPACE, "active_learning", f"selected_{args.name}")
 
     if not os.path.exists(DST_DIR):
         os.makedirs(DST_DIR)
 
-    #assert selected_scans_pd.patient_id.drop_duplicates().shape[0] == selected_scans_pd.shape[0], \
-    #    "patients selected are not unique"
+    assert selected_scans_pd.patient_id.drop_duplicates().shape[0] == selected_scans_pd.shape[0], \
+        "patients selected are not unique"
 
     selected_path = os.path.join(DST_DIR, f"records_selected_{args.name}.csv")
     selected_scans_pd.to_csv(selected_path)

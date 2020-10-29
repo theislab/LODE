@@ -8,23 +8,25 @@ import sys
 path = Path(os.getcwd())
 sys.path.append(str(path.parent))
 sys.path.append(str(path.parent.parent))
+sys.path.append(str(path.parent.parent.parent))
+sys.path.append("/mnt/home/icb/olle.holmberg/projects/LODE/feature_segmentation")
 
-from config import WORK_SPACE, EMBEDD_DIR
+from segmentation_config import WORK_SPACE, EMBEDD_SAVE_PATH
 
 
 class FileManager:
     def __init__(self, annotated_file):
         self.annotated_file = annotated_file
-        self.cache_dir = os.path.join(WORK_SPACE, "feature_segmentation/active_learning/cache")
+        self.cache_dir = os.path.join(WORK_SPACE, "active_learning/cache")
 
     @property
     def feature_table_paths(self):
-        return glob.glob(os.path.join(WORK_SPACE, "feature_segmentation/segmentation/feature_tables/*"))
+        return glob.glob(os.path.join(WORK_SPACE, "segmentation/feature_tables/*.csv"))
 
     @property
     def annotated_patients(self):
         embeddings = \
-        pd.read_csv(os.path.join(WORK_SPACE, f"feature_segmentation/active_learning/{self.annotated_file}"),
+        pd.read_csv(os.path.join(WORK_SPACE, f"active_learning/{self.annotated_file}"),
                     ).dropna()["0"].tolist()
 
         # extract patient ids from first column
@@ -48,10 +50,10 @@ class FileManager:
             return ua_paths
         else:
             print("list available embeddings")
-            unannotated_ids = os.listdir(EMBEDD_DIR)
+            unannotated_ids = os.listdir(EMBEDD_SAVE_PATH)
             print("available embeddings listed")
 
-            uap_pd = EMBEDD_DIR + "/" + pd.DataFrame(unannotated_ids)
+            uap_pd = EMBEDD_SAVE_PATH + "/" + pd.DataFrame(unannotated_ids)
             
             # rename columns
             uap_pd = uap_pd.rename(columns={0: "embedding_path"})
@@ -59,9 +61,11 @@ class FileManager:
 
             # extract patients
             patients = record_ids.str.split("_", expand = True).iloc[:, 0]
-            study_date = record_ids.str.split("_", expand = True).iloc[:, 1]
-            laterality = record_ids.str.split("_", expand = True).iloc[:, 2]
-
+            study_date = record_ids.str.split("_", expand = True).iloc[:, 2]
+            laterality = record_ids.str.split("_", expand = True).iloc[:, 1]
+            
+            study_date = study_date.str.replace(".npy", "")
+            
             uap_pd["patient_id"] = patients
             uap_pd["study_date"] = study_date
             uap_pd["laterality"] = laterality
@@ -91,3 +95,6 @@ if __name__ == "__main__":
     print("The file procesing took: ", time.time() - start_)
     print("number of embedded volumes", unannotated_pd.shape[0])
     print("number of annotated embedded volumes", annotated_pd.shape[0])
+
+    print("#"*30)
+    print(annotated_pd.head())
