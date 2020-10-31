@@ -224,9 +224,10 @@ class ETDRSUtils:
         self.path = path
         self.record = path.split("/")[-1]
         self.patient = self.record.split("_")[0]
-        self.study_date = self.record.split("_")[1]
-        self.laterality = laterality_string_frormatting(self.record.split("_")[2])
-        self.dicom_path = os.path.join(dicom_path, self.patient, self.laterality, self.study_date)
+        self.study_date = self.record.split("_")[2].replace(".npy", "")
+        self.laterality = laterality_string_frormatting(self.record.split("_")[1])
+        self.dicom_path = os.path.join(dicom_path, str(self.patient), 
+                str(self.laterality), str(self.study_date))
         self.width = None
         self.height = None
         self.scans = None
@@ -297,7 +298,6 @@ class ETDRSUtils:
 
         # load segmentation
         volume = np.load(self.path)
-
         pixel_2_volume_mm3, pixel_height_2_mm = get_pixel_2_volume_factors(self.dicom_path)
 
         # get dim
