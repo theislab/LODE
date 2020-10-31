@@ -13,15 +13,12 @@ for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
 
 from kcenter_greedy_nalu import kCenterGreedy
 
-class Select():
-    def __init__(self, budget):
-        self.budget = budget
 
-    def select_batch(self, embeddings):
-        kcenters = kCenterGreedy(embeddings)
-        # select new indices
-        [ind_to_label, min_dist] = kcenters.select_batch_(already_selected = kcenters.already_selected, N = self.budget)
-        return [ind_to_label, min_dist]
+def select_batch(embeddings, budget):
+    kcenters = kCenterGreedy(embeddings)
+    # select new indices
+    [ind_to_label, min_dist] = kcenters.select_batch_(already_selected = kcenters.already_selected, N = budget)
+    return [ind_to_label, min_dist]
 
 
 if __name__ == "__main__":

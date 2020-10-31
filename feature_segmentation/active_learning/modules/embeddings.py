@@ -7,81 +7,79 @@ import pandas as pd
 from tqdm import tqdm
 
 
-class OCTEmbeddings:
-    def __init__(self):
-        super()
+def load_scan(path):
+    return np.load(path).flatten()
 
-    @staticmethod
-    def load_scan(path):
-        return np.load(path).flatten()
 
-    @staticmethod
-    def load_volume(path):
-        embedding_vol = np.load(path)
-        scans = embedding_vol.reshape(embedding_vol.shape[0], -1)
-        return scans
+def load_volume(path):
+    embedding_vol = np.load(path)
+    scans = embedding_vol.reshape(embedding_vol.shape[0], -1)
+    return scans
 
-    @staticmethod
-    def apply_umap(feature_vector):
-        # first run faster PCA before final UMAP
 
-        try:
-            n_components = min(len(feature_vector), 30)
-            pca = decomposition.PCA(n_components = n_components)
-            pca.fit(np.array(feature_vector))
-            X = pca.transform(np.array(feature_vector))
-            res = umap.UMAP(metric = 'correlation').fit_transform(X)
-        except:
-            res = np.array([])
-        return res
+def apply_umap(feature_vector):
+    # first run faster PCA before final UMAP
+    try:
+        n_components = min(len(feature_vector), 30)
+        pca = decomposition.PCA(n_components = n_components)
+        pca.fit(np.array(feature_vector))
+        X = pca.transform(np.array(feature_vector))
+        res = umap.UMAP(metric = 'correlation').fit_transform(X)
+    except:
+        res = np.array([])
+    return res
 
-    def reduce_dim_annotated(self, embedding_paths):
-        embeddings = []
-        for ep in embedding_paths:
-            embedding = self.load_scan(ep)
 
-            # add loaded embeddings
-            embeddings.append(embedding)
-        print("--- annotated images embedded ---")
-        return self.apply_umap(embeddings)
+def reduce_dim_annotated(embedding_paths):
+    embeddings = []
+    for ep in embedding_paths:
+        embedding = load_scan(ep)
 
-    def reduce_dim_unannotated(self, table, chunk):
-        umap_embeddings = pd.DataFrame(columns = ["id", "embedding"])
-        embedding_chunks = np.array_split(table.embedding_path.drop_duplicates().tolist(), chunk)
-        for ec in tqdm(embedding_chunks):
-            print("completed another embedding chunk")
-            embeddings = [[], []]
-            for ep in ec:
-                features_ep = table[table.embedding_path == ep]
-                embedding = self.load_volume(ep)
-                embedding_frames = features_ep.frame.tolist()
+        # add loaded embeddings
+        embeddings.append(embedding)
+    print("--- annotated images embedded ---")
+    return apply_umap(embeddings)
 
-                # add all embeddings in volume
-                for frame in embedding_frames:
-                    # extract id and embedding array
-                    id_ = features_ep[features_ep.frame == frame].id.iloc[0]
-                    embedding_array = embedding[frame, :]
 
-                    assert isinstance(id_, str), "id value must be string"
-                    assert type(embedding_array) is not np.array, "embedding vector must be numpy array"
+def reduce_dim_unannotated(table, chunk):
+    umap_embeddings = pd.DataFrame(columns = ["id", "embedding"])
+    embedding_chunks = np.array_split(table.embedding_path.drop_duplicates().tolist(), chunk)
+    for ec in tqdm(embedding_chunks):
+        print("completed another embedding chunk")
+        embeddings = [[], []]
+        for ep in ec:
+            features_ep = table[table.embedding_path == ep]
+            embedding = load_volume(ep)
+            embedding_frames = features_ep.frame.tolist()
 
-                    if embedding_array.size == 0:
-                        print("embedding array is empty, skip record")
-                        continue
+            # add all embeddings in volume
+            for frame in embedding_frames:
+                # print(frame, ep)
+                # extract id and embedding array
+                id_ = features_ep[features_ep.frame == frame].id.iloc[0]
+                embedding_array = embedding[frame, :]
 
-                    embeddings[0].append(id_)
-                    embeddings[1].append(embedding_array)
+                assert isinstance(id_, str), "id value must be string"
+                assert type(embedding_array) is not np.array, "embedding vector must be numpy array"
 
-            umap_ = self.apply_umap(embeddings[1].copy())
+                if embedding_array.size == 0:
+                    print("embedding array is empty, skip record")
+                    continue
+                embeddings[0].append(id_)
+                embeddings[1].append(embedding_array)
 
-            # if umap is empty, then continue
-            if umap_.size == 0:
-                continue
+        print("finished loading")
+        umap_ = apply_umap(embeddings[1].copy())
 
-            umap_pd = pd.DataFrame([embeddings[0].copy(), umap_]).T.rename(columns = {0: "id", 1: "embedding"})
-            umap_embeddings = umap_embeddings.append(umap_pd)
-        print("--- unannotated images embedded ---")
-        return umap_embeddings
+        # if umap is empty, then continue
+        if umap_.size == 0:
+            continue
+
+        umap_pd = pd.DataFrame([embeddings[0].copy(), umap_]).T.rename(columns = {0: "id", 1: "embedding"})
+        umap_embeddings = umap_embeddings.append(umap_pd)
+
+    print("--- unannotated images embedded ---")
+    return umap_embeddings
 
 
 if __name__ == "__main__":
@@ -122,7 +120,8 @@ if __name__ == "__main__":
     assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
     assert features_ffiltered_pd is not None, "returning None"
-    assert (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (args.chunk_size > 1), "chunk size to large"
+    assert (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (
+                args.chunk_size > 1), "chunk size to large"
 
     embedding = OCTEmbeddings()
 
