@@ -10,8 +10,8 @@ EMBEDD_SAVE_PATH: path where to save embeddings
 """
 
 PROJ_DIR = Path(os.getcwd()).parent.as_posix()
-WORK_SPACE = './workspace'
-OCT_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation/test_examples"
+WORK_SPACE = '/storage/groups/ml01/workspace/olle.holmberg/LODE/feature_segmentation'
+OCT_DIR = "/storage/groups/ml01/datasets/raw/2018_LMUAugenklinik_niklas.koehler/Studies/Optical Coherence Tomography Scanner"
 
 
 FEATURE_SAVE_PATH = os.path.join(WORK_SPACE, "/feature_tables")
