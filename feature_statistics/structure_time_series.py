@@ -117,7 +117,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         time_utils = TimeUtils(record_table = record_table)
         time_line = time_utils.time_line
 
-        # initalize sequence class
+        # initialize sequence class
         super().__init__(SeqUtils, time_line = time_line)
 
         # check so patient is treated with no lens surgery

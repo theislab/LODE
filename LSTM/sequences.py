@@ -216,7 +216,7 @@ class Measurement:
 
         if event['iol?'] is True:
             self.lens_surgery = True
-        if event['injection?'] is True:
+        if event['injections_joint?'] == True:
             self.injections[Measurement.MEDS.index(event['MED'])] += 1
             self.injection_dates.append(datetime.strptime(event['study_date'], '%Y-%m-%d'))
 

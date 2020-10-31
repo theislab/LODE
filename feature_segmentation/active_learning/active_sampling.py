@@ -63,7 +63,7 @@ if __name__ == '__main__':
     from embeddings import OCTEmbeddings
     from selection import Select
     from utils import move_selected_octs
-    from config import WORK_SPACE, EMBEDD_DIR
+    from segmentation_config import WORK_SPACE
 
     file_manager = FileManager("annotated_files.csv")
 

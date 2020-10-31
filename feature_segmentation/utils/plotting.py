@@ -234,6 +234,40 @@ def plot_image_predictions(records, model_dir, mode, filename):
     plt.close()
 
 
+def plot_image(records, model_dir, mode, filename):
+    """
+    :param records: list containing numpy array of image
+    :param model_dir: directory of model where to save images
+    :param mode: str: train or test
+    :param filename: str: filename of image
+    :return: save images in directory for inspection
+    """
+
+    seg_cmap, seg_norm, bounds = color_mappings()
+    fig = plt.figure(figsize=(16, 4))
+
+    gs = gridspec.GridSpec(nrows=1,
+                           ncols=1,
+                           figure=fig,
+                           width_ratios=[1],
+                           height_ratios=[1],
+                           wspace=0.3,
+                           hspace=0.3)
+
+    # turn image to 3 channel
+    ax3 = fig.add_subplot(gs[0])
+    ax3.imshow(records[1], cmap = seg_cmap, norm = seg_norm)
+    ax3.set_xticks([])
+    ax3.set_yticks([])
+    ax3.set_title("prediction")
+
+    if not os.path.exists(os.path.join(model_dir, mode + "_pred_records")):
+        os.makedirs(os.path.join(model_dir, mode + "_pred_records"))
+
+    plt.savefig(os.path.join(model_dir, mode + "_pred_records", filename))
+    plt.close()
+
+
 def get_max_min_uncertainty(all_uq_maps):
     """
     Parameters

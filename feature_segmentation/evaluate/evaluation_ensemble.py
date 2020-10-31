@@ -4,7 +4,7 @@ from feature_segmentation.evaluate.evaluation_utils import get_result_report, lo
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
 from feature_segmentation.segmentation_config import WORK_SPACE, TRAIN_DATA_PATH
 from feature_segmentation.utils.plotting import plot_image_label_prediction, plot_uncertainty_heatmaps, \
-    plot_uncertainty_statistics
+    plot_uncertainty_statistics, plot_image
 
 # select model to be evaluated
 models_directory = os.path.join(WORK_SPACE, "models")
@@ -15,7 +15,6 @@ ensemble_dir = os.path.join(WORK_SPACE, ensemble_name)
 
 if not os.path.exists(ensemble_dir):
     os.makedirs(ensemble_dir, exist_ok = True)
-
 
 ensemble_dict = {}
 
@@ -54,8 +53,8 @@ for i in range(0, len(test_ids) - 1):
 
     for model in model_predictions.keys():
         prediction = model_predictions[model]
-        plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode = f"test_{model}",
-                                    filename = test_ids[i])
+        plot_image([lbl], ensemble_dir, mode = f"test_{model}",
+                   filename = test_ids[i])
 
 # plot all uq maps
 plot_uncertainty_heatmaps(all_uq_maps, ensemble_dir)
