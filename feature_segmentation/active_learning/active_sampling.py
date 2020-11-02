@@ -15,7 +15,7 @@ for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
 
 from embeddings_utils import reduce_dim_unannotated
 from file_utils import get_unannotated_records
-from filter_utils import get_feature_table, apply_feature_filter
+from filter_utils import get_feature_table, apply_feature_filter, set_id_columns
 from selection_utils import select_batch
 
 from utils import move_selected_octs
@@ -67,10 +67,10 @@ if __name__ == '__main__':
 
     class Args():
         budget = 1
-        chunk_size = 10
-        number_to_search = 10
+        chunk_size = 1
+        number_to_search = 1
         sampling_rate = 49
-        name = "new_batch_20201102"
+        name = "test"
 
     args = Args()
 
@@ -82,13 +82,14 @@ if __name__ == '__main__':
     unannotated_pd = unannotated_pd.sample(args.number_to_search)
     
     features_table = get_feature_table(feature_table_paths)
+    features_table = set_id_columns(features_table)
 
     keys = ["patient_id", "laterality", "study_date"]
 
     # get features for unannotated samples
     features_table_pd = pd.merge(unannotated_pd, features_table, left_on = keys, right_on = keys, how = "left")
 
-    # get records for un fetures of interest
+    # get records for un features of interest
     features_filtered_pd = apply_feature_filter(features_table_pd)
 
     pprint(features_table.head(5))
@@ -99,7 +100,6 @@ if __name__ == '__main__':
     print("number of filtered samples are:", features_filtered_pd.shape)
 
     assert sum(unannotated_pd.patient_id.isin(annotated_pd.patient_id.values)) == 0, "patient overlap"
-    # assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
     assert features_filtered_pd is not None, "returning None"
 
@@ -108,7 +108,6 @@ if __name__ == '__main__':
 
     assert reduce_dim_unannotated(pd.DataFrame(columns = features_filtered_pd.columns.values.tolist()),
                                             chunk = args.chunk_size).size == 0, "function does not handle empty DF"
-
     assert ua_embeddings.shape[0] == features_filtered_pd.shape[0], "not all filtered oct were embedded"
 
     [ind_to_label, min_dist] = select_batch(ua_embeddings, args.budget)
