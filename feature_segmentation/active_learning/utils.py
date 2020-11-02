@@ -27,7 +27,7 @@ def move_selected_octs(selected_pd, dst_dir):
             laterality = row.laterality
         
         print(row)
-        dicom_file_path = os.path.join(OCT_DIR, str(row.patient_id), laterality, str(row.study_date), row.dicom)
+        dicom_file_path = row.dicom_path # os.path.join(OCT_DIR, str(row.patient_id), laterality, str(row.study_date), row.dicom)
 
         dc = read_file(dicom_file_path)
         vol = dc.pixel_array

@@ -34,10 +34,9 @@ def apply_feature_filter(features_table):
     fibrosis_bool = features_table["13"] > 50
     drusen_bool = features_table["8"] > 50
     srhm_bool = features_table["5"] > 50
-    fibro_vasc_bool = features_table["7"] > 50
+    # fibro_vasc_bool = features_table["7"] > 50
 
-    print(features_table.shape, sum(fibrosis_bool))
-    features_table_filtered = features_table[fibrosis_bool | drusen_bool | srhm_bool | fibro_vasc_bool]
+    features_table_filtered = features_table[fibrosis_bool | drusen_bool | srhm_bool]
 
     features_table_filtered["frame"] = features_table_filtered.frame.astype("int").copy()
     return features_table_filtered

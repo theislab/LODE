@@ -6,17 +6,17 @@ import sys
 import glob
 from pprint import pprint
 
-from feature_segmentation.active_learning.modules.embeddings import reduce_dim_unannotated
-from feature_segmentation.active_learning.modules.file_manager import get_unannotated_records
-from feature_segmentation.active_learning.modules.filter import get_feature_table, apply_feature_filter
-from feature_segmentation.active_learning.modules.selection import select_batch
-
 path = Path(os.getcwd())
 sys.path.append(str(path.parent))
 
 # add children paths
 for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
     sys.path.append(str(child_dir))
+
+from embeddings import reduce_dim_unannotated
+from file_manager import get_unannotated_records
+from modules.filter import get_feature_table, apply_feature_filter
+from selection import select_batch
 
 from utils import move_selected_octs
 from segmentation_config import WORK_SPACE
@@ -66,20 +66,21 @@ if __name__ == '__main__':
     #args = parser.parse_args()
 
     class Args():
-        budget = 2
-        chunk_size = 1
-        number_to_search = 3
+        budget = 200
+        chunk_size = 10
+        number_to_search = 100000
         sampling_rate = 49
-        name = "test"
+        name = "new_batch_20201102"
 
     args = Args()
 
     feature_table_paths = glob.glob(os.path.join(WORK_SPACE, "segmentation/feature_tables/*.csv"))
     unannotated_pd, annotated_pd = get_unannotated_records("annotated_files.csv")
-
+    
+    print("loading feature table paths: ", feature_table_paths)
     assert args.number_to_search <= unannotated_pd.shape[0], "searching more images than exist filtered"
     unannotated_pd = unannotated_pd.sample(args.number_to_search)
-
+    
     features_table = get_feature_table(feature_table_paths)
 
     keys = ["patient_id", "laterality", "study_date"]
@@ -91,6 +92,7 @@ if __name__ == '__main__':
     features_filtered_pd = apply_feature_filter(features_table_pd)
 
     pprint(features_table.head(5))
+    pprint(features_table_pd.head(5))
     pprint(features_filtered_pd.head(5))
 
     print("number of unfiltered samples are:", features_table.shape)
@@ -117,13 +119,16 @@ if __name__ == '__main__':
 
     print("format csv")
     selected_scans_pd = selected_scans.id.str.split("_", expand = True).rename(
-        columns = {0: "patient_id", 1: "study_date", 2: "laterality", 3: "frame"})
+            columns = {0: "patient_id", 1: "laterality", 2: "study_date", 3: "frame"})
 
     # assign id
     selected_scans_pd["id"] = selected_scans["id"]
+    
+    print("#"*30)
+    print(selected_scans_pd.head(30))
 
     # add dicom name
-    selected_scans_pd = pd.merge(selected_scans_pd, features_filtered_pd[["dicom", "id"]],
+    selected_scans_pd = pd.merge(selected_scans_pd, features_filtered_pd[["dicom_path", "id"]],
                                  how = "left", left_on = "id", right_on = "id")
     
     print(selected_scans_pd.head(30))
@@ -133,8 +138,8 @@ if __name__ == '__main__':
     if not os.path.exists(DST_DIR):
         os.makedirs(DST_DIR)
 
-    assert selected_scans_pd.patient_id.drop_duplicates().shape[0] == selected_scans_pd.shape[0], \
-        "patients selected are not unique"
+    #assert selected_scans_pd.patient_id.drop_duplicates().shape[0] == selected_scans_pd.shape[0], \
+    #    "patients selected are not unique"
 
     selected_path = os.path.join(DST_DIR, f"records_selected_{args.name}.csv")
     selected_scans_pd.to_csv(selected_path)
