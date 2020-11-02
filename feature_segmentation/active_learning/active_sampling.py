@@ -13,10 +13,10 @@ sys.path.append(str(path.parent))
 for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
     sys.path.append(str(child_dir))
 
-from embeddings import reduce_dim_unannotated
-from file_manager import get_unannotated_records
-from modules.filter import get_feature_table, apply_feature_filter
-from selection import select_batch
+from embeddings_utils import reduce_dim_unannotated
+from file_utils import get_unannotated_records
+from filter_utils import get_feature_table, apply_feature_filter
+from selection_utils import select_batch
 
 from utils import move_selected_octs
 from segmentation_config import WORK_SPACE
@@ -66,9 +66,9 @@ if __name__ == '__main__':
     #args = parser.parse_args()
 
     class Args():
-        budget = 200
+        budget = 1
         chunk_size = 10
-        number_to_search = 100000
+        number_to_search = 10
         sampling_rate = 49
         name = "new_batch_20201102"
 
@@ -102,8 +102,6 @@ if __name__ == '__main__':
     # assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
     assert features_filtered_pd is not None, "returning None"
-    #assert not (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (
-    #        args.chunk_size > 1), "chunk size to large"
 
     # embedding
     ua_embeddings = reduce_dim_unannotated(features_filtered_pd, chunk = args.chunk_size)
@@ -137,9 +135,6 @@ if __name__ == '__main__':
 
     if not os.path.exists(DST_DIR):
         os.makedirs(DST_DIR)
-
-    #assert selected_scans_pd.patient_id.drop_duplicates().shape[0] == selected_scans_pd.shape[0], \
-    #    "patients selected are not unique"
 
     selected_path = os.path.join(DST_DIR, f"records_selected_{args.name}.csv")
     selected_scans_pd.to_csv(selected_path)
