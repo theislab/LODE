@@ -48,26 +48,28 @@ def reduce_dim_unannotated(table, chunk):
         print("completed another embedding chunk")
         embeddings = [[], []]
         for ep in ec:
-            features_ep = table[table.embedding_path == ep]
-            embedding = load_volume(ep)
-            embedding_frames = features_ep.frame.tolist()
+            try:
+                features_ep = table[table.embedding_path == ep]
+                embedding = load_volume(ep)
+                embedding_frames = features_ep.frame.tolist()
 
-            # add all embeddings in volume
-            for frame in embedding_frames:
-                # print(frame, ep)
-                # extract id and embedding array
-                id_ = features_ep[features_ep.frame == frame].id.iloc[0]
-                embedding_array = embedding[frame, :]
+                # add all embeddings in volume
+                for frame in embedding_frames:
+                    # print(frame, ep)
+                    # extract id and embedding array
+                    id_ = features_ep[features_ep.frame == frame].id.iloc[0]
+                    embedding_array = embedding[frame, :]
 
-                assert isinstance(id_, str), "id value must be string"
-                assert type(embedding_array) is not np.array, "embedding vector must be numpy array"
+                    assert isinstance(id_, str), "id value must be string"
+                    assert type(embedding_array) is not np.array, "embedding vector must be numpy array"
 
-                if embedding_array.size == 0:
-                    print("embedding array is empty, skip record")
-                    continue
-                embeddings[0].append(id_)
-                embeddings[1].append(embedding_array)
-
+                    if embedding_array.size == 0:
+                        print("embedding array is empty, skip record")
+                        continue
+                    embeddings[0].append(id_)
+                    embeddings[1].append(embedding_array)
+            except:
+                print("File failed to load: ", ep)
         print("finished loading")
         umap_ = apply_umap(embeddings[1].copy())
 

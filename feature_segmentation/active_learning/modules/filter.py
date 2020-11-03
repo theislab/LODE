@@ -31,12 +31,12 @@ def apply_feature_filter(features_table):
     @return:
     @rtype:
     """
-    fibrosis_bool = features_table["13"] > 50
-    drusen_bool = features_table["8"] > 50
-    srhm_bool = features_table["5"] > 50
+    #fibrosis_bool = features_table["13"] > 50
+    drusen_bool = features_table["8"] > 100
+    srhm_bool = features_table["5"] > 100
     # fibro_vasc_bool = features_table["7"] > 50
 
-    features_table_filtered = features_table[fibrosis_bool | drusen_bool | srhm_bool]
+    features_table_filtered = features_table[srhm_bool | drusen_bool]
 
     features_table_filtered["frame"] = features_table_filtered.frame.astype("int").copy()
     return features_table_filtered
