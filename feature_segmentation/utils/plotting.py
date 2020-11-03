@@ -6,7 +6,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors, gridspec
 
-from feature_segmentation.config import TRAIN_DATA_PATH
+from feature_segmentation.segmentation_config import TRAIN_DATA_PATH
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
 
 
