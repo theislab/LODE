@@ -1,5 +1,3 @@
-from pprint import pprint
-
 import numpy as np
 import umap
 from sklearn import decomposition
@@ -82,55 +80,3 @@ def reduce_dim_unannotated(table, chunk):
 
     print("--- unannotated images embedded ---")
     return umap_embeddings
-
-
-if __name__ == "__main__":
-    import os
-    import random
-    from pathlib import Path
-    import sys
-
-    path = Path(os.getcwd())
-    sys.path.append(str(path.parent))
-    sys.path.append(str(path.parent.parent))
-
-    from file_manager import FileManager
-    from filter import Filter
-    from utils import args
-
-    file_manager = FileManager("annotated_files.csv")
-
-    # get record paths
-    unannotated_pd, annotated_pd = file_manager.unannotated_records(use_cache = False)
-    # unannotated_pd = unannotated_pd.sample(args.number_to_search)
-
-    filter = Filter(file_manager.feature_table_paths, unannotated_pd)
-
-    features_table = filter.selection_table()
-
-    keys = ["patient_id", "laterality", "study_date"]
-    features_table_pd = pd.merge(unannotated_pd, features_table, left_on = keys, right_on = keys, how = "left")
-    features_ffiltered_pd = filter.filter_paths(features_table_pd)
-
-    pprint(features_table.head(5))
-    pprint(features_ffiltered_pd.head(5))
-
-    print("number of unfiltered samples are:", features_table.shape)
-    print("number of filtered samples are:", features_ffiltered_pd.shape)
-
-    assert sum(unannotated_pd.patient_id.isin(annotated_pd.patient_id.values)) == 0, "patient overlap"
-    assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
-    assert features_table is not None, "returning None"
-    assert features_ffiltered_pd is not None, "returning None"
-    assert (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (
-                args.chunk_size > 1), "chunk size to large"
-
-    embedding = OCTEmbeddings()
-
-    # embedding
-    ua_embeddings = embedding.reduce_dim_unannotated(features_ffiltered_pd, chunk = args.chunk_size)
-
-    assert embedding.reduce_dim_unannotated(pd.DataFrame(columns = features_ffiltered_pd.columns.values.tolist()),
-                                            chunk = args.chunk_size).size == 0, "function does not handle empty DF"
-
-    assert ua_embeddings.shape[0] == features_ffiltered_pd.shape[0], "not all filtered oct were embedded"

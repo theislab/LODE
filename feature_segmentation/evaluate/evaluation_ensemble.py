@@ -7,14 +7,15 @@ from feature_segmentation.utils.plotting import plot_image_label_prediction, plo
     plot_uncertainty_statistics, plot_image
 
 # select model to be evaluated
-models_directory = os.path.join(WORK_SPACE, "models")
-ensemble_models = ["49", "48"]
+ensemble_dir = "/media/olle/Seagate/LODE/segmentation_ensembles/ensemble_stratified"
+models_directory = os.path.join(ensemble_dir, "models")
+ensemble_models = os.listdir(models_directory) # ["56", "57"]
 
-ensemble_name = "test2_ensemble"
+ensemble_name = "ensemble_stratified"
 ensemble_dir = os.path.join(WORK_SPACE, ensemble_name)
 
 if not os.path.exists(ensemble_dir):
-    os.makedirs(ensemble_dir, exist_ok = True)
+    os.makedirs(ensemble_dir, exist_ok=True)
 
 ensemble_dict = {}
 
@@ -53,6 +54,8 @@ for i in range(0, len(test_ids) - 1):
 
     for model in model_predictions.keys():
         prediction = model_predictions[model]
+        plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode=f"test_{model}",
+                                    filename=test_ids[i])
         plot_image([lbl], ensemble_dir, mode = f"test_{model}",
                    filename = test_ids[i])
 

@@ -7,12 +7,18 @@ from pydicom import read_file
 import glob
 import os
 import sys
-root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
-search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
+from pathlib import Path
+
+path_variable = Path(os.path.dirname(__file__))
+sys.path.insert(0, str(path_variable))
+sys.path.insert(0, str(path_variable.parent))
+
+from segmentation_config import PROJ_DIR
+
+search_paths = [i for i in glob.glob(PROJ_DIR + "/*/*") if os.path.isdir(i)]
 
 for sp in search_paths:
-        sys.path.append(sp)
-
+    sys.path.append(sp)
 def invert_camera_effect(img):
     # annotate camera artifact
     if len(img.shape) == 3:
@@ -97,6 +103,16 @@ def read_resize(img_path, label_path, shape):
 
 
 def read_resize_image(img_path, shape):
+    """
+    Parameters
+    ----------
+    img_path : str; full path to image
+    shape : tuple, (img_width, img_height)
+
+    Returns
+    -------
+    resized oct image
+    """
     # load samples
     im = Image.open(img_path)
 

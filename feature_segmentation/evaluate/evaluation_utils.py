@@ -313,6 +313,24 @@ def save_volume(segmentation, save_path, record_name):
     np.save(save_path + f"/{record_name}.npy", segmentation)
 
 
+def save_segmentation(segmentation, save_path, record_name):
+    """
+    Parameters
+    ----------
+    segmentation : segmented oct
+    save_path : str; where to save
+
+    Returns
+    -------
+    None
+    """
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    np.save(save_path + f"/{record_name}.npy", segmentation)
+
+
 def save_embedding(embeding, save_path, record_name):
     """
     Parameters
@@ -361,7 +379,32 @@ def initialize_volume_feature_dict():
             11: [], 12: [], 13: [], 14: [], 15: []}
 
 
-def segmentation_to_vector(segmentation, feature_dict):
+def oct_segmentation_to_vector(segmentation):
+    """
+    Parameters
+    ----------
+    segmentation : array, segmented oct
+    feature_dict : dict with counts for each feature
+
+    Returns
+    -------
+    feature dict with feature statistics for segmentation
+    """
+    feature_dict = {}
+
+    # count features
+    feature_counts = np.unique(segmentation, return_counts = True)
+
+    # add do dict
+    for feature in SEGMENTED_CLASSES:
+        if int(feature) in feature_counts[0]:
+            feature_dict[feature] = feature_counts[1][feature_counts[0].tolist().index(int(feature))]
+        else:
+            feature_dict[feature] = 0
+    return feature_dict
+
+
+def segmentation_to_vector(segmentation, feature_dict={}):
     """
     Parameters
     ----------
