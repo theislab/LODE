@@ -6,7 +6,7 @@ import glob
 import argparse
 from pathlib import Path
 
-from feature_segmentation.utils.plotting import save_segmentation_plot
+from feature_segmentation.utils.plotting import save_segmentation_plot, plot_image_predictions
 
 path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable))
@@ -33,8 +33,9 @@ if __name__ == "__main__":
 
     # select model to be evaluated
     ensemble_name = "ensemble_stratified"
-    ensemble_models = ["56"]
-    ensemble_dir = os.path.join(WORK_SPACE, f"segmentation/{ensemble_name}")
+    ENSEMBLE_SPACE = "/media/olle/Seagate/LODE/workspace/segmentation_ensembles"
+    ensemble_models = ["57"]#, "57", "58"]
+    ensemble_dir = os.path.join(ENSEMBLE_SPACE, f"{ensemble_name}/models")
 
     # get dictionary holding all models
     ensemble_dict = get_ensemble_dict(ensemble_models, ensemble_dir)
@@ -48,10 +49,11 @@ if __name__ == "__main__":
     shape = (256, 256)
     save_oct = True
 
-    data_path = WORK_SPACE + "/segmentation/data/versions/iteration_10"
+    data_path = "/media/olle/Seagate/LODE/workspace/new_samples/selected_new_batch_20201102"
     oct_paths = glob.glob(data_path + "/*/*.png")
     i = 0
     for oct_path in tqdm(oct_paths):
+        o_path = Path(oct_path)
         try:
             oct_ = read_resize_image(oct_path, shape)
 
@@ -66,10 +68,16 @@ if __name__ == "__main__":
                 feature_statistics = feature_statistics.append(pd.DataFrame(feature_dict, index=[0]), sort = True)
 
                 if save_oct:
-                    save_segmentation(ensemble_prediction, os.path.dirname(oct_path),
+                    save_segmentation(ensemble_prediction, os.path.dirname(oct_path) + "/segmentation",
                                       feature_dict["id"].replace(".png", ""))
 
-                save_segmentation_plot(oct_path.replace(".png", "_seg.png"), ensemble_prediction)
+                save_segmentation_plot(os.path.dirname(oct_path) + "/segmentation/" + feature_dict["id"],
+                                       ensemble_prediction)
+
+                plot_image_predictions([oct_, ensemble_prediction],
+                                       o_path.parent.parent.as_posix() + "/visulizations",
+                                       "test",
+                                       feature_dict["id"].replace(".png", ""))
             else:
                 print("oct does not have requested shape, skipping")
                 continue
