@@ -112,7 +112,7 @@ def main():
     # test iteration
     PROJ_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation"
     annotatio_file = ".json"
-    annotator = "ben"
+    annotator = "test"
     iteration = f"iteration_{annotator}"
     out_dir = iteration
     labels_file = "labels.txt"
@@ -173,7 +173,7 @@ def main():
     # create out dir
     class_name_to_id = set_outdir(out_dir, labels_file)
 
-    files_to_process = iter_nine_json_files # iter_eight_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files + iter_seven_json_files
+    files_to_process = iter_test_json_files# iter_nine_json_files # iter_eight_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files + iter_seven_json_files
     labelfiles_to_output(files_to_process, out_dir, class_name_to_id, lq_records = lq_records, iteration = iteration,
                          with_choroid = choroid, fibrosis_change_log = fibrosis_change_log)
 
