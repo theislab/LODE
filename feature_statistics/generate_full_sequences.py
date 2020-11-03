@@ -19,7 +19,7 @@ if __name__ == "__main__":
         sequences.Measurement.FEATURES = feature_names
 
     # events is a table containing injections and lens surgery events for each patient
-    events = pd.read_csv(os.path.join(workspace_dir, 'sequence_data/longitudinal_events_ops.csv'), index_col = 0)
+    events = pd.read_csv(os.path.join(workspace_dir, 'sequence_data/longitudinal_events_ops_integrated.csv'), index_col = 0)
     events = events.sort_values('study_date')
     events.loc[:, 'visus?'] = False
     events.loc[:, 'oct?'] = False
@@ -42,6 +42,8 @@ if __name__ == "__main__":
     seqs = []
     i = 0
     for name, group in tqdm(grouped_patients):
+        #if name == (502, 'L'):
+        print("")
         # get events for this group
         group_events = None
         try:

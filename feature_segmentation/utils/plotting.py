@@ -1,13 +1,35 @@
 from __future__ import print_function
+
 import os
+import sys
+from pathlib import Path
+import pandas as pd
+import glob
+
+
+root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
+search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
+
+for sp in search_paths:
+        sys.path.append(sp)
+
+path_variable = Path(os.path.dirname(__file__))
+sys.path.insert(0, str(path_variable))
+sys.path.insert(0, str(path_variable.parent))
+
 import numpy as np
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors, gridspec
 
+<<<<<<< HEAD
 from feature_segmentation.segmentation_config import TRAIN_DATA_PATH
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
+=======
+from segmentation_config import TRAIN_DATA_PATH
+from generators.generator_utils.image_processing import read_resize
+>>>>>>> 44f77dde811efed16e9f2df0f3812e950b298428
 
 
 def color_mappings():
@@ -141,20 +163,20 @@ def plot_image_label_prediction(records, model_dir, mode, filename):
     ax2.set_title("ground truth")
 
     ax3 = fig.add_subplot(gs[0, 2])
-    colorbar_im = ax3.imshow(records[2], cmap=seg_cmap, norm=seg_norm)
+    #colorbar_im = ax3.imshow(records[2], cmap=seg_cmap, norm=seg_norm)
     ax3.set_xticks([])
     ax3.set_yticks([])
     ax3.set_title("prediction")
 
     # set colorbar ticks
-    tick_loc_array = np.arange(len(bounds)) + 0.5
-    tick_loc_list = tick_loc_array.tolist()
-    tick_list = np.arange(len(bounds)).tolist()
-    c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
+    #tick_loc_array = np.arange(len(bounds)) + 0.5
+    #tick_loc_list = tick_loc_array.tolist()
+    #tick_list = np.arange(len(bounds)).tolist()
+    #c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
 
     # set ticks
-    c_bar.set_ticks(tick_loc_list)
-    c_bar.ax.set_yticklabels(tick_list)
+    #c_bar.set_ticks(tick_loc_list)
+    #c_bar.ax.set_yticklabels(tick_list)
 
     if not os.path.exists(os.path.join(model_dir, mode + "_records")):
         os.makedirs(os.path.join(model_dir, mode + "_records"))
@@ -214,6 +236,40 @@ def plot_image_predictions(records, model_dir, mode, filename):
         os.makedirs(os.path.join(model_dir, mode + "_img_pred_records"))
 
     plt.savefig(os.path.join(model_dir, mode + "_img_pred_records", filename))
+    plt.close()
+
+
+def plot_image(records, model_dir, mode, filename):
+    """
+    :param records: list containing numpy array of image
+    :param model_dir: directory of model where to save images
+    :param mode: str: train or test
+    :param filename: str: filename of image
+    :return: save images in directory for inspection
+    """
+
+    seg_cmap, seg_norm, bounds = color_mappings()
+    fig = plt.figure(figsize=(16, 4))
+
+    gs = gridspec.GridSpec(nrows=1,
+                           ncols=1,
+                           figure=fig,
+                           width_ratios=[1],
+                           height_ratios=[1],
+                           wspace=0.3,
+                           hspace=0.3)
+
+    # turn image to 3 channel
+    ax3 = fig.add_subplot(gs[0])
+    ax3.imshow(records[1], cmap = seg_cmap, norm = seg_norm)
+    ax3.set_xticks([])
+    ax3.set_yticks([])
+    ax3.set_title("prediction")
+
+    if not os.path.exists(os.path.join(model_dir, mode + "_pred_records")):
+        os.makedirs(os.path.join(model_dir, mode + "_pred_records"))
+
+    plt.savefig(os.path.join(model_dir, mode + "_pred_records", filename))
     plt.close()
 
 

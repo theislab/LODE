@@ -3,6 +3,15 @@ from PIL import Image
 import cv2
 from random import random;
 
+from pydicom import read_file
+import glob
+import os
+import sys
+root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
+search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
+
+for sp in search_paths:
+        sys.path.append(sp)
 
 def invert_camera_effect(img):
     # annotate camera artifact
@@ -104,3 +113,35 @@ def read_resize_image(img_path, shape):
     # Store sample
     image = im_resized.reshape(shape[0], shape[1], 3)
     return image
+
+
+def read_oct_from_dicom(dicom_path, shape):
+    """
+    Parameters
+    ----------
+    dicom_path : path to dicom file
+    shape : shape for resizing
+
+    Returns
+    -------
+    None of OCT volume does not have standard shape of (49, 496, 512), else the resized oct volume array
+    """
+    dc = read_file(dicom_path)
+
+    if not dc.pixel_array.shape == (49, 496, 512):
+        return None
+
+    else:
+        oct_volume = dc.pixel_array
+        octs = []
+        for i in range(oct_volume.shape[0]):
+            oct_ = oct_volume[i, :, :]
+
+            oct_resized = resize(oct_, shape = shape)
+
+            # if image grey scale, make 3 channel
+            if len(oct_resized.shape) == 2:
+                oct_resized = np.stack((oct_resized,) * 3, axis = -1)
+
+            octs.append(oct_resized.reshape(shape[0], shape[1], 3))
+        return np.array(octs)

@@ -3,9 +3,23 @@ import os
 import pandas as pd
 from pathlib import Path
 import sys
+import glob
 from pprint import pprint
 
+path = Path(os.getcwd())
+sys.path.append(str(path.parent))
 
+# add children paths
+for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
+    sys.path.append(str(child_dir))
+
+from embeddings_utils import reduce_dim_unannotated
+from file_utils import get_unannotated_records
+from filter_utils import get_feature_table, apply_feature_filter, set_id_columns
+from selection_utils import select_batch
+
+from utils import move_selected_octs
+from segmentation_config import WORK_SPACE
 '''
 Program to perform active learning on a pool of unannotated OCT files.
 
@@ -49,85 +63,77 @@ if __name__ == '__main__':
     parser.add_argument("name", help = "name of iteration to save results under", type = str,
                         default = "test")
 
-    args = parser.parse_args()
+    #args = parser.parse_args()
 
-    path = Path(os.getcwd())
-    sys.path.append(str(path.parent))
+    class Args():
+        budget = 1
+        chunk_size = 1
+        number_to_search = 1
+        sampling_rate = 49
+        name = "test"
 
-    # add children paths
-    for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
-        sys.path.append(str(child_dir))
+    args = Args()
 
-    from file_manager import FileManager
-    from filter import Filter
-    from embeddings import OCTEmbeddings
-    from selection import Select
-    from utils import move_selected_octs
-    from config import WORK_SPACE, EMBEDD_DIR
-
-    file_manager = FileManager("annotated_files.csv")
-
-    # get record paths
-    unannotated_pd, annotated_pd = file_manager.unannotated_records(use_cache = False)
-
+    feature_table_paths = glob.glob(os.path.join(WORK_SPACE, "segmentation/feature_tables/*.csv"))
+    unannotated_pd, annotated_pd = get_unannotated_records("annotated_files.csv")
+    
+    print("loading feature table paths: ", feature_table_paths)
     assert args.number_to_search <= unannotated_pd.shape[0], "searching more images than exist filtered"
     unannotated_pd = unannotated_pd.sample(args.number_to_search)
-
-    filter = Filter(file_manager.feature_table_paths, unannotated_pd)
-
-    features_table = filter.selection_table()
+    
+    features_table = get_feature_table(feature_table_paths)
+    features_table = set_id_columns(features_table)
 
     keys = ["patient_id", "laterality", "study_date"]
+
+    # get features for unannotated samples
     features_table_pd = pd.merge(unannotated_pd, features_table, left_on = keys, right_on = keys, how = "left")
-    features_ffiltered_pd = filter.filter_paths(features_table_pd)
+
+    # get records for un features of interest
+    features_filtered_pd = apply_feature_filter(features_table_pd)
 
     pprint(features_table.head(5))
-    pprint(features_ffiltered_pd.head(5))
+    pprint(features_table_pd.head(5))
+    pprint(features_filtered_pd.head(5))
 
     print("number of unfiltered samples are:", features_table.shape)
-    print("number of filtered samples are:", features_ffiltered_pd.shape)
+    print("number of filtered samples are:", features_filtered_pd.shape)
 
     assert sum(unannotated_pd.patient_id.isin(annotated_pd.patient_id.values)) == 0, "patient overlap"
-    assert sum(features_ffiltered_pd["13"] < 50) == 0, "all record contains feature oi"
     assert features_table is not None, "returning None"
-    assert features_ffiltered_pd is not None, "returning None"
-    #assert not (features_ffiltered_pd.embedding_path.drop_duplicates().shape[0] // args.chunk_size) > 5 and not (
-    #        args.chunk_size > 1), "chunk size to large"
-
-    embedding = OCTEmbeddings()
+    assert features_filtered_pd is not None, "returning None"
 
     # embedding
-    ua_embeddings = embedding.reduce_dim_unannotated(features_ffiltered_pd, chunk = args.chunk_size)
+    ua_embeddings = reduce_dim_unannotated(features_filtered_pd, chunk = args.chunk_size)
 
-    assert embedding.reduce_dim_unannotated(pd.DataFrame(columns = features_ffiltered_pd.columns.values.tolist()),
+    assert reduce_dim_unannotated(pd.DataFrame(columns = features_filtered_pd.columns.values.tolist()),
                                             chunk = args.chunk_size).size == 0, "function does not handle empty DF"
+    assert ua_embeddings.shape[0] == features_filtered_pd.shape[0], "not all filtered oct were embedded"
 
-    assert ua_embeddings.shape[0] == features_ffiltered_pd.shape[0], "not all filtered oct were embedded"
-
-    selection = Select(args.budget)
-    [ind_to_label, min_dist] = selection.select_batch(ua_embeddings)
+    [ind_to_label, min_dist] = select_batch(ua_embeddings, args.budget)
 
     selected_scans = ua_embeddings.iloc[ind_to_label]
 
     print("format csv")
     selected_scans_pd = selected_scans.id.str.split("_", expand = True).rename(
-        columns = {0: "patient_id", 1: "study_date", 2: "laterality", 3: "frame"})
+            columns = {0: "patient_id", 1: "laterality", 2: "study_date", 3: "frame"})
 
     # assign id
     selected_scans_pd["id"] = selected_scans["id"]
+    
+    print("#"*30)
+    print(selected_scans_pd.head(30))
 
     # add dicom name
-    selected_scans_pd = pd.merge(selected_scans_pd, features_ffiltered_pd[["dicom", "id"]],
+    selected_scans_pd = pd.merge(selected_scans_pd, features_filtered_pd[["dicom_path", "id"]],
                                  how = "left", left_on = "id", right_on = "id")
-
+    
+    print(selected_scans_pd.head(30))
     print("records to select for annotations are: ", selected_scans)
     DST_DIR = os.path.join(WORK_SPACE, "active_learning", f"selected_{args.name}")
 
     if not os.path.exists(DST_DIR):
         os.makedirs(DST_DIR)
-
-    #assert selected_scans_pd.patient_id.drop_duplicates().shape[0] == selected_scans_pd.shape[0], \
-    #    "patients selected are not unique"
 
     selected_path = os.path.join(DST_DIR, f"records_selected_{args.name}.csv")
     selected_scans_pd.to_csv(selected_path)

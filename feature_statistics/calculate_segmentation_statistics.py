@@ -9,7 +9,9 @@ num_cores = 60
 
 print("reading input files")
 inputs = tqdm(os.listdir(SEG_DIR))
-# inputs = ["61619_20170110_L_512575001.npy"]*100
+print("Number of segmentation to process is: ", len(inputs))
+
+#inputs = ["61619_20170110_L_512575001.npy"]*100
 print(f"number of cores {num_cores} set to paralell process")
 feature_pd = None
 
@@ -44,6 +46,9 @@ def process(i):
 
 
 if __name__ == "__main__":
-    processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs)
+    processed_list = Parallel(n_jobs = num_cores)(delayed(process)(i) for i in inputs) 
+    print("Remove None values", len(processed_list))
+    processed_list = [l for l in processed_list if l is not None]
+    print("Get the processed list", len(processed_list))
     features_pd = pd.DataFrame.from_dict(processed_list)
     features_pd.to_csv(os.path.join(WORK_SPACE, "segmentation_statistics.csv"))
