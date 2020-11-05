@@ -91,9 +91,12 @@ if __name__ == "__main__":
                 print("oct does not have requested shape, skipping")
                 continue
 
-            if i % 100 == 0:
+            if i % 1000 == 0:
                 # plot all uq maps
                 plot_uncertainty_heatmaps(uq_maps, data_path + "/uq_heatmap")
+
+                # reset uq map dict
+                uq_maps = {}
 
                 # progress
                 feature_statistics.to_csv(data_path + "/feature_statistics.csv")
