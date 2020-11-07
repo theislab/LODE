@@ -8,11 +8,7 @@
   "load_train_records": 0,
   "load_prepared_split": 1,
   "dropout": 0.2,
-<<<<<<< HEAD
-  "model": "deeper_unet",
-=======
   "model": "deep_unet",
->>>>>>> 6823769523637e6a18dd7b9935806fd27ca67b16
   "choroid_latest": 0,
   "n_scans": 1,
   "flip": 0.5,
@@ -20,5 +16,6 @@
   "gamma": 0.0,
   "noise": 0.5,
   "elastic": 0.1,
+  "balance_dataset": 1,
   "aug_strategy": "medium",
   "pretrained_model": "./pretrained_models/deep_unet_first_examples"}

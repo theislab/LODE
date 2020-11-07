@@ -57,7 +57,6 @@ if __name__ == "__main__":
 
             if oct_ is not None:
                 model_segmentations, ensemble_prediction, uq_map = ensemble_predict(ensemble_dict, oct_)
-
                 feature_dict = oct_segmentation_to_vector(ensemble_prediction)
 
                 feature_dict["id"] = f"{oct_path.split('/')[-1]}"
