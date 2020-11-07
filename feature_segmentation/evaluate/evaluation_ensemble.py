@@ -7,12 +7,9 @@ from feature_segmentation.utils.plotting import plot_image_label_prediction, plo
     plot_uncertainty_statistics, plot_image
 
 # select model to be evaluated
-ensemble_dir = "/media/olle/Seagate/LODE/segmentation_ensembles/ensemble_stratified"
+ensemble_dir = "/media/olle/Seagate/LODE/workspace/segmentation_ensembles/ensemble_stratified_camera_effect"
 models_directory = os.path.join(ensemble_dir, "models")
-ensemble_models = os.listdir(models_directory) # ["56", "57"]
-
-ensemble_name = "ensemble_stratified"
-ensemble_dir = os.path.join(WORK_SPACE, ensemble_name)
+ensemble_models = os.listdir(models_directory)  # ["56", "57"]
 
 if not os.path.exists(ensemble_dir):
     os.makedirs(ensemble_dir, exist_ok=True)
@@ -50,14 +47,14 @@ for i in range(0, len(test_ids) - 1):
     all_uq_maps[test_ids[i]] = uq_map
 
     # plot all images and their labels/predictions
-    plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode = "test", filename = test_ids[i])
+    plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode="test", filename=test_ids[i])
 
     for model in model_predictions.keys():
         prediction = model_predictions[model]
         plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode=f"test_{model}",
                                     filename=test_ids[i])
-        plot_image([lbl], ensemble_dir, mode = f"test_{model}",
-                   filename = test_ids[i])
+        plot_image([lbl[:, :, 0]], ensemble_dir, mode=f"test_{model}",
+                   filename=test_ids[i])
 
 # plot all uq maps
 plot_uncertainty_heatmaps(all_uq_maps, ensemble_dir)

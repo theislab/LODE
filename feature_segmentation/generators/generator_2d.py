@@ -80,7 +80,7 @@ class DataGenerator(keras.utils.Sequence):
             lbl_path = glob.glob(os.path.join(self.label_path, ID.replace(".png", "*")))[0]
             #im_path = os.path.join(self.image_path, ID)
             #lbl_path = os.path.join(self.label_path, ID)
-            im_resized, lbl_resized = read_resize(im_path, lbl_path, self.shape)
+            im_resized, lbl_resized = read_resize_random_invert(im_path, lbl_path, self.shape)
 
             # Store sample
             X[i, ] = im_resized

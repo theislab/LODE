@@ -66,11 +66,11 @@ if __name__ == '__main__':
     #args = parser.parse_args()
 
     class Args():
-        budget = 1
-        chunk_size = 1
-        number_to_search = 1
+        budget = 200
+        chunk_size = 10
+        number_to_search = 10000
         sampling_rate = 49
-        name = "test"
+        name = "srhm_drusen_20201102"
 
     args = Args()
 
@@ -79,7 +79,7 @@ if __name__ == '__main__':
     
     print("loading feature table paths: ", feature_table_paths)
     assert args.number_to_search <= unannotated_pd.shape[0], "searching more images than exist filtered"
-    unannotated_pd = unannotated_pd.sample(args.number_to_search)
+    # unannotated_pd = unannotated_pd.sample(args.number_to_search)
     
     features_table = get_feature_table(feature_table_paths)
     features_table = set_id_columns(features_table)
@@ -91,7 +91,8 @@ if __name__ == '__main__':
 
     # get records for un features of interest
     features_filtered_pd = apply_feature_filter(features_table_pd)
-
+    
+    feature_filtered_pd = features_filtered_pd.sample(args.number_to_search)
     pprint(features_table.head(5))
     pprint(features_table_pd.head(5))
     pprint(features_filtered_pd.head(5))
@@ -108,7 +109,8 @@ if __name__ == '__main__':
 
     assert reduce_dim_unannotated(pd.DataFrame(columns = features_filtered_pd.columns.values.tolist()),
                                             chunk = args.chunk_size).size == 0, "function does not handle empty DF"
-    assert ua_embeddings.shape[0] == features_filtered_pd.shape[0], "not all filtered oct were embedded"
+
+    #assert ua_embeddings.shape[0] == features_filtered_pd.shape[0], "not all filtered oct were embedded"
 
     [ind_to_label, min_dist] = select_batch(ua_embeddings, args.budget)
 
