@@ -22,10 +22,7 @@ class DataGenerator(keras.utils.Sequence):
         self.on_epoch_end()
         self.params = params
         self.image_path = os.path.join(params.data_path, "images")
-        if choroid_latest:
-            self.label_path = os.path.join(params.data_path, "masks_choroid")
-        else:
-            self.label_path = os.path.join(params.data_path, "masks")
+        self.label_path = os.path.join(params.data_path, "masks")
 
         self.is_training = is_training
         self.augment_box = get_augmentations(params)[params.aug_strategy]
