@@ -5,8 +5,11 @@ import os
 import keras.backend as K
 from models.model import get_model
 import pandas as pd
+import matplotlib.pyplot as plt
 from random import shuffle
 from segmentation_config import TRAIN_DATA_PATH
+import cv2
+
 
 # load utils classes
 from utils.plotting import plot_image_label_prediction
@@ -49,7 +52,7 @@ test_generator = DataGenerator(validation_ids, params=params, is_training=False,
                                pretraining=False, choroid_latest=params.choroid_latest)
 
 # set model tries
-model_configs = ["volumeNet"]
+model_configs = ["deep_unet"]
 
 for model_config in model_configs:
     # set this iterations model
@@ -67,8 +70,10 @@ for model_config in model_configs:
     pd.DataFrame(test_ids).to_csv(os.path.join(logging.model_directory + "/test_ids.csv"))
 
     # plot examples
-    # for k in range(2):
-    #    train_generator.example_record()
+    for k in range(100):
+        record, name = train_generator.example_record()
+        cv2.imwrite(logging.model_directory + f"train_image_{k}.png", record[0]*255)
+        plt.imsave(logging.model_directory + f"train_label_{k}.png", record[1]*(255//15))
 
     # for k in range(len(test_ids)):
     #    test_generator.example_record()

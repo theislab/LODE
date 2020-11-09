@@ -1,45 +1,33 @@
 import tensorflow as tf
+import tensorflow.keras.backend as K
 
 
-def dice_loss(y_true, y_pred, num_labels):
-
-    probabilities = tf.keras.backend.reshape(y_pred, [-1, num_labels])
-    y_true_flat = tf.keras.backend.reshape(y_true, [-1])
-
-    onehots_true = tf.one_hot(tf.cast(y_true_flat, tf.int32), num_labels)
-
-    numerator = tf.reduce_sum(onehots_true * probabilities, axis = -1)
-    denominator = tf.reduce_sum(onehots_true + probabilities, axis = -1)
-
-    loss = 1.0 - 2.0 * (numerator / denominator)
-    return tf.keras.backend.mean(loss)
+def dice_coef(y_true, y_pred, smooth=1):
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+    intersection = K.sum(y_true_f * y_pred_f)
+    return (2. * intersection + smooth) / (K.sum(y_true_f) + K.sum(y_pred_f) + smooth)
 
 
-def gen_dice(y_true, y_pred, eps=1e-6):
-    """both tensors are [b, h, w, classes] and y_pred is in logit form"""
+def dice_coef_loss(y_true, y_pred):
+    return 1 - dice_coef(y_true, y_pred)
 
-    # [b, h, w, classes]
-    pred_tensor = y_pred
-    y_true_shape = tf.shape(y_true)
 
-    # [b, h*w, classes]
-    y_true = tf.reshape(y_true, [-1, y_true_shape[1] * y_true_shape[2], y_true_shape[3]])
-    y_pred = tf.reshape(pred_tensor, [-1, y_true_shape[1] * y_true_shape[2], y_true_shape[3]])
+def tversky(y_true, y_pred, smooth=1, alpha=0.7):
+    y_true_pos = K.flatten(y_true)
+    y_pred_pos = K.flatten(y_pred)
+    true_pos = K.sum(y_true_pos * y_pred_pos)
+    false_neg = K.sum(y_true_pos * (1 - y_pred_pos))
+    false_pos = K.sum((1 - y_true_pos) * y_pred_pos)
+    return (true_pos + smooth) / (true_pos + alpha * false_neg + (1 - alpha) * false_pos + smooth)
 
-    # [b, classes]
-    # count how many of each class are present in
-    # each image, if there are zero, then assign
-    # them a fixed weight of eps
-    # counts = tf.reduce_sum(y_true, axis=1)
-    # weights = 1. / (counts ** 2)
-    # weights = tf.where(tf.math.is_finite(weights), weights, eps)
 
-    multed = tf.reduce_sum(y_true * y_pred, axis = 1)
-    summed = tf.reduce_sum(y_true + y_pred, axis = 1)
+def tversky_loss(y_true, y_pred):
+    return 1 - tversky(y_true, y_pred)
 
-    # [b]
-    numerators = tf.reduce_sum(multed, axis = -1)
-    denom = tf.reduce_sum(summed, axis = -1)
-    dices = 1. - 2. * numerators / denom
-    dices = tf.where(tf.math.is_finite(dices), dices, tf.zeros_like(dices))
-    return tf.reduce_mean(dices)
+
+def focal_tversky_loss(y_true, y_pred, gamma=0.75):
+    y_true = tf.cast(y_true, tf.int32)
+    y_true = tf.one_hot(y_true, 16)
+    tv = tversky(y_true, y_pred)
+    return K.pow((1 - tv), gamma)

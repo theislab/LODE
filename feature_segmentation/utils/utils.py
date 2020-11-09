@@ -16,24 +16,10 @@ sys.path.insert(0, str(path_variable))
 sys.path.insert(0, str(path_variable.parent))
 
 import json
-from random import shuffle
-
-import matplotlib.pyplot as plt
-from matplotlib import colors
 import glob
 import shutil
-import tensorflow
-from PIL import Image
-import numpy as np
-import matplotlib.gridspec as gridspec
 import os
-from sklearn.metrics import jaccard_score
-import tensorflow as tf
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
-from pydicom import read_file
-from loss_functions import dice_loss, gen_dice
-from plotting import color_mappings
-from scipy.stats import entropy
 from segmentation_config import DATA_SPLIT_PATH
 
 class Params():
@@ -202,8 +188,6 @@ def cast_params_types(params, model_path):
 class TrainOps():
     def __init__(self, params):
         self.params = params
-        self.dice = dice_loss
-        self.gen_dice = gen_dice
 
     def lr_schedule(self, epoch):
         """Learning Rate Schedule

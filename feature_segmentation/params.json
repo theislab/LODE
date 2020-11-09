@@ -8,6 +8,7 @@
   "load_train_records": 0,
   "load_prepared_split": 1,
   "dropout": 0.2,
+  "loss": "focal_tversky",
   "model": "deep_unet",
   "choroid_latest": 0,
   "n_scans": 1,

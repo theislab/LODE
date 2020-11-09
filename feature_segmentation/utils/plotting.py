@@ -27,7 +27,6 @@ from segmentation_config import TRAIN_DATA_PATH
 from generators.generator_utils.image_processing import read_resize
 
 
-
 def color_mappings():
     color_palett = np.array([[148., 158., 167.],
                              [11., 151., 199.],
