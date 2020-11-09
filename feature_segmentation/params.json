@@ -16,5 +16,6 @@
   "gamma": 0.0,
   "noise": 0.5,
   "elastic": 0.1,
+  "balance_dataset": 0,
   "aug_strategy": "medium",
   "pretrained_model": "./pretrained_models/deep_unet_first_examples"}

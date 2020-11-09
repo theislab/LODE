@@ -1,13 +1,20 @@
+from copy import deepcopy
+
 import numpy as np
 import keras
 import os
 import random
 from PIL import Image
 import glob
+from collections import Counter
+import itertools
+import pandas as pd
+
 from generators.generator_utils.image_processing import resize, read_resize
 from generators.generator_utils.oct_augmentations import get_augmentations
 
 from feature_segmentation.generators.generator_utils.image_processing import read_resize_random_invert
+from feature_segmentation.generators.generator_utils.utils import get_class_distribution, upsample
 
 
 class DataGenerator(keras.utils.Sequence):
@@ -23,10 +30,23 @@ class DataGenerator(keras.utils.Sequence):
         self.params = params
         self.image_path = os.path.join(params.data_path, "images")
         self.label_path = os.path.join(params.data_path, "masks")
-
         self.is_training = is_training
         self.augment_box = get_augmentations(params)[params.aug_strategy]
         self.val_aug_box = get_augmentations(params)["light"]
+
+        if params.balance_dataset and is_training:
+            upsampling_factors, label_repr = get_class_distribution(self.label_path, list_IDs)
+            train_ids = deepcopy(list_IDs)
+            for label in [5, 8, 13]:
+                new_ids = upsample(train_ids, label, label_repr, upsampling_factors)
+                train_ids = deepcopy(new_ids)
+                upsampling_factors, label_repr = get_class_distribution(self.label_path, train_ids)
+
+            self.list_IDs = new_ids
+
+            print("Number of new samples after balancing: ", len(self.list_IDs))
+
+
 
     def __len__(self):
         'Denotes the number of batches per epoch'

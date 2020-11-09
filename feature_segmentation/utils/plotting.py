@@ -6,12 +6,11 @@ from pathlib import Path
 import pandas as pd
 import glob
 
-
 root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
 search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
 
 for sp in search_paths:
-        sys.path.append(sp)
+    sys.path.append(sp)
 
 path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable))
@@ -19,9 +18,11 @@ sys.path.insert(0, str(path_variable.parent))
 
 import numpy as np
 import matplotlib
+
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors, gridspec
+
 from segmentation_config import TRAIN_DATA_PATH
 from generators.generator_utils.image_processing import read_resize
 
@@ -64,14 +65,14 @@ def save_segmentation_plot(out_clsv_file, cls):
     :return: save figure to out_clsv_file
     """
     seg_cmap, seg_norm, bounds = color_mappings()
-    colorbar_im = plt.imshow(cls, cmap = seg_cmap, norm = seg_norm)
+    colorbar_im = plt.imshow(cls, cmap=seg_cmap, norm=seg_norm)
 
     # set colorbar ticks
     tick_loc_array = np.arange(len(bounds) - 1) + 0.5
     tick_loc_list = tick_loc_array.tolist()
 
     tick_list = np.arange(len(bounds) - 1).tolist()
-    c_bar = plt.colorbar(colorbar_im, cmap = seg_cmap, norm = seg_norm, boundaries = bounds)
+    c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
     # set ticks
     c_bar.set_ticks(tick_loc_list)
     c_bar.ax.set_yticklabels(tick_list)
@@ -87,7 +88,7 @@ def plot_data_processing(record, path):
     :return:
     """
     seg_cmap, seg_norm, bounds = color_mappings()
-    fig = plt.figure(figsize = (24, 8))
+    fig = plt.figure(figsize=(24, 8))
     columns = 3
     rows = 1
     types = ["image", "pre processing", "post processing"]
@@ -95,21 +96,21 @@ def plot_data_processing(record, path):
         img = record[i - 1]
         fig.add_subplot(rows, columns, i)
         if types[i - 1] != "image":
-            colorbar_im = plt.imshow(img, cmap = seg_cmap, norm = seg_norm)
+            colorbar_im = plt.imshow(img, cmap=seg_cmap, norm=seg_norm)
 
             # set colorbar ticks
             tick_loc_array = np.arange(len(bounds)) + 0.5
             tick_loc_list = tick_loc_array.tolist()
 
             tick_list = np.arange(len(bounds)).tolist()
-            c_bar = plt.colorbar(colorbar_im, cmap = seg_cmap, norm = seg_norm, boundaries = bounds)
+            c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
 
             # set ticks
             c_bar.set_ticks(tick_loc_list)
             c_bar.ax.set_yticklabels(tick_list)
         if types[i - 1] == "image":
             if len(img.shape) == 2:
-                img = np.stack((img,) * 3, axis = -1)
+                img = np.stack((img,) * 3, axis=-1)
             plt.imshow(img)
         plt.title(types[i - 1])
     plt.savefig(path)
@@ -158,20 +159,20 @@ def plot_image_label_prediction(records, model_dir, mode, filename):
     ax2.set_title("ground truth")
 
     ax3 = fig.add_subplot(gs[0, 2])
-    #colorbar_im = ax3.imshow(records[2], cmap=seg_cmap, norm=seg_norm)
+    ax3.imshow(records[2], cmap=seg_cmap, norm=seg_norm)
     ax3.set_xticks([])
     ax3.set_yticks([])
     ax3.set_title("prediction")
 
     # set colorbar ticks
-    #tick_loc_array = np.arange(len(bounds)) + 0.5
-    #tick_loc_list = tick_loc_array.tolist()
-    #tick_list = np.arange(len(bounds)).tolist()
-    #c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
+    # tick_loc_array = np.arange(len(bounds)) + 0.5
+    # tick_loc_list = tick_loc_array.tolist()
+    # tick_list = np.arange(len(bounds)).tolist()
+    # c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
 
     # set ticks
-    #c_bar.set_ticks(tick_loc_list)
-    #c_bar.ax.set_yticklabels(tick_list)
+    # c_bar.set_ticks(tick_loc_list)
+    # c_bar.ax.set_yticklabels(tick_list)
 
     if not os.path.exists(os.path.join(model_dir, mode + "_records")):
         os.makedirs(os.path.join(model_dir, mode + "_records"))
@@ -244,7 +245,7 @@ def plot_image(records, model_dir, mode, filename):
     """
 
     seg_cmap, seg_norm, bounds = color_mappings()
-    fig = plt.figure(figsize=(16, 4))
+    fig = plt.figure(figsize=(4, 4))
 
     gs = gridspec.GridSpec(nrows=1,
                            ncols=1,
@@ -256,7 +257,7 @@ def plot_image(records, model_dir, mode, filename):
 
     # turn image to 3 channel
     ax3 = fig.add_subplot(gs[0])
-    ax3.imshow(records[1], cmap = seg_cmap, norm = seg_norm)
+    ax3.imshow(records[0], cmap=seg_cmap, norm=seg_norm)
     ax3.set_xticks([])
     ax3.set_yticks([])
     ax3.set_title("prediction")
@@ -284,7 +285,6 @@ def get_max_min_uncertainty(all_uq_maps):
     for record in all_uq_maps.keys():
         max_ = np.max(all_uq_maps[record])
         min_ = np.min(all_uq_maps[record])
-
 
         if min_ < min_value:
             min_value = min_
@@ -350,7 +350,7 @@ def plot_uncertainty_statistics(all_uq_maps, ensemble_dir):
         labels, data = uncertainty_log.keys(), uncertainty_log.values()
 
         plt.style.use('ggplot')
-        plt.boxplot(data, showfliers = False, )
+        plt.boxplot(data, showfliers=False, )
         plt.xticks(range(1, len(labels) + 1), labels)
         plt.ylim([min_value, max_value])
         plt.savefig(os.path.join(save_dir, record))
@@ -370,7 +370,7 @@ def plot_uncertainty_heatmaps(all_uq_maps, ensemble_dir):
 
     """
     mode = "test"
-    save_dir = os.path.join(ensemble_dir, mode + "uncertainty_records")
+    save_dir = os.path.join(ensemble_dir, mode + "_uncertainty_records")
     max_value, min_value = get_max_min_uncertainty(all_uq_maps)
 
     if not os.path.exists(save_dir):
@@ -379,9 +379,7 @@ def plot_uncertainty_heatmaps(all_uq_maps, ensemble_dir):
     # plot uq maps
     for record in all_uq_maps.keys():
         record_uq_map = all_uq_maps[record]
-        plt.imshow(record_uq_map, cmap = 'hot', interpolation = 'nearest', vmin = min_value, vmax = max_value)
+        plt.imshow(record_uq_map, cmap='hot', interpolation='nearest', vmin=min_value, vmax=max_value)
         plt.axis('off')
         plt.savefig(os.path.join(save_dir, record))
         plt.close()
-
-

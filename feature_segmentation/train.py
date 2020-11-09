@@ -26,6 +26,15 @@ if TRAIN_DATA_PATH.split("/")[-1] == "first_examples":
     train_ids = train_ids + test_ids
     pretraining = True
 
+upsampling_factors, label_repr = get_class_distribution(self.label_path, list_IDs)
+                    train_ids = deepcopy(list_IDs)
+            for label in [5, 8, 13]:
+                new_ids = upsample(train_ids, label, label_repr, upsampling_factors)
+                train_ids = deepcopy(new_ids)
+                upsampling_factors, label_repr = get_class_distribution(self.label_path, train_ids)
+
+            self.list_IDs = new_ids
+
 print("number of train and test image are: ", len(train_ids), len(validation_ids))
 
 if params.model == "volumeNet":
@@ -67,7 +76,7 @@ for model_config in model_configs:
     # get model
     model = get_model(params)
     history = model.fit_generator(generator=train_generator,
-                                  steps_per_epoch=int(len(train_ids) / (params.batch_size * 1)),
+                                  steps_per_epoch=len(train_generator),
                                   epochs=params.num_epochs,
                                   validation_data=test_generator,
                                   validation_steps=int(len(validation_ids) / 1),

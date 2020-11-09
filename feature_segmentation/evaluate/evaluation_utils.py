@@ -75,13 +75,13 @@ def ensemble_predict(ensemble_dict, img):
     if len(img.shape) == 3:
         img = img.reshape((1, img.shape[0], img.shape[1], img.shape[-1]))
 
+    # pre process (255. divide) as when training
+    img = img / 255.
+
     model_segmentations = {}
     predictions = []
     for ensemble_model in ensemble_dict.keys():
         model = ensemble_dict[ensemble_model]["model"]
-
-        # pre process (255. divide) as when training
-        img = img / 255.
 
         # get probability map
         pred = model.predict(img)
