@@ -44,8 +44,6 @@ class DataGenerator(keras.utils.Sequence):
 
             self.list_IDs = new_ids
 
-
-
     def __len__(self):
         'Denotes the number of batches per epoch'
         return int(np.floor(len(self.list_IDs) / self.batch_size))
@@ -78,23 +76,21 @@ class DataGenerator(keras.utils.Sequence):
             # load samples
             im_path = glob.glob(os.path.join(self.image_path, ID.replace(".png", "*")))[0]
             lbl_path = glob.glob(os.path.join(self.label_path, ID.replace(".png", "*")))[0]
-            #im_path = os.path.join(self.image_path, ID)
-            #lbl_path = os.path.join(self.label_path, ID)
+            # im_path = os.path.join(self.image_path, ID)
+            # lbl_path = os.path.join(self.label_path, ID)
             im_resized, lbl_resized = read_resize_random_invert(im_path, lbl_path, self.shape)
 
             # Store sample
-            X[i, ] = im_resized
-            y[i, ] = lbl_resized
+            X[i,] = im_resized
+            y[i,] = lbl_resized
 
-            X[i, ], y[i, ] = self.__pre_process(X[i,], y[i,])
+            X[i,], y[i,] = self.__pre_process(X[i,], y[i,])
         return X, y.astype(np.int32)
 
     def example_record(self):
         record_idx = random.randint(0, len(self.list_IDs))
         print("number of ids are: ", len(self.list_IDs))
         # load samples
-        #im_path = os.path.join(self.image_path, self.list_IDs[record_idx - 1].replace(".png", "*"))
-        #lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1].replace(".png", "*"))    
         im_path = os.path.join(self.image_path, self.list_IDs[record_idx - 1])
         lbl_path = os.path.join(self.label_path, self.list_IDs[record_idx - 1])
         image, label = read_resize_random_invert(im_path, lbl_path, self.shape)

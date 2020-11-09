@@ -22,15 +22,9 @@ import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors, gridspec
-<<<<<<< HEAD
 
-from feature_segmentation.segmentation_config import TRAIN_DATA_PATH
-from feature_segmentation.generators.generator_utils.image_processing import read_resize
-
-=======
 from segmentation_config import TRAIN_DATA_PATH
 from generators.generator_utils.image_processing import read_resize
->>>>>>> 3c70c424bfbbd2d05b2df524685c610eb95f0db7
 
 
 def color_mappings():
