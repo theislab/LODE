@@ -68,9 +68,9 @@ if __name__ == '__main__':
     class Args():
         budget = 200
         chunk_size = 10
-        number_to_search = 10000
+        number_to_search = 40000
         sampling_rate = 49
-        name = "srhm_drusen_20201102"
+        name = "srhm_20201120"
 
     args = Args()
 

@@ -34,7 +34,7 @@ class DataGenerator(keras.utils.Sequence):
         self.augment_box = get_augmentations(params)[params.aug_strategy]
         self.val_aug_box = get_augmentations(params)["light"]
 
-        if params.balance_dataset:
+        if params.balance_dataset and is_training:
             upsampling_factors, label_repr = get_class_distribution(self.label_path, list_IDs)
             train_ids = deepcopy(list_IDs)
             for label in [5, 8, 13]:
@@ -74,8 +74,9 @@ class DataGenerator(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(list_IDs_temp):
             # load samples
-            im_path = glob.glob(os.path.join(self.image_path, ID.replace(".png", "*")))[0]
-            lbl_path = glob.glob(os.path.join(self.label_path, ID.replace(".png", "*")))[0]
+            im_path = os.path.join(self.image_path, ID)
+            lbl_path = os.path.join(self.label_path, ID)
+            
             # im_path = os.path.join(self.image_path, ID)
             # lbl_path = os.path.join(self.label_path, ID)
             im_resized, lbl_resized = read_resize_random_invert(im_path, lbl_path, self.shape)

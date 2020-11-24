@@ -60,19 +60,10 @@ for model_config in model_configs:
     pd.DataFrame(train_ids).to_csv(os.path.join(logging.model_directory + "/train_ids.csv"))
     pd.DataFrame(test_ids).to_csv(os.path.join(logging.model_directory + "/test_ids.csv"))
 
-    # plot examples
-    for k in range(100):
-        record, name = train_generator.example_record()
-        cv2.imwrite(logging.model_directory + f"train_image_{k}.png", record[0]*255)
-        plt.imsave(logging.model_directory + f"train_label_{k}.png", record[1]*(255//15))
-
-    # for k in range(len(test_ids)):
-    #    test_generator.example_record()
-
     # get model
     model = get_model(params)
     history = model.fit_generator(generator=train_generator,
-                                  steps_per_epoch=int(len(train_ids) / (params.batch_size * 1)),
+                                  steps_per_epoch=len(train_generator),
                                   epochs=params.num_epochs,
                                   validation_data=test_generator,
                                   validation_steps=int(len(validation_ids) / 1),

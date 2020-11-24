@@ -8,7 +8,7 @@ sys.path.insert(0, os.path.join(path_variable, "networks"))
 sys.path.insert(0, str(path_variable.parent))
 sys.path.insert(0, str(path_variable.parent.parent))
 
-from keras.optimizers import Adam
+from keras.optimizers import Adam, SGD
 from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet, cluster_unet
 from loss_functions import focal_tversky_loss
 
