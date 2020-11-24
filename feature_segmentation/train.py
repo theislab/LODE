@@ -29,15 +29,6 @@ if TRAIN_DATA_PATH.split("/")[-1] == "first_examples":
     train_ids = train_ids + test_ids
     pretraining = True
 
-upsampling_factors, label_repr = get_class_distribution(self.label_path, list_IDs)
-                    train_ids = deepcopy(list_IDs)
-            for label in [5, 8, 13]:
-                new_ids = upsample(train_ids, label, label_repr, upsampling_factors)
-                train_ids = deepcopy(new_ids)
-                upsampling_factors, label_repr = get_class_distribution(self.label_path, train_ids)
-
-            self.list_IDs = new_ids
-
 print("number of train and test image are: ", len(train_ids), len(validation_ids))
 
 if params.model == "volumeNet":
@@ -68,15 +59,6 @@ for model_config in model_configs:
     pd.DataFrame(validation_ids).to_csv(os.path.join(logging.model_directory + "/validation_ids.csv"))
     pd.DataFrame(train_ids).to_csv(os.path.join(logging.model_directory + "/train_ids.csv"))
     pd.DataFrame(test_ids).to_csv(os.path.join(logging.model_directory + "/test_ids.csv"))
-
-    # plot examples
-    for k in range(100):
-        record, name = train_generator.example_record()
-        cv2.imwrite(logging.model_directory + f"train_image_{k}.png", record[0]*255)
-        plt.imsave(logging.model_directory + f"train_label_{k}.png", record[1]*(255//15))
-
-    # for k in range(len(test_ids)):
-    #    test_generator.example_record()
 
     # get model
     model = get_model(params)
