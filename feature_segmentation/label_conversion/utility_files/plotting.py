@@ -23,7 +23,7 @@ def color_mappings():
                              [209., 227., 239.],
                              [226., 233., 48.]])
 
-    color_palett_norm = color_palett / 255  # (np.max(color_palett)-np.min(color_palett))
+    color_palett_norm = np.clip(color_palett, 0, 255) / 255  # (np.max(color_palett)-np.min(color_palett))
     custom_cmap = colors.ListedColormap(
         color_palett_norm
     )

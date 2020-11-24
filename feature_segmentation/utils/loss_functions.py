@@ -28,6 +28,7 @@ def tversky_loss(y_true, y_pred):
 
 def focal_tversky_loss(y_true, y_pred, gamma=0.75):
     y_true = tf.cast(y_true, tf.int32)
+
     y_true = tf.one_hot(y_true, 16)
     tv = tversky(y_true, y_pred)
     return K.pow((1 - tv), gamma)
