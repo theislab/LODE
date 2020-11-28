@@ -19,7 +19,7 @@ sys.path.insert(0, str(path_variable.parent))
 import numpy as np
 import matplotlib
 
-matplotlib.use('Agg')
+#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors, gridspec
 
@@ -234,7 +234,7 @@ def plot_image_predictions(records, model_dir, mode, filename):
     plt.close()
 
 
-def plot_image(records, model_dir, mode, filename):
+def plot_image(records, model_dir, mode, filename, save_fig=True):
     """
     :param records: list containing numpy array of image
     :param model_dir: directory of model where to save images
@@ -259,13 +259,14 @@ def plot_image(records, model_dir, mode, filename):
     ax3.imshow(records[0], cmap=seg_cmap, norm=seg_norm)
     ax3.set_xticks([])
     ax3.set_yticks([])
-    ax3.set_title("prediction")
-
-    if not os.path.exists(os.path.join(model_dir, mode + "_pred_records")):
-        os.makedirs(os.path.join(model_dir, mode + "_pred_records"))
-
-    plt.savefig(os.path.join(model_dir, mode + "_pred_records", filename))
-    plt.close()
+    # ax3.set_title("prediction")
+    if save_fig:
+        if not os.path.exists(os.path.join(model_dir, mode + "_pred_records")):
+            os.makedirs(os.path.join(model_dir, mode + "_pred_records"))
+        plt.savefig(os.path.join(model_dir, mode + "_pred_records", filename))
+        plt.close()
+    else:
+        plt.show()
 
 
 def get_max_min_uncertainty(all_uq_maps):

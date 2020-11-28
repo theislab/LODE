@@ -113,7 +113,7 @@ def main():
     # test iteration
     PROJ_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation"
     annotatio_file = ".json"
-    annotator = "ben_inter_doctor"
+    annotator = "michael_inter_doctor"
     iteration = f"iteration_{annotator}"
     out_dir = iteration
     labels_file = "labels.txt"
@@ -161,7 +161,7 @@ def main():
     iter_test_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*/*{annotatio_file}*"))
 
     # inter doctor variation
-    iter_test_dir = "data/versions/inter_doctor_variance_sample_ben"
+    iter_test_dir = "data/versions/inter_doctor_variance_sample_michael"
     iter_idv_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*/*{annotatio_file}*"))
 
 
