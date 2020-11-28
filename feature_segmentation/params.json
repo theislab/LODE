@@ -2,7 +2,7 @@
   "batch_size": 1,
   "num_epochs": 30,
   "img_shape": 256,
-  "n_filters": 1,
+  "n_filters": 16,
   "num_classes": 16,
   "continue_training": 1,
   "load_train_records": 0,
@@ -10,8 +10,7 @@
   "dropout": 0.2,
   "learning_rate_scheduel": "exponential_decay",
   "loss": "ce",
-  "model": "deep_unet",
-  "choroid_latest": 0,
+  "model": "attention_unet",
   "balance_dataset": 0,
   "aug_strategy": "medium",
   "pretrained_model": "./pretrained_models/deep_unet_first_examples"}

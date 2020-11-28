@@ -38,10 +38,8 @@ print("number of train and test image are: ", len(train_ids), len(validation_ids
 from generators.generator_2d import DataGenerator
 
 # Generators
-train_generator = DataGenerator(train_ids[0:5], params=params, is_training=True,
-                                pretraining=False, choroid_latest=params.choroid_latest)
-test_generator = DataGenerator(validation_ids[0:5], params=params, is_training=False,
-                               pretraining=False, choroid_latest=params.choroid_latest)
+train_generator = DataGenerator(train_ids[0:5], params=params, is_training=True)
+test_generator = DataGenerator(validation_ids[0:5], params=params, is_training=False)
 
 # set model tries
 model_configs = ["deep_unet"]

@@ -21,7 +21,7 @@ def get_augmentations(params):
                                    width = params.img_shape,
                                    p = 0.1),
                    PadIfNeeded(min_height = params.img_shape, min_width = params.img_shape, p = 0.5)], p = 1),
-            
+
             VerticalFlip(p = 0.2),
             RandomRotate90(p = 0.2),
             Rotate(p = 0.5),
@@ -29,5 +29,6 @@ def get_augmentations(params):
             GaussNoise(p = 0.1, var_limit = (10.0, 25.0)),
             ISONoise(color_shift = (0.01, 0.5), intensity = (0.1, 0.9), p = 0.1),
             RandomGamma(gamma_limit = (50, 150), p = 0.1)],
-        )
+        )}
+
     return augmentations

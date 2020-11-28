@@ -2,6 +2,7 @@ import os
 import sys
 from pathlib import Path
 
+from .advanced_unets.models import att_unet
 
 path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, os.path.join(path_variable, "networks"))
@@ -33,6 +34,9 @@ def get_model(params):
 
     if params.model == "cluster_unet":
         model = cluster_unet.unet(params)
+
+    if params.model == "attention_unet":
+        model = att_unet(params, data_format = 'channels_last')
 
     if params.loss == "ce":
         '''Compile model'''
