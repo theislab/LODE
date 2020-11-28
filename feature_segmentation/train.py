@@ -1,18 +1,22 @@
 import random
-from utils.utils import Params, TrainOps, Logging, data_split
 import os
-
-import keras.backend as K
-from models.model import get_model
 import pandas as pd
-import matplotlib.pyplot as plt
-from random import shuffle
+import keras.backend as K
+
+from pathlib import Path
+import sys
+
+path = Path(os.getcwd())
+sys.path.append(str(path.parent))
+
+# add children paths
+for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
+    sys.path.append(str(child_dir))
+
+from models.model import get_model
 from segmentation_config import TRAIN_DATA_PATH
-import cv2
-
-
-# load utils classes
-from utils.plotting import plot_image_label_prediction
+from utils.utils import Params, TrainOps, Logging, data_split
+from generator_2d import DataGenerator
 
 params = Params("params.json")
 logging = Logging("./logs", params)
@@ -31,16 +35,13 @@ if TRAIN_DATA_PATH.split("/")[-1] == "first_examples":
 
 print("number of train and test image are: ", len(train_ids), len(validation_ids))
 
-if params.model == "volumeNet":
-    from generators.generator_3d import DataGenerator
-else:
-    from generators.generator_2d import DataGenerator
+from generators.generator_2d import DataGenerator
 
 # Generators
 train_generator = DataGenerator(train_ids, params=params, is_training=True,
-                                pretraining=False, choroid_latest=params.choroid_latest)
+                                pretraining=False)
 test_generator = DataGenerator(validation_ids, params=params, is_training=False,
-                               pretraining=False, choroid_latest=params.choroid_latest)
+                               pretraining=False)
 
 # set model tries
 model_configs = ["deep_unet"]

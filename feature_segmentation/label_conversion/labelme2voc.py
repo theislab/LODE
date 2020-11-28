@@ -24,12 +24,12 @@ def labelfiles_to_output(label_files, out_dir, class_name_to_id, lq_records,
         print(label_file)
 
         with open(label_file) as f:
-            base = label_file.split("/")[-2]
+            base = label_file.split("/")[-1]
 
             # set iteration specific base
             if "7" in iteration:
                 base = label_file.split("/")[-1].replace(".json", "").replace(".png", "")
-            # if base in "41018_Left_20170321_527788001":
+            # if base in "252332_R_20180802_15":
             if base.replace(".json", "").replace(".png", "") in lq_records:
                 print("remove low quality record")
                 continue
@@ -96,6 +96,7 @@ def labelfiles_to_output(label_files, out_dir, class_name_to_id, lq_records,
             # create_visualizations(out_clsv_file_smooth, cls_smooth)
 
             ins[cls == -1] = 0  # ignore it.
+
             # class label
             cv2.imwrite(out_cls_file.replace(".npy", ".png").replace(".json", ""), cls)
 
@@ -105,14 +106,14 @@ def labelfiles_to_output(label_files, out_dir, class_name_to_id, lq_records,
             record = [img, cls_preprocessing, cls]
 
             # save overview
-            plot_examples(record, out_clsv_file_complete)
+            plot_examples(record, out_clsv_file_complete.replace(".json", ""))
 
 
 def main():
     # test iteration
     PROJ_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation"
     annotatio_file = ".json"
-    annotator = "test"
+    annotator = "michael_inter_doctor"
     iteration = f"iteration_{annotator}"
     out_dir = iteration
     labels_file = "labels.txt"
@@ -159,9 +160,10 @@ def main():
     iter_test_dir = "data/versions/test_iteration/final_iteration"
     iter_test_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*/*{annotatio_file}*"))
 
-    # ad hoc covnersions
-    dir_ = "data/train_data/hq_examples_fibrosis/volumes"
-    iter_adhoc_json_files = glob.glob(os.path.join(PROJ_DIR, dir_ + f"/*/*{annotatio_file}*"))
+    # inter doctor variation
+    iter_test_dir = "data/versions/inter_doctor_variance_sample_michael"
+    iter_idv_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*/*{annotatio_file}*"))
+
 
     # low quality iteration one files
     lq_records = pd.read_csv(iter_one_dir.replace("json", "loq_quality.txt"),
@@ -173,7 +175,7 @@ def main():
     # create out dir
     class_name_to_id = set_outdir(out_dir, labels_file)
 
-    files_to_process = iter_test_json_files# iter_nine_json_files # iter_eight_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files + iter_seven_json_files
+    files_to_process = iter_idv_json_files # iter_nine_json_files + iter_eight_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files + iter_seven_json_files
     labelfiles_to_output(files_to_process, out_dir, class_name_to_id, lq_records = lq_records, iteration = iteration,
                          with_choroid = choroid, fibrosis_change_log = fibrosis_change_log)
 

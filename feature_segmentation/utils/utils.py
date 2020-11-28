@@ -4,6 +4,7 @@ import sys
 from pathlib import Path
 import pandas as pd
 import glob
+import math
 
 root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
 search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
@@ -19,6 +20,7 @@ import json
 import glob
 import shutil
 import os
+
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 from segmentation_config import DATA_SPLIT_PATH
 
@@ -212,9 +214,39 @@ class TrainOps():
         print('Learning rate: ', lr)
         return lr
 
+    def step_decay(self, epoch):
+        """
+        Parameters
+        ----------
+        epoch :
+
+        Returns
+        -------
+
+        """
+        initial_lrate = self.params.learning_rate
+        drop = 0.5
+        epochs_drop = self.params.num_epochs // 8
+        lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
+        return lrate
+
+    def exp_decay(self, epoch):
+        if epoch <  self.params.num_epochs // 10:
+            return self.params.learning_rate
+        else:
+            return self.params.learning_rate * math.exp(-0.05 * (epoch // 2))
+
     def callbacks_(self):
-        '''callbacks'''
-        lr_scheduler = LearningRateScheduler(self.lr_schedule)
+
+        available_decays = ["exponential_decay", "step_decay"]
+        print_str = f"learning rate decay not available, choose from {available_decays}"
+        assert self.params.learning_rate_scheduel in ["exponential_decay", "step_decay"], print_str
+
+        if self.params.learning_rate_scheduel == "exponential_decay":
+            lr_scheduler = LearningRateScheduler(self.exp_decay, verbose = 1)
+
+        elif self.params.learning_rate_scheduel == "step_decay":
+            lr_scheduler = LearningRateScheduler(self.step_decay, verbose = 1)
 
         checkpoint = ModelCheckpoint(filepath=self.params.model_directory + "/weights.hdf5",
                                      monitor='val_accuracy',
@@ -223,7 +255,7 @@ class TrainOps():
                                      mode='max',
                                      save_weights_only=False)
 
-        tb = TensorBoard(log_dir=self.params.model_directory + "/tensorboard")
+        tb = TensorBoard(log_dir=self.params.model_directory + "/tensorboard", write_graph=False)
 
         csv_logger = CSVLogger(filename=self.params.model_directory + '/history.csv',
                                append=True,

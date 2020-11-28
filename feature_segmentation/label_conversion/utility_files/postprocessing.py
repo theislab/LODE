@@ -16,8 +16,16 @@ def column_all_background(col):
 
 def remove_all_background_columns(cls, img):
     cols_to_remove = []
+
     # cut all background column
-    for j in range(0, cls.shape[1]):
+    for j in range(0, 100):
+        column = cls[:, j]
+        all_background = column_all_background(column)
+        if all_background:
+            cols_to_remove.append(j)
+
+    # cut all background column
+    for j in range(-1, -100):
         column = cls[:, j]
         all_background = column_all_background(column)
         if all_background:
@@ -105,7 +113,6 @@ def neu_intima_feature_processing(cls):
 
 def fill_out_vitreous(cls):
     """make all background pixels above 2 into vitreous"""
-    # fill out blanks below feature
     for feature in [2]:
         # if feature is in map
         if feature in cls:
@@ -119,6 +126,29 @@ def fill_out_vitreous(cls):
                     for row in range(0, last):
                         if column[row] in F_BELOW_NEO_INTIMA:
                             cls[row, column_idx] = 14
+
+    cls = fill_vitreous_wholes(cls)
+    return cls
+
+
+def fill_vitreous_wholes(cls):
+    for row in range(cls.shape[0] - 1):
+        vitreous_columns = np.where(cls[row, :] == 14)
+        background_columns = np.where(cls[row, :] == 0)
+
+        if (background_columns[0].size > 0) and (vitreous_columns[0].size > 0):
+            for j in range(cls.shape[1]):
+                if cls[row, j] == 0:
+                    # if edge background, ignore
+                    if j < min(vitreous_columns[0]):
+                        continue
+                    if j > max(vitreous_columns[0]):
+                        continue
+                    if (np.sum(cls[:, j] == 2) == 0) and \
+                            (j > min(vitreous_columns[0])) and \
+                            (j < max(vitreous_columns[0])) and (j > 50) and (j < cls.shape[1] - 50):
+
+                        cls[row, j] = 14
     return cls
 
 
