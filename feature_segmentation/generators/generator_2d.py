@@ -20,7 +20,11 @@ from feature_segmentation.generators.generator_utils.utils import get_class_dist
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
 
+<<<<<<< HEAD
     def __init__(self, list_IDs, params, is_training):
+=======
+    def __init__(self, list_IDs, params, is_training, pretraining):
+>>>>>>> 20c3b1a4dbaba1f69aa1382736389cc31bb00418
         'Initialization'
         self.shape = (params.img_shape, params.img_shape)
         self.batch_size = params.batch_size

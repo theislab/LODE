@@ -8,7 +8,7 @@
   "load_train_records": 0,
   "load_prepared_split": 1,
   "dropout": 0.2,
-  "learning_rate_scheduel": "exponential_decay",
+  "learning_rate_scheduel": "step_decay",
   "loss": "ce",
   "model": "attention_unet",
   "balance_dataset": 0,
