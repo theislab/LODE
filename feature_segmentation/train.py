@@ -2,10 +2,13 @@ import random
 import os
 import pandas as pd
 import keras
+import keras.backend as K
 import tensorflow as tf
 from tqdm import tqdm
 from pathlib import Path
 import sys
+
+from feature_segmentation.utils.loss_functions import dice_coef_cat_loss
 
 path = Path(os.getcwd())
 sys.path.append(str(path.parent))
@@ -56,14 +59,17 @@ pd.DataFrame(test_ids).to_csv(os.path.join(logging.model_directory + "/test_ids.
 # get model
 model = get_model(params)
 
+
 for epoch in range(params.num_epochs):
     # Iterate over the batches of the dataset.
     for step, (x_batch_train, y_batch_train) in tqdm(enumerate(train_generator)):
         with tf.GradientTape() as tape:
             logits = model(x_batch_train, training = True)
             loss_value = loss_fn(y_batch_train, logits)
+            loss = dice_coef_cat_loss(y_batch_train, logits)
+            print(loss.numpy())
 
-        grads = tape.gradient(loss_value, model.trainable_weights)
+        grads = tape.gradient(loss, model.trainable_weights)
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
         # Update training metric.

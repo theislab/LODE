@@ -8,6 +8,8 @@ from pathlib import Path
 import sys
 import numpy as np
 
+from feature_segmentation.utils.loss_functions import dice_coef_cat_loss
+
 path = Path(os.getcwd())
 sys.path.append(str(path.parent))
 
@@ -48,7 +50,7 @@ test_generator = DataGenerator(train_ids[0:2], params=params, is_training=False)
 optimizer = keras.optimizers.Adam(learning_rate=trainops.callbacks_()[0])
 
 # Instantiate a loss function.
-loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits = True)
+loss_fn = dice_coef_cat_loss # keras.losses.SparseCategoricalCrossentropy(from_logits = True)
 
 # Prepare the metrics.
 train_acc_metric = keras.metrics.SparseCategoricalAccuracy()
@@ -63,7 +65,7 @@ epochs = 30
 def train_step(x, y):
     with tf.GradientTape() as tape:
         logits = model(x, training=True)
-        loss_value = loss_fn(y, logits)
+        loss_value = loss_fn(y, logits, params.num_classes)
     grads = tape.gradient(loss_value, model.trainable_weights)
     optimizer.apply_gradients(zip(grads, model.trainable_weights))
     train_acc_metric.update_state(y, logits)
