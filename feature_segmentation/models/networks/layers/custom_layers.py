@@ -27,6 +27,7 @@ def conv2d_block(input_tensor, n_filters, kernel_size=3, batchnorm=True):
     if batchnorm:
         x = BatchNormalization()(x)
     x = Activation("relu")(x)
+
     # second layer
     x = Conv2D(filters = n_filters, kernel_size = (kernel_size, kernel_size), kernel_initializer = "he_normal",
                padding = "same")(x)
