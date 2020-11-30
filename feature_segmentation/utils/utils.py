@@ -234,7 +234,8 @@ class TrainOps():
         if epoch <  self.params.num_epochs // 10:
             return self.params.learning_rate
         else:
-            return self.params.learning_rate * math.exp(-0.05 * (epoch // 2))
+            lr = self.params.learning_rate * math.exp(-0.05 * (epoch // 2))
+            return max(lr, self.params.learning_rate*10e-3)
 
     def callbacks_(self):
 

@@ -13,7 +13,9 @@ from albumentations import (
 def get_augmentations(params):
     augmentations = {
         "light": Compose([
-            HorizontalFlip(p = 0.5)]),
+            HorizontalFlip(p = 0.5),
+            Rotate(p = 0.5)])
+        ,
 
         "medium": Compose([
             OneOf([RandomSizedCrop(min_max_height = (params.img_shape  - 40, params.img_shape  - 40),

@@ -184,7 +184,7 @@ def unet(img_w, img_h, n_label, data_format='channels_last'):
 def att_unet(params, data_format='channels_last'):
     inputs = Input((params.img_shape, params.img_shape, 3))
     x = inputs
-    depth = 4
+    depth = params.depth
     features = params.n_filters
     skips = []
     for i in range(depth):

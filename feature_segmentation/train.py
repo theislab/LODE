@@ -22,7 +22,7 @@ params = Params("params.json")
 logging = Logging("./logs", params)
 trainops = TrainOps(params)
 
-params.data_path = TRAIN_DATA_PATH
+params.data_path = os.path.join(TRAIN_DATA_PATH, params.dataset) 
 
 ids = os.listdir(os.path.join(params.data_path, "images"))
 train_ids, validation_ids, test_ids = data_split(ids, params)
@@ -38,8 +38,8 @@ print("number of train and test image are: ", len(train_ids), len(validation_ids
 from generators.generator_2d import DataGenerator
 
 # Generators
-train_generator = DataGenerator(train_ids[0:5], params=params, is_training=True)
-test_generator = DataGenerator(validation_ids[0:5], params=params, is_training=False)
+train_generator = DataGenerator(train_ids, params=params, is_training=True)
+test_generator = DataGenerator(validation_ids, params=params, is_training=False)
 
 # set model tries
 model_configs = ["deep_unet"]
