@@ -5,8 +5,8 @@ from pathlib import Path
 import pandas as pd
 import glob
 import math
-
-from tensorflow.python.keras.optimizer_v2.learning_rate_schedule import ExponentialDecay, PiecewiseConstantDecay
+import keras
+from keras.optimizers.schedules import ExponentialDecay, PiecewiseConstantDecay
 
 root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
 search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
@@ -67,7 +67,6 @@ class Logging():
     def __init__(self, logging_directory, params):
         self.log_dir = logging_directory
         self.model_directory = None
-        self.tensorboard_directory = None
         self.params = params
 
     def __create_dir(self, dir):
@@ -82,17 +81,6 @@ class Logging():
             os.makedirs(self.log_dir)
         else:
             pass
-
-    def __create_tensorboard_dir(self, model_dir):
-
-        # set abs path to new dir
-        new_dir = os.path.join(model_dir, "tensorboard_dir")
-
-        # create new dir
-        self.__create_dir(new_dir)
-
-        # set object instance to new path
-        self.tensorboard_directory = new_dir
 
     def __remove_empty_directories(self):
 
@@ -129,9 +117,6 @@ class Logging():
             # make new directory
             self.__create_dir(created_dir)
 
-            # create subdir for tensorboard logs
-            self.__create_tensorboard_dir(created_dir)
-
         else:
             # determine the new model directory
             last_ = max(list(map(int, existing_)))
@@ -143,8 +128,6 @@ class Logging():
             # make new directory
             self.__create_dir(created_dir)
 
-            # create subdir for tensorboard logs
-            self.__create_tensorboard_dir(created_dir)
 
         # set class instancy to hold abs path
         self.model_directory = created_dir

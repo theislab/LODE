@@ -1,5 +1,5 @@
 {"learning_rate": 0.001,
-  "batch_size": 2,
+  "batch_size": 1,
   "num_epochs": 30,
   "img_shape": 256,
   "n_filters": 32,
@@ -9,8 +9,9 @@
   "load_prepared_split": 1,
   "dropout": 0.0,
   "learning_rate_scheduel": "exponential_decay",
-  "loss": "ce",
-  "model": "deep_unet",
+  "loss": "dice_loss",
+  "optimizer": "Adam",
+  "model": "attention_unet",
   "balance_dataset": 0,
   "aug_strategy": "medium",
   "pretrained_model": "./pretrained_models/deep_unet_first_examples"}

@@ -32,7 +32,7 @@ class SequenceModel():
         concatenates inputs
         """
         if len(X) > 1:
-            X = tf.keras.layers.concatenate(X, axis=-1)
+            X = keras.layers.concatenate(X, axis=-1)
         else:
             X = X[0]
         return X
@@ -42,7 +42,7 @@ class SequenceModel():
         assumes an input X with shape (batch, sequence, features).
         flattens sequence and features dimensions of X, returning X with shape (batch, _)
         """
-        X = tf.keras.layers.Flatten()(X)
+        X = keras.layers.Flatten()(X)
         return X
     
     def _dense_shared_layers(self, X, num_layers=1, units=32, activation='relu', log=False):
@@ -58,7 +58,7 @@ class SequenceModel():
         """
         if num_layers == 0:
             return X
-        X = tf.keras.layers.Lambda(lambda x: tf.split(x, self.sequence_length, axis=1))(X)
+        X = keras.layers.Lambda(lambda x: tf.split(x, self.sequence_length, axis=1))(X)
         units = makelist(units, num_layers)
         for i in range(num_layers):
             dense_layer = tf.keras.layers.Dense(units[i], activation=activation)

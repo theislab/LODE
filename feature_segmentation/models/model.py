@@ -14,7 +14,9 @@ from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volume
 
 def get_model(params):
 
-    global model
+    available_models = ["attention_unet", "deep_unet"]
+    assert params.model in available_models, f"model not available, choose from {available_models}"
+
     if params.model == 'standard_unet':
         model = standard_unet.unet(params)
 
