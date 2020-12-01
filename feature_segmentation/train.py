@@ -29,8 +29,8 @@ ids = os.listdir(os.path.join(params.data_path, "images"))
 train_ids, validation_ids, test_ids = data_split(ids, params)
 
 # Generators
-train_generator = DataGenerator(train_ids[0:params.batch_size], params=params, is_training=False)
-test_generator = DataGenerator(train_ids[0:params.batch_size], params=params, is_training=False)
+train_generator = DataGenerator(train_ids, params=params, is_training=False)
+validation_generator = DataGenerator(validation_ids, params=params, is_training=False)
 
 # Instantiate an optimizer to train the model.logits
 optimizer = keras.optimizers.Adam(learning_rate=1e-3)
@@ -85,7 +85,7 @@ for epoch in range(params.num_epochs):
     train_acc_metric.reset_states()
 
     # Run a validation loop at the end of each epoch.
-    for x_batch_val, y_batch_val in test_generator:
+    for x_batch_val, y_batch_val in validation_generator:
         val_logits = model(x_batch_val, training = False)
 
         # Update val metrics

@@ -41,14 +41,14 @@ pd.DataFrame(train_ids).to_csv(os.path.join(logging.model_directory + "/train_id
 pd.DataFrame(test_ids).to_csv(os.path.join(logging.model_directory + "/test_ids.csv"))
 
 # Generators
-train_generator = DataGenerator(train_ids[0:2], params=params, is_training=False)
-test_generator = DataGenerator(train_ids[0:2], params=params, is_training=False)
+train_generator = DataGenerator(train_ids, params=params, is_training=True)
+validation_generator = DataGenerator(validation_ids, params=params, is_training=False)
 
 # Instantiate an optimizer to train the model.logits
-optimizer = keras.optimizers.Adam(learning_rate=trainops.callbacks_()[0])
+optimizer = keras.optimizers.SGD(learning_rate=trainops.callbacks_()[0], momentum=0.9)
 
 # Instantiate a loss function.
-loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits = True)
+loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits = False)
 
 # Prepare the metrics.
 train_acc_metric = keras.metrics.SparseCategoricalAccuracy()
@@ -57,7 +57,7 @@ val_acc_metric = keras.metrics.SparseCategoricalAccuracy()
 # get model
 model = get_model(params)
 
-epochs = 30
+epochs = params.num_epochs
 
 @tf.function
 def train_step(x, y):
@@ -101,7 +101,7 @@ for epoch in range(epochs):
     train_acc_metric.reset_states()
 
     # Run a validation loop at the end of each epoch.
-    for x_batch_val, y_batch_val in test_generator:
+    for x_batch_val, y_batch_val in validation_generator:
         test_step(x_batch_val, y_batch_val)
 
     val_acc = val_acc_metric.result()
