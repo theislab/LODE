@@ -1,11 +1,23 @@
-import random
 import os
-import pandas as pd
 import keras
 import tensorflow as tf
 from tqdm import tqdm
 from pathlib import Path
 import sys
+
+path = Path(os.getcwd())
+sys.path.append(str(path.parent))
+
+# add children paths
+for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
+    sys.path.append(str(child_dir))
+
+from metrics import ModelMetrics
+from model_logging import ModelCheckpointCustom
+from print_stats import PrintStats
+from tensorboard_callback import TensorboardCallback
+from losses import get_loss
+from optimizers import get_optimizer
 
 path = Path(os.getcwd())
 sys.path.append(str(path.parent))
@@ -28,30 +40,24 @@ params.data_path = TRAIN_DATA_PATH
 ids = os.listdir(os.path.join(params.data_path, "images"))
 train_ids, validation_ids, test_ids = data_split(ids, params)
 
-# Generators
-train_generator = DataGenerator(train_ids, params=params, is_training=False)
-validation_generator = DataGenerator(validation_ids, params=params, is_training=False)
-
-# Instantiate an optimizer to train the model.logits
-optimizer = keras.optimizers.Adam(learning_rate=1e-3)
-
-# Instantiate a loss function.
-loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits = False)
-
-# Prepare the metrics.
-train_acc_metric = keras.metrics.SparseCategoricalAccuracy()
-val_acc_metric = keras.metrics.SparseCategoricalAccuracy()
-
-# create logging directory
 logging.create_model_directory()
 params.model_directory = logging.model_directory
 
 # saving model config file to model output dir
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
-pd.DataFrame(validation_ids).to_csv(os.path.join(logging.model_directory + "/validation_ids.csv"))
-pd.DataFrame(train_ids).to_csv(os.path.join(logging.model_directory + "/train_ids.csv"))
-pd.DataFrame(test_ids).to_csv(os.path.join(logging.model_directory + "/test_ids.csv"))
+# Generators
+train_generator = DataGenerator(train_ids, params = params, is_training = True)
+validation_generator = DataGenerator(validation_ids, params = params, is_training = False)
+
+optimizer= get_optimizer(params)
+
+loss_fn = get_loss(params)
+
+model_metrics = ModelMetrics(params)
+tb_callback = TensorboardCallback(model_dir = params.model_directory)
+model_checkpoint = ModelCheckpointCustom(monitor="val_acc", model_dir = params.model_directory, mode="max")
+print_stats = PrintStats(params=params)
 
 # get model
 model = get_model(params)
@@ -61,36 +67,30 @@ for epoch in range(params.num_epochs):
     for step, (x_batch_train, y_batch_train) in tqdm(enumerate(train_generator)):
         with tf.GradientTape() as tape:
             logits = model(x_batch_train, training = True)
-            loss_value = loss_fn(y_batch_train, logits)
-
-        grads = tape.gradient(loss_value, model.trainable_weights)
+            loss = loss_fn(y_batch_train, logits)
+        grads = tape.gradient(loss, model.trainable_weights)
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
 
         # Update training metric.
-        train_acc_metric.update_state(y_batch_train, logits)
+        model_metrics.update_metric_states(y_batch_train, logits, mode="train")
 
-        # Log every 200 batches.
-        if step % 200 == 0:
-            print(
-                "Training loss (for one batch) at step %d: %.4f"
-                % (step, float(loss_value))
-            )
-            print("Seen so far: %d samples" % ((step + 1)))
-
-        # Display metrics at the end of each epoch.
-    train_acc = train_acc_metric.result()
-    print("Training acc over epoch: %.4f" % (float(train_acc),))
-
-    # Reset training metrics at the end of each epoch
-    train_acc_metric.reset_states()
+    # Display metrics at the end of each epoch.
+    train_result_dict = model_metrics.result_metrics(mode="train")
+    tb_callback.on_epoch_end(epoch = epoch, logging_dict = train_result_dict)
 
     # Run a validation loop at the end of each epoch.
     for x_batch_val, y_batch_val in validation_generator:
         val_logits = model(x_batch_val, training = False)
 
         # Update val metrics
-        val_acc_metric.update_state(y_batch_val, val_logits)
+        model_metrics.update_metric_states(y_batch_val, val_logits, mode="val")
 
-    val_acc = val_acc_metric.result()
-    val_acc_metric.reset_states()
-    print("Validation acc: %.4f" % (float(val_acc),))
+    val_result_dict = model_metrics.result_metrics(mode = "val")
+
+    tb_callback.on_epoch_end(epoch = epoch, logging_dict = val_result_dict)
+    model_checkpoint.on_epoch_end(epoch, model, logging_dict = val_result_dict)
+    print_stats.on_epoch_end(epoch, train_dict=train_result_dict, validation_dict=val_result_dict)
+
+    # Reset training metrics at the end of each epoch
+    model_metrics.reset_metric_states(mode="train")
+    model_metrics.reset_metric_states(mode="val")

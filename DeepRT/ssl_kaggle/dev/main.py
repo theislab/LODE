@@ -147,7 +147,7 @@ def main(model):
 
     '''callbacks'''
     save_model_path = os.path.join(params["save_path"], "weights.hdf5")
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor='val_acc',
+    checkpoint = keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor='val_acc',
                                                     save_best_only=True, verbose=1, save_weights_only=True)
     learning_rate_reduction = ReduceLROnPlateau(factor=0.1, patience=5, min_lr=0.000001, verbose=1)
     es = tf.keras.callbacks.EarlyStopping(monitor="val_acc", mode="max", patience=75)
