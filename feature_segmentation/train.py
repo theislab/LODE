@@ -5,21 +5,12 @@ from tqdm import tqdm
 from pathlib import Path
 import sys
 
-path = Path(os.getcwd())
-sys.path.append(str(path.parent))
-
-# add children paths
-for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
-    sys.path.append(str(child_dir))
-
-
 from metrics import ModelMetrics
 from model_logging import ModelCheckpointCustom
 from print_stats import PrintStats
-from tensorboard import TensorboardCallback
+from tensorboard_callback import TensorboardCallback
 from losses import get_loss
 from optimizers import get_optimizer
-
 
 from models.model import get_model
 from segmentation_config import TRAIN_DATA_PATH
@@ -35,7 +26,6 @@ params.data_path = TRAIN_DATA_PATH
 ids = os.listdir(os.path.join(params.data_path, "images"))
 train_ids, validation_ids, test_ids = data_split(ids, params)
 
-# create logging directory
 logging.create_model_directory()
 params.model_directory = logging.model_directory
 
@@ -43,10 +33,10 @@ params.model_directory = logging.model_directory
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
 # Generators
-train_generator = DataGenerator(train_ids[0:1], params = params, is_training = False)
-test_generator = DataGenerator(train_ids[0:1], params = params, is_training = False)
+train_generator = DataGenerator(train_ids, params = params, is_training = True)
+validation_generator = DataGenerator(validation_ids, params = params, is_training = False)
 
-optimizer = get_optimizer(params)
+optimizer= get_optimizer(params)
 
 loss_fn = get_loss(params)
 
@@ -60,7 +50,7 @@ model = get_model(params)
 
 for epoch in range(params.num_epochs):
     # Iterate over the batches of the dataset.
-    for step, (x_batch_train, y_batch_train) in enumerate(train_generator):
+    for step, (x_batch_train, y_batch_train) in tqdm(enumerate(train_generator)):
         with tf.GradientTape() as tape:
             logits = model(x_batch_train, training = True)
             loss = loss_fn(y_batch_train, logits)
@@ -75,7 +65,7 @@ for epoch in range(params.num_epochs):
     tb_callback.on_epoch_end(epoch = epoch, logging_dict = train_result_dict)
 
     # Run a validation loop at the end of each epoch.
-    for x_batch_val, y_batch_val in test_generator:
+    for x_batch_val, y_batch_val in validation_generator:
         val_logits = model(x_batch_val, training = False)
 
         # Update val metrics

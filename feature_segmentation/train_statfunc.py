@@ -40,13 +40,15 @@ params.model_directory = logging.model_directory
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
 # Generators
-train_generator = DataGenerator(train_ids[0:1], params = params, is_training = False)
-test_generator = DataGenerator(train_ids[0:1], params = params, is_training = False)
+train_generator = DataGenerator(train_ids, params=params, is_training=True)
+validation_generator = DataGenerator(validation_ids, params=params, is_training=False)
 
-optimizer = get_optimizer(params)
+# Instantiate an optimizer to train the model.logits
+optimizer = keras.optimizers.SGD(learning_rate=trainops.callbacks_()[0], momentum=0.9)
 
 # Instantiate a loss function.
-loss_fn = get_loss(params)
+loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits = False)
+
 
 model_metrics = ModelMetrics(params)
 tb_callback = TensorboardCallback(model_dir = params.model_directory)
@@ -87,7 +89,7 @@ for epoch in range(params.num_epochs):
     tb_callback.on_epoch_end(epoch = epoch, logging_dict = train_result_dict)
 
     # Run a validation loop at the end of each epoch.
-    for x_batch_val, y_batch_val in test_generator:
+    for x_batch_val, y_batch_val in validation_generator:
         test_step(x_batch_val, y_batch_val)
 
     val_result_dict = model_metrics.result_metrics(mode = "val")

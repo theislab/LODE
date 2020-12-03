@@ -231,7 +231,7 @@ class TrainOps():
         if self.params.learning_rate_scheduel == "exponential_decay":
             lr_scheduler = ExponentialDecay(
                 initial_learning_rate = self.params.learning_rate,
-                decay_steps = 10000,
+                decay_steps = 1000,
                 decay_rate = 0.95)
 
         elif self.params.learning_rate_scheduel == "step_decay":
