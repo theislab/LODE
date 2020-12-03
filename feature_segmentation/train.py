@@ -5,19 +5,21 @@ from tqdm import tqdm
 from pathlib import Path
 import sys
 
-from feature_segmentation.evaluate.callbacks.metrics import ModelMetrics
-from feature_segmentation.evaluate.callbacks.model_logging import ModelCheckpointCustom
-from feature_segmentation.evaluate.callbacks.print_stats import PrintStats
-from feature_segmentation.evaluate.callbacks.tensorboard import TensorboardCallback
-from feature_segmentation.models.losses import get_loss
-from feature_segmentation.models.optimizers import get_optimizer
-
 path = Path(os.getcwd())
 sys.path.append(str(path.parent))
 
 # add children paths
 for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
     sys.path.append(str(child_dir))
+
+
+from metrics import ModelMetrics
+from model_logging import ModelCheckpointCustom
+from print_stats import PrintStats
+from tensorboard import TensorboardCallback
+from losses import get_loss
+from optimizers import get_optimizer
+
 
 from models.model import get_model
 from segmentation_config import TRAIN_DATA_PATH
