@@ -145,6 +145,11 @@ def predict(model, img):
     return np.argmax(pred, -1)[0, :, :].astype(int), pred
 
 
+def generate_bbox_pascal_files(ground_truth, prediction):
+
+    pass
+
+
 def embedd(model, img):
     """
     Parameters
