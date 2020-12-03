@@ -42,6 +42,7 @@ class DiceCoefficient(keras.metrics.Metric):
     def result(self):
         return tf.divide(self.dc, self.iterations)
 
+
 class ModelMetrics:
     def __init__(self, config):
         self.train_acc = tf.keras.metrics.SparseCategoricalAccuracy()

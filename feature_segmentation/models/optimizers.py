@@ -1,7 +1,7 @@
 import keras
 
 
-def get_optimizer(params):
+def get_optimizer(params, training_operations):
     """
     Parameters
     ----------
@@ -18,8 +18,8 @@ def get_optimizer(params):
 
     if params.optimizer == "Adadelta":
         optimizer = keras.optimizers.Adadelta(
-            learning_rate = params.learning_rate, name = "Adadelta")
+            learning_rate = training_operations.callbacks_()[0])
 
     if params.optimizer == "Adam":
-        optimizer = keras.optimizers.Adam(learning_rate = params.learning_rate)
+        optimizer = keras.optimizers.Adam(learning_rate = training_operations.callbacks_()[0])
     return optimizer

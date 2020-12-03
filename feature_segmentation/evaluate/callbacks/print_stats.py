@@ -14,7 +14,7 @@ class PrintStats(Callback):
     def on_epoch_start(self, epoch):
         pass
 
-    def on_epoch_end(self, epoch, train_dict, validation_dict):
+    def on_epoch_end(self, epoch, train_dict, validation_dict, lr=None):
         """
         Parameters
         ----------
@@ -38,4 +38,8 @@ class PrintStats(Callback):
             for key in self.metrics:
                 key_value = str(np.round(train_dict[key].numpy(), 2))
                 metric_str = metric_str + f"{key}: {key_value}: "
+
         print(f"Epoch {epoch} / {self.params.num_epochs} :: " + metric_str)
+
+        if lr is not None:
+            print("Learning rate is:: ", lr)

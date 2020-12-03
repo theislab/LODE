@@ -5,7 +5,14 @@ from tqdm import tqdm
 from pathlib import Path
 import sys
 
-from metrics import ModelMetrics
+path = Path(os.getcwd())
+sys.path.append(str(path.parent))
+
+# add children paths
+for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
+    sys.path.append(str(child_dir))
+
+from custom_metrics import ModelMetrics
 from model_logging import ModelCheckpointCustom
 from print_stats import PrintStats
 from tensorboard_callback import TensorboardCallback
@@ -33,11 +40,10 @@ params.model_directory = logging.model_directory
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
 # Generators
-train_generator = DataGenerator(train_ids, params = params, is_training = True)
-validation_generator = DataGenerator(validation_ids, params = params, is_training = False)
+train_generator = DataGenerator(train_ids[0:1], params = params, is_training = True)
+validation_generator = DataGenerator(validation_ids[0:1], params = params, is_training = False)
 
-optimizer= get_optimizer(params)
-
+optimizer = get_optimizer(params, trainops)
 loss_fn = get_loss(params)
 
 model_metrics = ModelMetrics(params)
@@ -60,9 +66,12 @@ for epoch in range(params.num_epochs):
         # Update training metric.
         model_metrics.update_metric_states(y_batch_train, logits, mode="train")
 
+    current_lr = optimizer._decayed_lr(tf.float32).numpy()
+
     # Display metrics at the end of each epoch.
     train_result_dict = model_metrics.result_metrics(mode="train")
-    tb_callback.on_epoch_end(epoch = epoch, logging_dict = train_result_dict)
+
+    tb_callback.on_epoch_end(epoch = epoch, logging_dict = train_result_dict, lr = current_lr)
 
     # Run a validation loop at the end of each epoch.
     for x_batch_val, y_batch_val in validation_generator:
@@ -75,7 +84,8 @@ for epoch in range(params.num_epochs):
 
     tb_callback.on_epoch_end(epoch = epoch, logging_dict = val_result_dict)
     model_checkpoint.on_epoch_end(epoch, model, logging_dict = val_result_dict)
-    print_stats.on_epoch_end(epoch, train_dict=train_result_dict, validation_dict=val_result_dict)
+    print_stats.on_epoch_end(epoch, train_dict=train_result_dict, validation_dict=val_result_dict,
+                             lr = current_lr)
 
     # Reset training metrics at the end of each epoch
     model_metrics.reset_metric_states(mode="train")

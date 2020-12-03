@@ -13,7 +13,7 @@ class TensorboardCallback(Callback):
     def on_epoch_start(self, epoch):
         pass
 
-    def on_epoch_end(self, epoch, logging_dict):
+    def on_epoch_end(self, epoch, logging_dict, lr=None):
         """
         Parameters
         ----------
@@ -29,3 +29,7 @@ class TensorboardCallback(Callback):
             with self.summary_writer.as_default():
                 tf.summary.scalar(key, logging_dict[key], step = epoch)
                 tf.summary.scalar(key, logging_dict[key], step = epoch)
+
+        if lr is not None:
+            with self.summary_writer.as_default():
+                tf.summary.scalar("lr", lr, step = epoch)
