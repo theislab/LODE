@@ -476,3 +476,55 @@ def get_embedding_model(model_directory):
     embedding_model = Model(inputs = model_input.output, outputs = [model_embedding.output])
     return embedding_model
 
+
+def save_predicted_detections(pred, save_path, id_):
+    """
+    Parameters
+    ----------
+    pred :
+    save_path :
+
+    Returns
+    -------
+
+    """
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    detections = []
+    from skimage.measure import regionprops
+    for region in regionprops(pred):
+        if region.area >= 100 and (region.label not in [2, 0, 14, 15]):
+            minr, minc, maxr, maxc = region.bbox
+            detections.append((region.label, 1, minr, minc, maxr, maxc))
+
+    pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), header = None, index = None)
+
+
+def save_groundtruth_detections(lbl, save_path, id_):
+    """
+    Parameters
+    ----------
+    pred :
+    save_path :
+
+    Returns
+    -------
+
+    """
+
+    if len(lbl.shape) > 2:
+        lbl = lbl[:, :, 0]
+
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+
+    detections = []
+    from skimage.measure import regionprops
+    for region in regionprops(lbl):
+        if region.area >= 100 and (region.label not in [2, 0, 14, 15]):
+            minr, minc, maxr, maxc = region.bbox
+            detections.append((region.label, minr, minc, maxr, maxc))
+
+    pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), header = None, index = None)
