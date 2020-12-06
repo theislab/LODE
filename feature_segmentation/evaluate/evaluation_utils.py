@@ -13,7 +13,6 @@ import numpy as np
 from keras import Model
 from keras.engine.saving import load_model
 from pydicom import read_file
-from segmentation_models.metrics import iou_score
 from sklearn.metrics import jaccard_score, classification_report
 
 from utils.utils import Params, cast_params_types
@@ -273,7 +272,7 @@ def load_test_config(model_path):
 
     save_model_path = os.path.join(model_path, "weights.hdf5")
 
-    model = load_model(save_model_path, custom_objects = {'iou_score': iou_score})
+    model = load_model(save_model_path)
     return model, test_ids, params
 
 
@@ -471,7 +470,7 @@ def get_embedding_model(model_directory):
     keras model to use for embedding the octs
     """
     save_model_path = os.path.join(model_directory, "weights.hdf5")
-    model = load_model(save_model_path, custom_objects = {'iou_score': iou_score})
+    model = load_model(save_model_path)
 
     # set up inference model
     model_input = model.layers[0]
