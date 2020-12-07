@@ -40,7 +40,6 @@ params.model_directory = logging.model_directory
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
 # Generators
-<<<<<<< HEAD
 train_generator = DataGenerator(train_ids, params=params, is_training=True)
 validation_generator = DataGenerator(validation_ids, params=params, is_training=False)
 
@@ -49,15 +48,7 @@ optimizer = keras.optimizers.SGD(learning_rate=trainops.callbacks_()[0], momentu
 
 # Instantiate a loss function.
 loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits = False)
-=======
-train_generator = DataGenerator(train_ids[0:1], params = params, is_training = False)
-test_generator = DataGenerator(train_ids[0:1], params = params, is_training = False)
 
-optimizer = get_optimizer(params)
-
-# Instantiate a loss function.
-loss_fn = get_loss(params)
->>>>>>> e692b8626b6ba86e89d0a4e55a9d74d64bbccd5d
 
 model_metrics = ModelMetrics(params)
 tb_callback = TensorboardCallback(model_dir = params.model_directory)
@@ -67,10 +58,6 @@ print_stats = PrintStats(params=params)
 # get model
 model = get_model(params)
 
-<<<<<<< HEAD
-epochs = params.num_epochs
-=======
->>>>>>> e692b8626b6ba86e89d0a4e55a9d74d64bbccd5d
 
 @tf.function
 def train_step(x, y):

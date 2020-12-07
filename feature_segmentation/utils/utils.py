@@ -235,11 +235,11 @@ class TrainOps():
                 decay_rate = 0.95)
 
         elif self.params.learning_rate_scheduel == "step_decay":
-            lr_scheduler = PiecewiseConstantDecay([5000, 10000, 15000],
+            lr_scheduler = PiecewiseConstantDecay([5, 10, 15],
                                                   [self.params.learning_rate,
                                                    self.params.learning_rate * 1e-1,
                                                    self.params.learning_rate * 1e-2],
-                                                  name = None)
+                                                   name = None)
 
         checkpoint = ModelCheckpoint(filepath = self.params.model_directory + "/weights.hdf5",
                                      monitor = 'val_accuracy',
