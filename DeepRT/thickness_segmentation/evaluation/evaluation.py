@@ -109,16 +109,12 @@ def main(input_shape, verbose, dr, lr,shape,model_it,num_filters,bf,cf):
         labels_flatten = labels_batch_val.flatten()
         predition_flatten = prediction.flatten()
 
-        #calc iou score
-        iou_score = iou(predition_flatten, labels_flatten)
-
         #save prediction
         save_pred = np.stack((prediction[0, :, :, 0],) * 3, axis=-1) * 255
         cv2.imwrite(os.path.join(save_pred_path,str(im_name)+".png"),save_pred)
 
         #append scores to logging lists
         test_loss.append(loss)
-        test_iou.append(iou_score)
 
 
     print("The mean iou and loss is: {}, {},respective std's are: {},{}".format(np.mean(test_iou), np.mean(test_loss),

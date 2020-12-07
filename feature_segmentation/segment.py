@@ -1,7 +1,6 @@
 import os
 import pandas as pd
 from keras.engine.saving import load_model
-from segmentation_models.metrics import iou_score
 import time
 from keras import Model
 from pydicom import read_file
@@ -72,7 +71,7 @@ if __name__ == "__main__":
 
     save_model_path = os.path.join(params.model_directory, "weights.hdf5")
     print(save_model_path)
-    model = load_model(save_model_path, custom_objects = {'iou_score': iou_score})
+    model = load_model(save_model_path)
 
     # set up inference model
     model_input = model.layers[0]

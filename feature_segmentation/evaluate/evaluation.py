@@ -8,7 +8,7 @@ from feature_segmentation.utils.plotting import plot_image_label_prediction
 models_directory = os.path.join(WORK_SPACE, "models")
 model_name = "49"
 
-model_path = os.path.join(models_directory, model_name)
+model_path = "/home/olle/PycharmProjects/LODE/workspace/ensemble_results/56" # os.path.join(models_directory, model_name)
 
 # load test configurations
 model, test_ids, params = load_test_config(model_path)
@@ -22,9 +22,6 @@ for i in range(0, len(test_ids) - 1):
     label_path = os.path.join(TRAIN_DATA_PATH, "masks", test_ids[i])
 
     img, lbl = read_resize(img_path, label_path, (params.img_shape, params.img_shape))
-
-    # pre process (255. divide) as when training
-    img /= 255.
 
     prediction, softmax_prediction = predict(model, img)
 

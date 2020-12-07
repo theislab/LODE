@@ -180,37 +180,51 @@ def unet(img_w, img_h, n_label, data_format='channels_last'):
 
 
 ########################################################################################################
+########################################################################################################
 #Attention U-Net
 def att_unet(params, data_format='channels_last'):
     inputs = Input((params.img_shape, params.img_shape, 3))
     x = inputs
-    depth = params.depth
+    depth = 4
     features = params.n_filters
     skips = []
     for i in range(depth):
         x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
-        x = Dropout(0.2)(x)
+
+        if params.batchnorm:
+            x = BatchNormalization()(x)
+
+        x = Dropout(params.dropout)(x)
         x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
+
+        if params.batchnorm:
+            x = BatchNormalization()(x)
+
         skips.append(x)
         x = MaxPooling2D((2, 2), data_format=data_format)(x)
         features = features * 2
 
     x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
-    x = Dropout(0.2)(x)
+    x = Dropout(params.dropout)(x)
     x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
 
     for i in reversed(range(depth)):
         features = features // 2
         x = attention_up_and_concate(x, skips[i], data_format=data_format)
         x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
-        x = Dropout(0.2)(x)
+
+        if params.batchnorm:
+            x = BatchNormalization()(x)
+
+        x = Dropout(params.dropout)(x)
         x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
+
+        if params.batchnorm:
+            x = BatchNormalization()(x)
 
     conv6 = Conv2D(params.num_classes, (1, 1), padding='same', data_format=data_format)(x)
     conv7 = core.Activation('softmax')(conv6)
     model = Model(inputs=inputs, outputs=conv7)
-
-    #model.compile(optimizer=Adam(lr=1e-5), loss=[focal_loss()], metrics=['accuracy', dice_coef])
     return model
 
 
