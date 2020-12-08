@@ -9,12 +9,12 @@ sys.path.insert(0, os.path.join(path_variable, "networks"))
 sys.path.insert(0, str(path_variable.parent))
 sys.path.insert(0, str(path_variable.parent.parent))
 
-from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet, cluster_unet
+from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet, cluster_unet, deep_se_unet
 
 
 def get_model(params):
 
-    available_models = ["attention_unet", "deep_unet"]
+    available_models = ["attention_unet", "deep_unet", "deep_se_unet"]
     assert params.model in available_models, f"model not available, choose from {available_models}"
 
     if params.model == 'standard_unet':
@@ -22,6 +22,9 @@ def get_model(params):
 
     if params.model == 'deep_unet':
         model = deep_unet.unet(params)
+
+    if params.model == 'deep_se_unet':
+        model = deep_se_unet.unet(params)
 
     if params.model == 'deeper_unet':
         model = deeper_unet.unet(params)

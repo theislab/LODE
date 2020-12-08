@@ -2,6 +2,7 @@ from keras.layers import BatchNormalization, Activation, Conv2D, Conv3D, GlobalA
     Permute, multiply
 import keras.backend as K
 
+
 def squeeze_excite_block(tensor, ratio=16):
     init = tensor
     channel_axis = 1 if K.image_data_format() == "channels_first" else -1
