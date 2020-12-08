@@ -40,7 +40,7 @@ class ModelCheckpointCustom(Callback):
                 previous_best = str(np.round(previous_best, 2))
                 current = str(np.round(logging_dict[self.monitor].numpy(), 2))
                 print(f"#### Model validation {self.monitor} improved from {previous_best} to "
-                      f"{current}, saving model ####")
+                      f"{current}, saving model in {self.model_dir}####")
 
                 model.save(os.path.join(self.model_dir, "model.h5"))
             else:
