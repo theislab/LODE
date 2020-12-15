@@ -4,6 +4,9 @@ import tensorflow as tf
 import sys
 from pathlib import Path
 import os
+
+from feature_segmentation.models.losses import FocalLoss
+
 path = Path(os.getcwd())
 sys.path.append(str(path.parent))
 

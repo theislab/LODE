@@ -219,7 +219,7 @@ def plot_image_predictions(records, model_dir, mode, filename):
     ax3.set_title("prediction")
 
     # set colorbar ticks
-    tick_loc_array = np.arange(len(bounds)) + 0.5
+    tick_loc_array = np.arange(len(bounds) - 1) + 0.5
     tick_loc_list = tick_loc_array.tolist()
     tick_list = np.arange(len(bounds)).tolist()
     c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
