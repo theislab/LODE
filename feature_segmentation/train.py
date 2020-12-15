@@ -25,10 +25,10 @@ from utils.utils import Params, TrainOps, Logging, data_split
 from generator_2d import DataGenerator
 
 params = Params("params.json")
+params.data_path = TRAIN_DATA_PATH
+
 logging = Logging("./logs", params)
 trainops = TrainOps(params)
-
-params.data_path = TRAIN_DATA_PATH
 
 ids = os.listdir(os.path.join(params.data_path, "images"))
 train_ids, validation_ids, test_ids = data_split(ids, params)
