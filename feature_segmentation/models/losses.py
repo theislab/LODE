@@ -38,6 +38,45 @@ class DiceLoss(keras.losses.Loss):
         return self.dice_coef_cat_loss(y_true, y_pred)
 
 
+
+class FocalLoss(keras.losses.Loss):
+    """
+    Args:
+      pos_weight: Scalar to affect the positive labels of the loss function.
+      weight: Scalar to affect the entirety of the loss function.
+      from_logits: Whether to compute loss from logits or the probability.
+      reduction: Type of tf.keras.losses.Reduction to apply to loss.
+      name: Name of the loss function.
+    """
+
+    def __init__(self, num_classes, smooth=1e-7, name='dice_loss'):
+        super().__init__(name = name)
+        self.num_classes = num_classes
+        self.alpha = 1
+        self.gamma = 1
+        self.smooth = smooth
+
+    def focal_loss_with_logits(self, logits, targets, alpha, gamma, y_pred):
+        weight_a = alpha * (1 - y_pred) ** gamma * targets
+        weight_b = (1 - alpha) * y_pred ** gamma * (1 - targets)
+
+        return (tf.math.log1p(tf.exp(-tf.abs(logits))) + tf.nn.relu(
+            -logits)) * (weight_a + weight_b) + logits * weight_b
+
+    def focal_loss(self, y_true, y_pred):
+        y_pred = tf.clip_by_value(y_pred, tf.keras.backend.epsilon(),
+                                  1 - tf.keras.backend.epsilon())
+        logits = tf.math.log(y_pred / (1 - y_pred))
+
+        loss = self.focal_loss_with_logits(logits=logits, targets=y_true,
+                                      alpha=alpha, gamma=gamma, y_pred=y_pred)
+
+        return tf.reduce_mean(loss)
+
+    def call(self, y_true, y_pred):
+        return self.dice_coef_cat_loss(y_true, y_pred)
+
+
 def get_loss(params):
     """
     Parameters

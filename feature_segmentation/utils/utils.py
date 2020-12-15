@@ -176,51 +176,8 @@ def cast_params_types(params, model_path):
 class TrainOps():
     def __init__(self, params):
         self.params = params
-
-    def lr_schedule(self, epoch):
-        """Learning Rate Schedule
-    
-        Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
-        Called automatically every epoch as part of callbacks during training.
-    
-        # Arguments
-            epoch (int): The number of epochs
-    
-        # Returns
-            lr (float32): learning rate
-        """
-        lr = self.params.learning_rate
-
-        if epoch > int(self.params.num_epochs * 0.8):
-            lr *= 1e-3
-        elif epoch > int(self.params.num_epochs * 0.6):
-            lr *= 1e-2
-        elif epoch > int(self.params.num_epochs * 0.4):
-            lr *= 1e-1
-        print('Learning rate: ', lr)
-        return lr
-
-    def step_decay(self, epoch):
-        """
-        Parameters
-        ----------
-        epoch :
-
-        Returns
-        -------
-
-        """
-        initial_lrate = self.params.learning_rate
-        drop = 0.5
-        epochs_drop = self.params.num_epochs // 8
-        lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
-        return lrate
-
-    def exp_decay(self, epoch):
-        if epoch < self.params.num_epochs // 10:
-            return self.params.learning_rate
-        else:
-            return self.params.learning_rate * math.exp(-0.05 * (epoch // 2))
+        self.num_records = len(os.listdir(self.params.data_path + "/images"))
+        self.steps_per_epoch = (self.num_records // self.params.batch_size)
 
     def callbacks_(self):
 
@@ -231,15 +188,15 @@ class TrainOps():
         if self.params.learning_rate_scheduel == "exponential_decay":
             lr_scheduler = ExponentialDecay(
                 initial_learning_rate = self.params.learning_rate,
-                decay_steps = 10000,
-                decay_rate = 0.95)
+                decay_steps = int(self.steps_per_epoch*self.params.num_epochs),
+                decay_rate = 0.001)
 
         elif self.params.learning_rate_scheduel == "step_decay":
-            lr_scheduler = PiecewiseConstantDecay([5, 10, 15],
-                                                  [self.params.learning_rate,
-                                                   self.params.learning_rate * 1e-1,
-                                                   self.params.learning_rate * 1e-2],
-                                                   name = None)
+            lr_scheduler = ExponentialDecay(
+                initial_learning_rate = self.params.learning_rate,
+                decay_steps = int(self.steps_per_epoch*self.params.num_epochs),
+                decay_rate = 0.001,
+                staircase = True)
 
         checkpoint = ModelCheckpoint(filepath = self.params.model_directory + "/weights.hdf5",
                                      monitor = 'val_accuracy',
