@@ -1,4 +1,6 @@
 import os
+from pprint import pprint
+
 import tensorflow as tf
 from tqdm import tqdm
 from pathlib import Path
@@ -41,7 +43,7 @@ params.model_directory = logging.model_directory
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
 # Generators
-train_generator = DataGenerator(train_ids[0:1], params = params, is_training = True)
+train_generator = DataGenerator(train_ids[0:1]*10, params = params, is_training = True)
 validation_generator = DataGenerator(validation_ids[0:1], params = params, is_training = False)
 
 optimizer = get_optimizer(params, trainops)
@@ -65,7 +67,8 @@ for epoch in range(params.num_epochs):
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
         current_lr = optimizer._decayed_lr(tf.float32).numpy()
 
-        print(f"Opt Iteration: {optimizer.__dict__['_iterations'].numpy()} learning rate: {current_lr} loss: {np.round(loss.numpy(), 2)}")
+        print(f"\nOpt Iteration: {optimizer.__dict__['_iterations'].numpy()} "
+              f"learning rate: {np.round(current_lr, 2)} loss: {np.round(loss.numpy(), 2)}")
 
         # Update training metric.
         model_metrics.update_metric_states(y_batch_train, logits, mode="train")
