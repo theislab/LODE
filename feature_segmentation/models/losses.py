@@ -1,3 +1,4 @@
+import tensorflow as tf
 import keras
 from keras import backend as K
 
@@ -16,6 +17,8 @@ class DiceLoss(keras.losses.Loss):
         super().__init__(name = name)
         self.num_classes = num_classes
         self.smooth = smooth
+        self.focal = self.add_weight(name='focal', initializer='zeros')
+
 
     def dice_coef_cat(self, y_true, y_pred):
         '''
@@ -38,7 +41,6 @@ class DiceLoss(keras.losses.Loss):
         return self.dice_coef_cat_loss(y_true, y_pred)
 
 
-
 class FocalLoss(keras.losses.Loss):
     """
     Args:
@@ -49,32 +51,35 @@ class FocalLoss(keras.losses.Loss):
       name: Name of the loss function.
     """
 
-    def __init__(self, num_classes, smooth=1e-7, name='dice_loss'):
+    def __init__(self, num_classes, name='focal_loss'):
         super().__init__(name = name)
         self.num_classes = num_classes
-        self.alpha = 1
-        self.gamma = 1
-        self.smooth = smooth
+        self.alpha = 0.25
+        self.gamma = 2
+        self.current_value = tf.constant(0)
 
     def focal_loss_with_logits(self, logits, targets, alpha, gamma, y_pred):
-        weight_a = alpha * (1 - y_pred) ** gamma * targets
-        weight_b = (1 - alpha) * y_pred ** gamma * (1 - targets)
+        targets_f = K.one_hot(K.cast(targets, 'int32'), num_classes = self.num_classes + 1)[..., 1:]
 
-        return (tf.math.log1p(tf.exp(-tf.abs(logits))) + tf.nn.relu(
+        weight_a = alpha * (1 - y_pred) ** gamma * targets_f
+        weight_b = (1 - alpha) * y_pred ** gamma * (1 - targets_f)
+
+        return (tf.math.log1p(keras.backend.exp(-keras.backend.abs(logits))) + tf.nn.relu(
             -logits)) * (weight_a + weight_b) + logits * weight_b
 
     def focal_loss(self, y_true, y_pred):
-        y_pred = tf.clip_by_value(y_pred, tf.keras.backend.epsilon(),
-                                  1 - tf.keras.backend.epsilon())
-        logits = tf.math.log(y_pred / (1 - y_pred))
+        y_pred = tf.clip_by_value(y_pred, keras.backend.epsilon(),
+                                  1 - keras.backend.epsilon())
+        logits = keras.backend.log(y_pred / (1 - y_pred))
 
         loss = self.focal_loss_with_logits(logits=logits, targets=y_true,
-                                      alpha=alpha, gamma=gamma, y_pred=y_pred)
+                                      alpha=self.alpha, gamma=self.gamma, y_pred=y_pred)
 
+        self.current_value = tf.reduce_mean(loss)
         return tf.reduce_mean(loss)
 
     def call(self, y_true, y_pred):
-        return self.dice_coef_cat_loss(y_true, y_pred)
+        return self.focal_loss(y_true, y_pred)
 
 
 def get_loss(params):
@@ -89,9 +94,12 @@ def get_loss(params):
     """
 
     if params.loss == "categorical_crossentropy":
-        # Instantiate a loss function.
         loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits = False)
 
     if params.loss == "dice_loss":
         loss_fn = DiceLoss(num_classes = params.num_classes)
+
+    if params.loss == "focal_loss":
+        loss_fn = FocalLoss(num_classes = params.num_classes)
+
     return loss_fn

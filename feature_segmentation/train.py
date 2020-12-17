@@ -1,9 +1,9 @@
 import os
-import keras
 import tensorflow as tf
 from tqdm import tqdm
 from pathlib import Path
 import sys
+import numpy as np
 
 path = Path(os.getcwd())
 sys.path.append(str(path.parent))
@@ -62,11 +62,12 @@ for epoch in range(params.num_epochs):
             loss = loss_fn(y_batch_train, logits)
         grads = tape.gradient(loss, model.trainable_weights)
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
+        current_lr = optimizer._decayed_lr(tf.float32).numpy()
+
+        print(f"Opt Iteration: {optimizer.__dict__['_iterations'].numpy()} learning rate: {current_lr} loss: {np.round(loss.numpy(), 2)}")
 
         # Update training metric.
         model_metrics.update_metric_states(y_batch_train, logits, mode="train")
-
-    current_lr = optimizer._decayed_lr(tf.float32).numpy()
 
     # Display metrics at the end of each epoch.
     train_result_dict = model_metrics.result_metrics(mode="train")
@@ -76,9 +77,12 @@ for epoch in range(params.num_epochs):
     # Run a validation loop at the end of each epoch.
     for x_batch_val, y_batch_val in validation_generator:
         val_logits = model(x_batch_val, training = False)
+        val_loss = loss_fn(y_batch_val, val_logits)
 
         # Update val metrics
         model_metrics.update_metric_states(y_batch_val, val_logits, mode="val")
+
+    print("validation loss is: ", np.round(val_loss.numpy(), 2))
 
     val_result_dict = model_metrics.result_metrics(mode = "val")
 
