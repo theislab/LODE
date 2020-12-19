@@ -270,7 +270,7 @@ def load_test_config(model_path):
     # read test images from trained model
     test_ids = pd.read_csv(os.path.join(model_path, "test_ids.csv"))["0"].tolist()
 
-    save_model_path = os.path.join(model_path, "model.h5")
+    save_model_path = os.path.join(model_path, "weights.hdf5")
 
     model = load_model(save_model_path)
     return model, test_ids, params
