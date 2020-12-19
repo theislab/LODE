@@ -6,7 +6,7 @@ from keras import Model
 from pydicom import read_file
 import matplotlib
 from tqdm import tqdm
-from config import WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
+from segmentation_config import EXPORT_DIR, WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
 from segmentation.utils import EvalVolume, load_config
 import argparse
 #matplotlib.use('Agg')
@@ -53,6 +53,8 @@ if __name__ == "__main__":
 
     parser.add_argument("save_id", help = "which of the different sub .csv files to read from ",
                                     type = str, default = "test")
+
+    parser.add_argument("part", type = int, default = "test")
     args = parser.parse_args()
 
     # select model to be evaluated
@@ -60,10 +62,11 @@ if __name__ == "__main__":
     params, logging, trainops = load_config(model_directory)
 
     file_name = args.filename
-    print(os.path.join(WORK_SPACE, "segmentation/path_files", file_name + ".csv"))
-    test_ids = pd.read_csv(os.path.join(WORK_SPACE, "feature_segmentation/segmentation/path_files",
-                                        file_name + ".csv"))["PATH"].dropna().tolist()
+    test_ids = pd.read_csv(os.path.join(EXPORT_DIR, "dicom_paths.csv"))[0].dropna().tolist()
     
+    number_of_dicoms = len(test_ids)
+    test_ids = test_ids[args.part*number_of_dicoms//5: int(number_of_dicoms//5 + args.part*number_of_dicoms//5)]
+
     file_name = file_name + "_{}".format(args.save_id)
 
     # copy remaining ids

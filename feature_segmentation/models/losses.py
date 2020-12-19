@@ -59,8 +59,9 @@ class FocalLoss(keras.losses.Loss):
         self.current_value = tf.constant(0)
 
     def focal_loss_with_logits(self, logits, targets, alpha, gamma, y_pred):
-        targets_f = K.one_hot(K.cast(targets, 'int32'), num_classes = self.num_classes + 1)[..., 1:]
+        targets_f = K.flatten(K.one_hot(K.cast(targets, 'int32'), num_classes = self.num_classes + 1)[..., 1:])
 
+        logits = K.flatten(logits)
         weight_a = alpha * (1 - y_pred) ** gamma * targets_f
         weight_b = (1 - alpha) * y_pred ** gamma * (1 - targets_f)
 
@@ -70,6 +71,8 @@ class FocalLoss(keras.losses.Loss):
     def focal_loss(self, y_true, y_pred):
         y_pred = tf.clip_by_value(y_pred, keras.backend.epsilon(),
                                   1 - keras.backend.epsilon())
+        y_pred = K.flatten(y_pred)
+
         logits = keras.backend.log(y_pred / (1 - y_pred))
 
         loss = self.focal_loss_with_logits(logits=logits, targets=y_true,
