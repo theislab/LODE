@@ -246,7 +246,7 @@ class TimeUtils:
         @return: DataFrame table filtered from first treatment date
         @rtype: DataFrame
         """
-        first_injection_idx = min(np.argwhere(self.table["injections"] > 0))[0]
+        first_injection_idx = min(np.argwhere(np.array(self.table["injections"] > 0)))[0]
         treatment_table = self.table.iloc[first_injection_idx:]
 
         # reset index to start from 1

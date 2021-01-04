@@ -144,11 +144,6 @@ def predict(model, img):
     return np.argmax(pred, -1)[0, :, :].astype(int), pred
 
 
-def generate_bbox_pascal_files(ground_truth, prediction):
-
-    pass
-
-
 def embedd(model, img):
     """
     Parameters
@@ -270,7 +265,7 @@ def load_test_config(model_path):
     # read test images from trained model
     test_ids = pd.read_csv(os.path.join(model_path, "test_ids.csv"))["0"].tolist()
 
-    save_model_path = os.path.join(model_path, "model.h5")
+    save_model_path = os.path.join(model_path, "weights.hdf5")
 
     model = load_model(save_model_path)
     return model, test_ids, params
