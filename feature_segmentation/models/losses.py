@@ -50,11 +50,11 @@ class FocalLoss(keras.losses.Loss):
       name: Name of the loss function.
     """
 
-    def __init__(self, num_classes, name='focal_loss'):
+    def __init__(self, num_classes, alpha=0.25, gamma=2, name='focal_loss'):
         super().__init__(name = name)
         self.num_classes = num_classes
-        self.alpha = 0.25
-        self.gamma = 2
+        self.alpha = alpha
+        self.gamma = gamma
         self.current_value = tf.constant(0)
 
     def focal_loss(self, y_true, y_pred):
@@ -99,6 +99,7 @@ def get_loss(params):
         loss_fn = DiceLoss(num_classes = params.num_classes)
 
     if params.loss == "focal_loss":
-        loss_fn = FocalLoss(num_classes = params.num_classes)
+        loss_fn = FocalLoss(alpha=params.alpha, gamma=params.gamma, 
+                num_classes = params.num_classes)
 
     return loss_fn
