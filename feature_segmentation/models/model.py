@@ -15,7 +15,7 @@ from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volume
 
 def get_model(params):
 
-    available_models = ["attention_unet", "deep_unet", "deep_se_unet", "pyramid_deep_unet"]
+    available_models = ["attention_unet", "deep_unet", "deep_se_unet", "pyramid_unet"]
     assert params.model in available_models, f"model not available, choose from {available_models}"
 
     if params.model == 'standard_unet':
@@ -36,7 +36,7 @@ def get_model(params):
     if params.model == 'volumeNet':
         model = volumeNet.unet(params)
 
-    if params.model == 'pyramid_deep_unet':
+    if params.model == 'pyramid_unet':
         model = pyramid_deep_unet.unet(params)
 
     if params.model == "cluster_unet":

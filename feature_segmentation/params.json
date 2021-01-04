@@ -2,7 +2,7 @@
   "batch_size": 12,
   "num_epochs": 200,
   "img_shape": 256,
-  "n_filters": 32,
+  "n_filters": 64,
   "depth": 5,
   "num_classes": 16,
   "continue_training": 0,
@@ -12,7 +12,12 @@
   "batchnorm": 1,
   "dropout": 0.2,
   "learning_rate_scheduel": "step_decay",
+<<<<<<< HEAD
   "loss": "focal_loss",
+=======
+  "model": "pyramid_unet",
+  "loss": "categorical_crossentropy",
+>>>>>>> f699342db0b2bbc1f2477311ad6a77029079d25c
   "model": "deep_unet",
   "optimizer": "Adam",
   "alpha":0.25,
