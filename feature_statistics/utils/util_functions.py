@@ -5,7 +5,6 @@ import numpy as np
 class SeqUtils():
     def __init__(self, time_line):
         self.time_line = time_line
-        pass
 
     def get_number_of_visits(self):
         return len(list(filter(lambda x: x != "nan", self.study_dates)))

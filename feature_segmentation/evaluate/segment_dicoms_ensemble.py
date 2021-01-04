@@ -3,9 +3,13 @@ import pandas as pd
 from tqdm import tqdm
 import time
 import sys
-from pathlib import Path
 import glob
+<<<<<<< HEAD
 root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
+=======
+
+root_dir = "./"
+>>>>>>> 29bdcc6939b36ffd6a82b2da2fa1dfa988a63a2b
 search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
 
 for sp in search_paths:
@@ -24,7 +28,7 @@ if __name__ == "__main__":
     part = 0
     file_name = f"export2_part_{part}"
     ensemble_name = "ensemble_stratified"
-    ensemble_dir = os.path.join(WORK_SPACE, "segmentation/ensembles/ensembles_stratified")
+    ensemble_dir = os.path.join(WORK_SPACE, "segmentation/ensembles/ensemble_stratified")
 
     # get dictionary holding all models
     ensemble_dict = get_ensemble_dict(ensemble_models, ensemble_dir)
@@ -83,7 +87,6 @@ if __name__ == "__main__":
                 if save_embedd:
                     embedding = embedd_volume(embedding_model, oct_volume)
                     save_embedding(embedding, save_path = EMBEDD_SAVE_PATH, record_name=feature_dict["id"])
-
             else:
                 print("oct does not have requested shape, skipping")
                 continue

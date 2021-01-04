@@ -13,7 +13,7 @@ def get_optimizer(params, training_operations):
     """
     optimizer = None
 
-    available_optimizers = ["Adadelta", "Adam"]
+    available_optimizers = ["Adadelta", "Adam", "SGD"]
     assert params.optimizer in available_optimizers, f"optimizer not available, choose on of {available_optimizers}"
 
     if params.optimizer == "Adadelta":
@@ -22,4 +22,7 @@ def get_optimizer(params, training_operations):
 
     if params.optimizer == "Adam":
         optimizer = keras.optimizers.Adam(learning_rate = training_operations.callbacks_()[0])
+
+    if params.optimizer == "SGD":
+        optimizer = keras.optimizers.SGD(learning_rate = training_operations.callbacks_()[0], momentum = 0.9)
     return optimizer

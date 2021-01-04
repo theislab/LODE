@@ -1,5 +1,6 @@
 import os
 from pprint import pprint
+from keras import backend as K
 
 import tensorflow as tf
 from tqdm import tqdm
@@ -50,8 +51,8 @@ loss_fn = get_loss(params)
 
 model_metrics = ModelMetrics(params)
 tb_callback = TensorboardCallback(model_dir = params.model_directory)
-model_checkpoint = ModelCheckpointCustom(monitor="val_acc", model_dir = params.model_directory, mode="max")
-print_stats = PrintStats(params=params)
+model_checkpoint = ModelCheckpointCustom(monitor = "val_acc", model_dir = params.model_directory, mode = "max")
+print_stats = PrintStats(params = params)
 
 # get model
 model = get_model(params)
@@ -61,19 +62,19 @@ for epoch in range(params.num_epochs):
     for step, (x_batch_train, y_batch_train) in tqdm(enumerate(train_generator)):
         with tf.GradientTape() as tape:
             logits = model(x_batch_train, training = True)
-            loss = loss_fn(y_batch_train, logits)
+            loss = loss_fn(y_batch_train, logits)  # focal_loss_fixed(y_batch_train, logits)
         grads = tape.gradient(loss, model.trainable_weights)
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
         current_lr = optimizer._decayed_lr(tf.float32).numpy()
         current_loss = np.round(loss.numpy(), 2)
         print(f"\nOpt Iteration: {optimizer.__dict__['_iterations'].numpy()} "
-              f"learning rate: {np.round(current_lr, 2)} loss: {current_loss}")
+              f"learning rate: {np.round(current_lr, 5)} loss: {np.round(loss.numpy(), 2)}")
 
         # Update training metric.
-        model_metrics.update_metric_states(y_batch_train, logits, mode="train")
+        model_metrics.update_metric_states(y_batch_train, logits, mode = "train")
 
     # Display metrics at the end of each epoch.
-    train_result_dict = model_metrics.result_metrics(mode="train")
+    train_result_dict = model_metrics.result_metrics(mode = "train")
 
     tb_callback.on_epoch_end(epoch = epoch, logging_dict = train_result_dict, lr = current_lr)
 
@@ -83,7 +84,7 @@ for epoch in range(params.num_epochs):
         val_loss = loss_fn(y_batch_val, val_logits)
 
         # Update val metrics
-        model_metrics.update_metric_states(y_batch_val, val_logits, mode="val")
+        model_metrics.update_metric_states(y_batch_val, val_logits, mode = "val")
 
     print("validation loss is: ", np.round(val_loss.numpy(), 2))
 
@@ -91,9 +92,9 @@ for epoch in range(params.num_epochs):
 
     tb_callback.on_epoch_end(epoch = epoch, logging_dict = val_result_dict)
     model_checkpoint.on_epoch_end(epoch, model, logging_dict = val_result_dict)
-    print_stats.on_epoch_end(epoch, train_dict=train_result_dict, validation_dict=val_result_dict,
+    print_stats.on_epoch_end(epoch, train_dict = train_result_dict, validation_dict = val_result_dict,
                              lr = current_lr)
 
     # Reset training metrics at the end of each epoch
-    model_metrics.reset_metric_states(mode="train")
-    model_metrics.reset_metric_states(mode="val")
+    model_metrics.reset_metric_states(mode = "train")
+    model_metrics.reset_metric_states(mode = "val")
