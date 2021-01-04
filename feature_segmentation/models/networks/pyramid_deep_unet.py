@@ -9,9 +9,9 @@ def pyramid_feature_maps(base):
 
     # red
     red = GlobalAveragePooling2D(name = 'red_pool')(base)
-    red = Reshape((1, 1, 512))(red)
+    red = Reshape((1, 1, base.shape[-1]))(red)
     red = Convolution2D(filters = 128, kernel_size = (1, 1), name = 'red_1_by_1')(red)
-    red = UpSampling2D(size = 8, interpolation = 'bilinear', name = 'red_upsampling')(red)
+    red = UpSampling2D(size = 32, interpolation = 'bilinear', name = 'red_upsampling')(red)
     # yellow
     yellow = AveragePooling2D(pool_size = (2, 2), name = 'yellow_pool')(base)
     yellow = Convolution2D(filters = 128, kernel_size = (1, 1), name = 'yellow_1_by_1')(yellow)
@@ -33,29 +33,20 @@ def unet(params):
 
     # contracting path
     c1 = conv2d_block(inputs, n_filters = params.n_filters * 1, kernel_size = 3)
-    p1 = MaxPooling2D((2, 2))(c1)
+    p1 = AveragePooling2D((2, 2))(c1)
 
     c2 = conv2d_block(p1, n_filters = params.n_filters * 2, kernel_size = 3)
-    p2 = MaxPooling2D((2, 2))(c2)
+    p2 = AveragePooling2D((2, 2))(c2)
 
     c3 = conv2d_block(p2, n_filters = params.n_filters * 4, kernel_size = 3)
-    p3 = MaxPooling2D((2, 2))(c3)
+    p3 = AveragePooling2D((2, 2))(c3)
 
     c4 = conv2d_block(p3, n_filters = params.n_filters * 8, kernel_size = 3)
-    p4 = MaxPooling2D(pool_size = (2, 2))(c4)
 
-    c5 = conv2d_block(p4, n_filters = params.n_filters * 8, kernel_size = 3)
-    p5 = MaxPooling2D(pool_size = (2, 2))(c5)
-    p5 = Dropout(params.dropout)(p5)
+    c7 = pyramid_feature_maps(c4)
 
-    c7 = pyramid_feature_maps(p5)
-    # c7 = conv2d_block(p5, n_filters = params.n_filters * 8, kernel_size = 3)
+    u8 = conv2d_block(c7, n_filters = params.n_filters * 8, kernel_size = 3)
 
-    u7 = Conv2DTranspose(params.n_filters * 8, (3, 3), strides = (2, 2), padding = 'same')(c7)
-    u7 = concatenate([u7, c5])
-    c8 = conv2d_block(u7, n_filters = params.n_filters * 8, kernel_size = 3)
-
-    u8 = Conv2DTranspose(params.n_filters * 8, (3, 3), strides = (2, 2), padding = 'same')(c8)
     u8 = concatenate([u8, c4])
     c9 = conv2d_block(u8, n_filters = params.n_filters * 8, kernel_size = 3)
 
