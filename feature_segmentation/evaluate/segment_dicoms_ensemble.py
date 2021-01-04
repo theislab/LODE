@@ -1,6 +1,7 @@
 import os
 import pandas as pd
 from tqdm import tqdm
+import time
 import sys
 from pathlib import Path
 import glob
@@ -59,10 +60,16 @@ if __name__ == "__main__":
     i = 0
     for dicom_path in tqdm(dicom_paths):
         try:
+            start_read = time.time()
             oct_volume = read_oct_from_dicom(dicom_path, shape)
-
+            
+            print("Reading volume took: ", time.time() - start_read)
             if oct_volume is not None:
+
+                start_segment = time.time()
                 segmented_volume = segment_volume(oct_volume, ensemble_dict)
+                print("Segmenting volume took", time.time() - start_segment)
+
                 feature_dict = get_feature_dict(dicom_path, segmented_volume)
 
                 feature_dict["id"] = f"{feature_dict['patient_id']}_{feature_dict['laterality']}_{feature_dict['study_date']}"

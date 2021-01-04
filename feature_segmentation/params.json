@@ -11,7 +11,7 @@
   "batchnorm": 1,
   "dropout": 0.5,
   "learning_rate_scheduel": "exponential_decay",
-  "loss": "focal_loss",
+  "loss": "categorical_crossentropy",
   "model": "deep_unet",
   "optimizer": "Adam",
   "balance_dataset": 0,

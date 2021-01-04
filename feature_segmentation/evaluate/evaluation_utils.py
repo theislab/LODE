@@ -1,6 +1,7 @@
 import os
 from pprint import pprint
 import pandas as pd
+import time
 
 import sys
 from pathlib import Path
@@ -19,6 +20,19 @@ from utils.utils import Params, cast_params_types
 
 SEGMENTED_CLASSES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
+def timeit(method):
+    def timed(*args, **kw):
+        ts = time.time()
+        result = method(*args, **kw)
+        te = time.time()
+        if 'log_time' in kw:
+            name = kw.get('log_name', method.__name__.upper())
+            kw['log_time'][name] = int((te - ts) * 1000)
+        else:
+            print('%r  %2.2f ms' % \
+                  (method.__name__, (te - ts) * 1000))
+        return result
+    return timed
 
 def ensemble_vote(predictions):
     """
@@ -32,7 +46,6 @@ def ensemble_vote(predictions):
     """
     ensemble_prediction = np.mean(np.array(predictions), 0)
     return np.argmax(ensemble_prediction, -1)[0, :, :].astype(int)
-
 
 def ensemble_uncertainty(predictions):
     """
@@ -57,7 +70,6 @@ def ensemble_uncertainty(predictions):
 
     uq_map = np.array(uncertainty).reshape(256, 256)
     return uq_map
-
 
 def ensemble_predict(ensemble_dict, img):
     """
@@ -88,8 +100,8 @@ def ensemble_predict(ensemble_dict, img):
         predictions.append(pred)
         model_segmentations[ensemble_model] = np.argmax(pred, -1)[0, :, :].astype(int)
 
-    uq_map = ensemble_uncertainty(predictions)
-    return model_segmentations, ensemble_vote(predictions), uq_map
+    # uq_map = ensemble_uncertainty(predictions)
+    return model_segmentations, ensemble_vote(predictions)# , uq_map
 
 
 def check_enseble_test_ids(ensemble_dict):
@@ -119,6 +131,28 @@ def check_enseble_test_ids(ensemble_dict):
 
         assert sum(not_same_ids) == 0, "models in ensemble not trained on the same ids, stop evaluation"
 
+def predict_on_batch(model, img):
+    """
+    Parameters
+    ----------
+    model : keras model for segmentation
+    img : array, numpy array with preprocessed image to predict on
+
+    Returns
+    -------
+    integer label map from prediction and soft max scores for each class
+    """
+
+    # check so shape is 4 channel
+    if len(img.shape) == 3:
+        img = img.reshape((img.shape[0], img.shape[0], img.shape[1], img.shape[-1]))
+
+    # pre process (255. divide) as when training
+    img = img / 255.
+    
+    # get probability map
+    pred = model.predict_on_batch(img)
+    return np.argmax(pred, -1).astype(np.uint8), pred
 
 def predict(model, img):
     """
@@ -142,6 +176,24 @@ def predict(model, img):
     # get probability map
     pred = model.predict(img)
     return np.argmax(pred, -1)[0, :, :].astype(int), pred
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 def generate_bbox_pascal_files(ground_truth, prediction):
@@ -366,7 +418,7 @@ def segment_volume(oct_volume, ensemble_dict):
     """
     segmented_octs = []
     for i in range(oct_volume.shape[0]):
-        _, segmented_oct, _ = ensemble_predict(ensemble_dict, oct_volume[i])
+        _, segmented_oct = ensemble_predict(ensemble_dict, oct_volume[i])
         segmented_octs.append(segmented_oct)
 
     return np.array(segmented_octs)
@@ -451,8 +503,9 @@ def get_feature_dict(dicom_path, segmented_volume):
     feature_dict["study_date"] = dc_header.StudyDate
     feature_dict["laterality"] = dc_header.ImageLaterality
     feature_dict["dicom_path"] = dicom_path
-
-    for i in range(segmented_volume.shape[0]):
+    
+    num_segmentations = segmented_volume.shape[0]
+    for i in range(num_segmentations):
         feature_dict["frame"].append(i)
         feature_dict = segmentation_to_vector(segmented_volume[i], feature_dict)
 
