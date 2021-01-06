@@ -1,6 +1,6 @@
 {"learning_rate": 0.001,
   "batch_size": 12,
-  "num_epochs": 200,
+  "num_epochs":600,
   "img_shape": 256,
   "n_filters": 64,
   "depth": 5,
@@ -10,18 +10,12 @@
   "load_prepared_split": 1,
   "dropout": 0.2,
   "batchnorm": 1,
-  "dropout": 0.2,
   "learning_rate_scheduel": "step_decay",
-<<<<<<< HEAD
-  "loss": "focal_loss",
-=======
-  "model": "pyramid_unet",
-  "loss": "categorical_crossentropy",
->>>>>>> f699342db0b2bbc1f2477311ad6a77029079d25c
   "model": "deep_unet",
+  "loss": "categorical_crossentropy",
   "optimizer": "Adam",
   "alpha":0.25,
-  "gamma": 4,
+  "gamma": 2,
   "balance_dataset": 0,
-  "aug_strategy": "light",
+  "aug_strategy": "medium",
   "pretrained_model": "./pretrained_models"}
