@@ -31,7 +31,6 @@ params = Params("params.json")
 params.data_path = TRAIN_DATA_PATH
 
 logging = Logging("./logs", params)
-trainops = TrainOps(params)
 
 ids = os.listdir(os.path.join(params.data_path, "images"))
 train_ids, validation_ids, test_ids = data_split(ids, params)
@@ -43,8 +42,10 @@ params.model_directory = logging.model_directory
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
 # Generators
-train_generator = DataGenerator(train_ids, params = params, is_training = True)
-validation_generator = DataGenerator(validation_ids, params = params, is_training = False)
+train_generator = DataGenerator(train_ids[0:1], params = params, is_training = True)
+validation_generator = DataGenerator(validation_ids[0:1], params = params, is_training = False)
+
+trainops = TrainOps(params, num_records = len(train_generator))
 
 optimizer = get_optimizer(params, trainops)
 loss_fn = get_loss(params)
@@ -62,7 +63,7 @@ for epoch in range(params.num_epochs):
     for step, (x_batch_train, y_batch_train) in tqdm(enumerate(train_generator)):
         with tf.GradientTape() as tape:
             logits = model(x_batch_train, training = True)
-            loss = loss_fn(y_batch_train, logits)  # focal_loss_fixed(y_batch_train, logits)
+            loss = loss_fn(y_batch_train, logits)
         grads = tape.gradient(loss, model.trainable_weights)
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
         current_lr = optimizer._decayed_lr(tf.float32).numpy()
