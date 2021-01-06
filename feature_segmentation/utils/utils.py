@@ -173,11 +173,10 @@ def cast_params_types(params, model_path):
         json.dump(params, json_file)
 
 
-class TrainOps():
-    def __init__(self, params):
+class TrainOps:
+    def __init__(self, params, num_records):
         self.params = params
-        self.num_records = len(os.listdir(self.params.data_path + "/images"))
-        self.steps_per_epoch = (self.num_records // self.params.batch_size)
+        self.steps_per_epoch = (num_records // self.params.batch_size)
 
     def callbacks_(self):
 
