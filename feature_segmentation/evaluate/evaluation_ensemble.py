@@ -7,9 +7,9 @@ from feature_segmentation.utils.plotting import plot_image_label_prediction, plo
     plot_uncertainty_statistics, plot_image
 
 # select model to be evaluated
-ensemble_dir = "/media/olle/Seagate/LODE/workspace/segmentation_ensembles/ensemble_stratified_camera_effect"
-models_directory = os.path.join(ensemble_dir, "models")
-ensemble_models = os.listdir(models_directory)  # ["56", "57"]
+ensemble_dir = "/home/olle/PycharmProjects/LODE/feature_segmentation/logs"
+models_directory = os.path.join(ensemble_dir)
+ensemble_models = ["43"] # os.listdir(models_directory)
 
 if not os.path.exists(ensemble_dir):
     os.makedirs(ensemble_dir, exist_ok=True)
@@ -21,7 +21,7 @@ for ensemble_model in ensemble_models:
     model_path = os.path.join(models_directory, ensemble_model)
 
     # load test configurations
-    model, test_ids, params = load_test_config(model_path)
+    model, test_ids, validation_ids, train_ids, params = load_test_config(model_path)
 
     ensemble_dict[ensemble_model] = {"model": model, "test_ids": test_ids, "params": params}
 
@@ -32,6 +32,7 @@ all_predictions = []
 all_labels = []
 all_uq_maps = {}
 
+test_ids = train_ids
 image_iter = 0
 for i in range(0, len(test_ids) - 1):
     img_path = os.path.join(TRAIN_DATA_PATH, "images", test_ids[i])

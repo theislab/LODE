@@ -113,7 +113,7 @@ def main():
     # test iteration
     PROJ_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation"
     annotatio_file = ".json"
-    annotator = "johannes_inter_doctor"
+    annotator = "johannes"
     iteration = f"iteration_{annotator}"
     out_dir = iteration
     labels_file = "labels.txt"
@@ -164,7 +164,6 @@ def main():
     iter_test_dir = "data/versions/inter_doctor_variance_sample_johannes"
     iter_idv_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*/*{annotatio_file}*"))
 
-
     # low quality iteration one files
     lq_records = pd.read_csv(iter_one_dir.replace("json", "loq_quality.txt"),
                              header = None)[0].str.replace(".json", "").str.replace(".png", "").tolist()
@@ -175,7 +174,7 @@ def main():
     # create out dir
     class_name_to_id = set_outdir(out_dir, labels_file)
 
-    files_to_process = iter_idv_json_files # iter_nine_json_files + iter_eight_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files + iter_seven_json_files
+    files_to_process = iter_nine_json_files + iter_eight_json_files + iter_seven_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files
     labelfiles_to_output(files_to_process, out_dir, class_name_to_id, lq_records = lq_records, iteration = iteration,
                          with_choroid = choroid, fibrosis_change_log = fibrosis_change_log)
 

@@ -42,7 +42,7 @@ def save_segmentation_plot(out_clsv_file, cls):
     :return: save figure to out_clsv_file
     """
     seg_cmap, seg_norm, bounds = color_mappings()
-    colorbar_im = plt.imshow(cls, cmap = seg_cmap, norm = seg_norm)
+    colorbar_im = plt.imshow(cls, interpolation = "nearest", cmap = seg_cmap, norm = seg_norm)
 
     # set colorbar ticks
     tick_loc_array = np.arange(len(bounds) - 1) + 0.5
@@ -125,13 +125,13 @@ def plot_model_run_images(records, model_dir, mode, filename):
     ax1.set_title("oct")
 
     ax2 = fig.add_subplot(gs[0, 1])
-    ax2.imshow(records[1], cmap=seg_cmap, norm=seg_norm)
+    ax2.imshow(records[1], interpolation = "nearest", cmap=seg_cmap, norm=seg_norm)
     ax2.set_xticks([])
     ax2.set_yticks([])
     ax2.set_title("ground truth")
 
     ax3 = fig.add_subplot(gs[0, 2])
-    colorbar_im = ax3.imshow(records[2], cmap=seg_cmap, norm=seg_norm)
+    colorbar_im = ax3.imshow(records[2], interpolation = "nearest", cmap=seg_cmap, norm=seg_norm)
     ax3.set_xticks([])
     ax3.set_yticks([])
     ax3.set_title("prediction")
@@ -157,7 +157,7 @@ def plot_model_run_images(records, model_dir, mode, filename):
 def create_visualizations(out_clsv_file, cls):
     seg_cmap, seg_norm, bounds = color_mappings()
 
-    colorbar_im = plt.imshow(cls, cmap = seg_cmap, norm = seg_norm)
+    colorbar_im = plt.imshow(cls, interpolation = "nearest", cmap = seg_cmap, norm = seg_norm)
 
     # set colorbar ticks
     tick_loc_array = np.arange(12) + 0.5

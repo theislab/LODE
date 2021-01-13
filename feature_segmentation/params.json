@@ -1,6 +1,6 @@
 {"learning_rate": 0.001,
   "batch_size": 1,
-  "num_epochs": 30,
+  "num_epochs": 20,
   "img_shape": 256,
   "n_filters": 32,
   "depth": 5,

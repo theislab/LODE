@@ -100,8 +100,8 @@ def ensemble_predict(ensemble_dict, img):
         predictions.append(pred)
         model_segmentations[ensemble_model] = np.argmax(pred, -1)[0, :, :].astype(int)
 
-    # uq_map = ensemble_uncertainty(predictions)
-    return model_segmentations, ensemble_vote(predictions)# , uq_map
+    uq_map = ensemble_uncertainty(predictions)
+    return model_segmentations, ensemble_vote(predictions), uq_map
 
 
 def check_enseble_test_ids(ensemble_dict):
@@ -298,11 +298,13 @@ def load_test_config(model_path):
 
     # read test images from trained model
     test_ids = pd.read_csv(os.path.join(model_path, "test_ids.csv"))["0"].tolist()
+    validation_ids = pd.read_csv(os.path.join(model_path, "validation_ids.csv"))["0"].tolist()
+    train_ids = pd.read_csv(os.path.join(model_path, "train_ids.csv"))["0"].tolist()
 
-    save_model_path = os.path.join(model_path, "weights.hdf5")
+    save_model_path = os.path.join(model_path, "model.h5")
 
     model = load_model(save_model_path)
-    return model, test_ids, params
+    return model, test_ids, validation_ids, train_ids, params
 
 
 def get_ensemble_dict(ensemble_models, models_directory):
