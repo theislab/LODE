@@ -188,13 +188,13 @@ class TrainOps:
             lr_scheduler = ExponentialDecay(
                 initial_learning_rate = self.params.learning_rate,
                 decay_steps = int(self.steps_per_epoch*self.params.num_epochs),
-                decay_rate = 0.001)
+                decay_rate = 0.1)
 
         elif self.params.learning_rate_scheduel == "step_decay":
             lr_scheduler = ExponentialDecay(
                 initial_learning_rate = self.params.learning_rate,
                 decay_steps = int(self.steps_per_epoch*self.params.num_epochs),
-                decay_rate = 0.001,
+                decay_rate = 0.1,
                 staircase = True)
 
         checkpoint = ModelCheckpoint(filepath = self.params.model_directory + "/weights.hdf5",
