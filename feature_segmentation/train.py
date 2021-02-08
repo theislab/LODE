@@ -42,7 +42,7 @@ params.model_directory = logging.model_directory
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
 # Generators
-train_generator = DataGenerator(train_ids[0:1], params = params, is_training = True)
+train_generator = DataGenerator(train_ids[0:1]*2, params = params, is_training = True)
 validation_generator = DataGenerator(validation_ids[0:1], params = params, is_training = False)
 
 trainops = TrainOps(params, num_records = len(train_generator))

@@ -3,6 +3,8 @@ from keras.layers import BatchNormalization, Activation, UpSampling2D, \
     Dropout, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Input
 from models.networks.layers.custom_layers import *
 
+from feature_segmentation.models.networks.layers.attn_augconv import augmented_conv2d
+
 
 def unet(params):
     inputs = Input(shape = (params.img_shape, params.img_shape, 3))
@@ -23,6 +25,7 @@ def unet(params):
     c5 = conv2d_block(p4, n_filters = params.n_filters * 8, kernel_size = 3, batchnorm=params.batchnorm)
     p5 = MaxPooling2D(pool_size = (2, 2))(c5)
     p5 = Dropout(params.dropout)(p5)
+
 
     c7 = conv2d_block(p5, n_filters = params.n_filters * 8, kernel_size = 3, batchnorm=params.batchnorm)
 
