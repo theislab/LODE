@@ -22,14 +22,20 @@ def unet(params):
     c2 = conv2d_block(p1, n_filters = params.n_filters * 2, kernel_size = 3, batchnorm = params.batchnorm)
     p2 = MaxPooling2D((2, 2))(c2)
 
+    if params.attention:
+        p2 = augmented_conv2d(p2, params.n_filters * 2, num_heads = 1)
+
     c3 = conv2d_block(p2, n_filters = params.n_filters * 4, kernel_size = 3, batchnorm = params.batchnorm)
     p3 = MaxPooling2D((2, 2))(c3)
+
+    if params.attention:
+        p3 = augmented_conv2d(p3, params.n_filters * 4, num_heads = 1)
 
     c4 = conv2d_block(p3, n_filters = params.n_filters * 8, kernel_size = 3, batchnorm = params.batchnorm)
     p4 = MaxPooling2D(pool_size = (2, 2))(c4)
 
     if params.attention:
-        c4 = augmented_conv2d(c4, params.n_filters * 8, num_heads = 1)
+        p4 = augmented_conv2d(p4, params.n_filters * 8, num_heads = 1)
 
     c5 = conv2d_block(p4, n_filters = params.n_filters * 8, kernel_size = 3, batchnorm = params.batchnorm)
     p5 = MaxPooling2D(pool_size = (2, 2))(c5)
@@ -57,6 +63,9 @@ def unet(params):
     u9 = Conv2DTranspose(params.n_filters * 4, (3, 3), strides = (2, 2), padding = 'same')(c9)
     u9 = concatenate([u9, c3])
     c10 = conv2d_block(u9, n_filters = params.n_filters * 4, kernel_size = 3, batchnorm = params.batchnorm)
+
+    if params.attention:
+        c10 = augmented_conv2d(c10, params.n_filters * 4, num_heads = 1)
 
     u10 = Conv2DTranspose(params.n_filters * 3, (3, 3), strides = (2, 2), padding = 'same')(c10)
     u10 = concatenate([u10, c2])
