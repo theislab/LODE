@@ -18,11 +18,11 @@ def get_optimizer(params, training_operations):
 
     if params.optimizer == "Adadelta":
         optimizer = keras.optimizers.Adadelta(
-            learning_rate = training_operations.callbacks_()[0])
+            learning_rate = params.learning_rate)
 
     if params.optimizer == "Adam":
-        optimizer = keras.optimizers.Adam(learning_rate = training_operations.callbacks_()[0])
+        optimizer = keras.optimizers.Adam(learning_rate = params.learning_rate)
 
     if params.optimizer == "SGD":
-        optimizer = keras.optimizers.SGD(learning_rate = training_operations.callbacks_()[0], momentum = 0.9)
+        optimizer = keras.optimizers.SGD(learning_rate = params.learning_rate, momentum = 0.9)
     return optimizer
