@@ -42,8 +42,8 @@ params.model_directory = logging.model_directory
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
 # Generators
-train_generator = DataGenerator(train_ids[0:1]*10, params = params, is_training = True)
-validation_generator = DataGenerator(validation_ids[0:1]*10, params = params, is_training = False)
+train_generator = DataGenerator(train_ids, params = params, is_training = True)
+validation_generator = DataGenerator(validation_ids, params = params, is_training = False)
 
 trainops = TrainOps(params, num_records = len(train_generator))
 
@@ -69,7 +69,7 @@ for epoch in range(params.num_epochs):
         current_lr = optimizer._decayed_lr(tf.float32).numpy()
         current_loss = np.round(loss.numpy(), 2)
         print(f"\nOpt Iteration: {optimizer.__dict__['_iterations'].numpy()} "
-              f"learning rate: {np.round(current_lr, 5)} loss: {np.round(loss.numpy(), 2)}")
+              f"learning rate: {current_lr} loss: {np.round(loss.numpy(), 2)}")
 
         # Update training metric.
         model_metrics.update_metric_states(y_batch_train, logits, mode = "train")
