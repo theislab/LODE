@@ -6,6 +6,8 @@ import time
 import sys
 from pathlib import Path
 
+from feature_segmentation.models.networks.layers.attn_augconv import AttentionAugmentation2D
+
 path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable))
 sys.path.insert(0, str(path_variable.parent))
@@ -302,8 +304,7 @@ def load_test_config(model_path):
     train_ids = pd.read_csv(os.path.join(model_path, "train_ids.csv"))["0"].tolist()
 
     save_model_path = os.path.join(model_path, "model.h5")
-
-    model = load_model(save_model_path)
+    model = load_model(save_model_path, custom_objects={'AttentionAugmentation2D': AttentionAugmentation2D})
     return model, test_ids, validation_ids, train_ids, params
 
 

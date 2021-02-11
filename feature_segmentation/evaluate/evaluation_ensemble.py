@@ -1,15 +1,19 @@
 import os
+import tensorflow as tf
 from feature_segmentation.evaluate.evaluation_utils import get_result_report, load_test_config, \
     ensemble_predict, check_enseble_test_ids
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
+from feature_segmentation.models.model import get_model
 from feature_segmentation.segmentation_config import WORK_SPACE, TRAIN_DATA_PATH
 from feature_segmentation.utils.plotting import plot_image_label_prediction, plot_uncertainty_heatmaps, \
     plot_uncertainty_statistics, plot_image
 
+tf.compat.v1.disable_eager_execution()
+
 # select model to be evaluated
 ensemble_dir = "/home/olle/PycharmProjects/LODE/feature_segmentation/logs"
 models_directory = os.path.join(ensemble_dir)
-ensemble_models = ["43"] # os.listdir(models_directory)
+ensemble_models = ["25"] # os.listdir(models_directory)
 
 if not os.path.exists(ensemble_dir):
     os.makedirs(ensemble_dir, exist_ok=True)
@@ -23,6 +27,10 @@ for ensemble_model in ensemble_models:
     # load test configurations
     model, test_ids, validation_ids, train_ids, params = load_test_config(model_path)
 
+    # get model
+    # model = get_model(params)
+    # model.load_weights(save_model_path)
+
     ensemble_dict[ensemble_model] = {"model": model, "test_ids": test_ids, "params": params}
 
 # assert correct train test split across ensemble
@@ -32,7 +40,7 @@ all_predictions = []
 all_labels = []
 all_uq_maps = {}
 
-test_ids = train_ids
+test_ids = test_ids
 image_iter = 0
 for i in range(0, len(test_ids) - 1):
     img_path = os.path.join(TRAIN_DATA_PATH, "images", test_ids[i])
