@@ -53,19 +53,17 @@ def squeeze_excite_block(tensor, ratio=16):
 
 def squeeze_excite_aline_block(tensor, params, ratio=16):
     init = tensor
-    filters = init.get_shape().as_list()[-1]  # init._keras_shape[channel_axis]
+    se = K.mean(init, [-2, -1])
 
-    se = K.mean(init, 1)
-    class_attention_vectors = []
-    for i in range(filters):
-        avec = Dense(filters // 8, activation = 'relu', kernel_initializer = 'he_normal', use_bias = False)(se[:, :, i])
-        avec = Dense(params.img_shape, activation = 'sigmoid', kernel_initializer = 'he_normal',
-                     use_bias = False)(avec)
+    avec = Dense(se.get_shape()[-1] // 8, activation = 'relu', kernel_initializer = 'he_normal', use_bias = False)(se)
+    avec = Dense(se.get_shape()[-1], activation = 'sigmoid', kernel_initializer = 'he_normal',
+                 use_bias = False)(avec)
 
-        # avec = Reshape((1, -1))(avec)
-        avec = multiply([init[:, :, :, i], avec])
-        class_attention_vectors.append(Reshape((256, 256, 1))(avec))
-    return Concatenate(-1)(class_attention_vectors)
+    se_reshape = Reshape([se.get_shape()[-1], 1])(avec)
+    init_reshape = Reshape([1, se.get_shape()[-1], se.get_shape()[-1], init.get_shape()[-1]])(init)
+
+    avec = multiply([se_reshape, init_reshape])
+    return Reshape([se.get_shape()[-1], se.get_shape()[-1], init.get_shape()[-1]])(avec)
 
 
 def conv2d_block(input_tensor, n_filters, kernel_size=3, batchnorm=True):
