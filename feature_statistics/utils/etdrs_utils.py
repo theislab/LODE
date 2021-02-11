@@ -298,7 +298,7 @@ class ETDRSUtils:
 
         # load segmentation
         volume = np.load(self.path)
-        pixel_2_volume_mm3, pixel_height_2_mm = get_pixel_2_volume_factors(self.dicom_path)
+        # pixel_2_volume_mm3, pixel_height_2_mm = get_pixel_2_volume_factors(self.dicom_path)
 
         # get dim
         self.scans, self.height, self.width = volume.shape
@@ -330,7 +330,7 @@ class ETDRSUtils:
             atrophy_segment = atrophy_map[bool_[0, :, :]]
 
             # log thickness feature
-            thickness_mean = np.mean(thickness_segment[np.nonzero(thickness_segment)] * pixel_height_2_mm)
+            thickness_mean = np.mean(thickness_segment[np.nonzero(thickness_segment)])
 
             # add all tissue types count for etdrs regions
             record_log[etdrs_region + "_" + "thickness_mean"] = thickness_mean
@@ -340,12 +340,11 @@ class ETDRSUtils:
             # get all tissue counts for all tissues
             for tissue in tissues.keys():
                 tissue_pixel_count = np.sum(region_segment == int(tissue))
-                tissue_volume = tissue_pixel_count * pixel_2_volume_mm3
 
-                record_log[etdrs_region + "_" + tissue] = tissue_volume
+                record_log[etdrs_region + "_" + tissue] = tissue_pixel_count
 
                 if tissue not in [9, 10]:
-                    region_total += tissue_volume
+                    region_total += tissue_pixel_count
 
             # add all tissue types count for etdrs regions
             record_log[etdrs_region + "_" + "total"] = region_total
