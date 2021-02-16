@@ -1,5 +1,6 @@
 from keras.layers import BatchNormalization, Activation, Conv2D, Conv3D, GlobalAveragePooling2D, Reshape, Dense, \
-    Permute, multiply, GlobalAveragePooling1D, Concatenate, add, LSTM
+    Permute, multiply, Multiply, GlobalAveragePooling1D, Concatenate, add
+
 import keras.backend as K
 
 from feature_segmentation.models.networks.layers.attn_augconv import augmented_conv2d
@@ -58,12 +59,10 @@ def squeeze_excite_aline_block(tensor, params, ratio=16):
     avec = Dense(se.get_shape()[-1] // 8, activation = 'relu', kernel_initializer = 'he_normal', use_bias = False)(se)
     avec = Dense(se.get_shape()[-1], activation = 'sigmoid', kernel_initializer = 'he_normal',
                  use_bias = False)(avec)
-
-    se_reshape = Reshape([se.get_shape()[-1], 1])(avec)
-    init_reshape = Reshape([1, se.get_shape()[-1], se.get_shape()[-1], init.get_shape()[-1]])(init)
-
-    avec = multiply([se_reshape, init_reshape])
-    return Reshape([se.get_shape()[-1], se.get_shape()[-1], init.get_shape()[-1]])(avec)
+    init_se = Permute((3, 1, 2))(init)
+    aline_scaled = multiply([init_se, avec])
+    init_out = Permute((2, 3, 1))(aline_scaled)
+    return init_out
 
 
 def conv2d_block(input_tensor, n_filters, kernel_size=3, batchnorm=True):
