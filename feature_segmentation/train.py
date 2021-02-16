@@ -42,18 +42,18 @@ params.model_directory = logging.model_directory
 logging.save_dict_to_json(logging.model_directory + "/config.json")
 
 # Generators
-train_generator = DataGenerator(train_ids, params = params, is_training = True)
-validation_generator = DataGenerator(validation_ids, params = params, is_training = False)
+train_generator = DataGenerator(train_ids, params=params, is_training=True)
+validation_generator = DataGenerator(validation_ids, params=params, is_training=False)
 
-trainops = TrainOps(params, num_records = len(train_generator))
+trainops = TrainOps(params, num_records=len(train_generator))
 
 optimizer = get_optimizer(params, trainops)
 loss_fn = get_loss(params)
 
 model_metrics = ModelMetrics(params)
-tb_callback = TensorboardCallback(model_dir = params.model_directory)
-model_checkpoint = ModelCheckpointCustom(monitor = "val_acc", model_dir = params.model_directory, mode = "max")
-print_stats = PrintStats(params = params)
+tb_callback = TensorboardCallback(model_dir=params.model_directory)
+model_checkpoint = ModelCheckpointCustom(monitor="val_acc", model_dir=params.model_directory, mode="max")
+print_stats = PrintStats(params=params)
 
 # get model
 model = get_model(params)
@@ -62,7 +62,7 @@ for epoch in range(params.num_epochs):
     # Iterate over the batches of the dataset.
     for step, (x_batch_train, y_batch_train) in tqdm(enumerate(train_generator)):
         with tf.GradientTape() as tape:
-            logits = model(x_batch_train, training = True)
+            logits = model(x_batch_train, training=True)
             loss = loss_fn(y_batch_train, logits)
         grads = tape.gradient(loss, model.trainable_weights)
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
@@ -72,30 +72,30 @@ for epoch in range(params.num_epochs):
               f"learning rate: {current_lr} loss: {np.round(loss.numpy(), 2)}")
 
         # Update training metric.
-        model_metrics.update_metric_states(y_batch_train, logits, mode = "train")
+        model_metrics.update_metric_states(y_batch_train, logits, mode="train")
 
     # Display metrics at the end of each epoch.
-    train_result_dict = model_metrics.result_metrics(mode = "train")
+    train_result_dict = model_metrics.result_metrics(mode="train")
 
-    tb_callback.on_epoch_end(epoch = epoch, logging_dict = train_result_dict, lr = current_lr)
+    tb_callback.on_epoch_end(epoch=epoch, logging_dict=train_result_dict, lr=current_lr)
 
     # Run a validation loop at the end of each epoch.
     for x_batch_val, y_batch_val in validation_generator:
-        val_logits = model(x_batch_val, training = False)
+        val_logits = model(x_batch_val, training=False)
         val_loss = loss_fn(y_batch_val, val_logits)
 
         # Update val metrics
-        model_metrics.update_metric_states(y_batch_val, val_logits, mode = "val")
+        model_metrics.update_metric_states(y_batch_val, val_logits, mode="val")
 
     print("validation loss is: ", np.round(val_loss.numpy(), 2))
 
-    val_result_dict = model_metrics.result_metrics(mode = "val")
+    val_result_dict = model_metrics.result_metrics(mode="val")
 
-    tb_callback.on_epoch_end(epoch = epoch, logging_dict = val_result_dict)
-    model_checkpoint.on_epoch_end(epoch, model, logging_dict = val_result_dict)
-    print_stats.on_epoch_end(epoch, train_dict = train_result_dict, validation_dict = val_result_dict,
-                             lr = current_lr)
+    tb_callback.on_epoch_end(epoch=epoch, logging_dict=val_result_dict)
+    model_checkpoint.on_epoch_end(epoch, model, logging_dict=val_result_dict)
+    print_stats.on_epoch_end(epoch, train_dict=train_result_dict, validation_dict=val_result_dict,
+                             lr=current_lr)
 
     # Reset training metrics at the end of each epoch
-    model_metrics.reset_metric_states(mode = "train")
-    model_metrics.reset_metric_states(mode = "val")
+    model_metrics.reset_metric_states(mode="train")
+    model_metrics.reset_metric_states(mode="val")
