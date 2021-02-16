@@ -3,7 +3,7 @@
   "num_epochs":2000,
   "img_shape": 256,
   "n_filters": 64,
-  "attention": 1,
+  "attention": 0,
   "depth": 5,
   "num_classes": 16,
   "continue_training": 0,
