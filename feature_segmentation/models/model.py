@@ -11,7 +11,7 @@ sys.path.insert(0, str(path_variable.parent.parent))
 
 from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet, \
     cluster_unet, deep_se_unet, pyramid_unet, pyramid_transpose_unet, pyramid_deep_unet, \
-    deep_s_class_e_unet, deep_aline_attention_unet
+    deep_s_class_e_unet, deep_aline_attention_unet, standard_unet_aa
 
 
 def get_model(params):
@@ -23,12 +23,17 @@ def get_model(params):
                         "pyramid_unet",
                         "pyramid_transpose_unet",
                         "pyramid_deep_unet",
-                        "deep_aline_attention_unet"]
+                        "deep_aline_attention_unet",
+                        "standard_unet_aa",
+                        "standard_unet"]
 
     assert params.model in available_models, f"model not available, choose from {available_models}"
 
     if params.model == 'standard_unet':
         model = standard_unet.unet(params)
+
+    if params.model == 'standard_unet_aa':
+        model = standard_unet_aa.unet(params)
 
     if params.model == 'deep_unet':
         model = deep_unet.unet(params)
