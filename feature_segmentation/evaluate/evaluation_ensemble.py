@@ -11,9 +11,9 @@ from feature_segmentation.utils.plotting import plot_image_label_prediction, plo
 tf.compat.v1.disable_eager_execution()
 
 # select model to be evaluated
-ensemble_dir = "/home/olle/PycharmProjects/LODE/feature_segmentation/logs"
+ensemble_dir = "/home/olle/PycharmProjects/LODE/feature_segmentation/trained_model"
 models_directory = os.path.join(ensemble_dir)
-ensemble_models = ["25"] # os.listdir(models_directory)
+ensemble_models = ["37"] # os.listdir(models_directory)
 
 if not os.path.exists(ensemble_dir):
     os.makedirs(ensemble_dir, exist_ok=True)
@@ -31,7 +31,7 @@ for ensemble_model in ensemble_models:
     # model = get_model(params)
     # model.load_weights(save_model_path)
 
-    ensemble_dict[ensemble_model] = {"model": model, "test_ids": test_ids, "params": params}
+    ensemble_dict[ensemble_model] = {"model": model, "test_ids": train_ids, "params": params}
 
 # assert correct train test split across ensemble
 check_enseble_test_ids(ensemble_dict)
@@ -41,6 +41,7 @@ all_labels = []
 all_uq_maps = {}
 
 test_ids = test_ids
+mode = "test"
 image_iter = 0
 for i in range(0, len(test_ids) - 1):
     img_path = os.path.join(TRAIN_DATA_PATH, "images", test_ids[i])
@@ -56,13 +57,13 @@ for i in range(0, len(test_ids) - 1):
     all_uq_maps[test_ids[i]] = uq_map
 
     # plot all images and their labels/predictions
-    plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode="test", filename=test_ids[i])
+    plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode=mode, filename=test_ids[i])
 
     for model in model_predictions.keys():
         prediction = model_predictions[model]
-        plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode=f"test_{model}",
+        plot_image_label_prediction([img, lbl, ensemble_prediction], ensemble_dir, mode=f"{mode}_{model}",
                                     filename=test_ids[i])
-        plot_image([lbl[:, :, 0]], ensemble_dir, mode=f"test_{model}",
+        plot_image([lbl[:, :, 0]], ensemble_dir, mode=f"{mode}_{model}",
                    filename=test_ids[i])
 
 # plot all uq maps
