@@ -13,7 +13,7 @@ tf.compat.v1.disable_eager_execution()
 # select model to be evaluated
 ensemble_dir = "/home/olle/PycharmProjects/LODE/feature_segmentation/logs"
 models_directory = os.path.join(ensemble_dir)
-ensemble_models = ["25"] # os.listdir(models_directory)
+ensemble_models = ["37"] # os.listdir(models_directory)
 
 if not os.path.exists(ensemble_dir):
     os.makedirs(ensemble_dir, exist_ok=True)
