@@ -18,6 +18,7 @@ def unet(params):
 
     c4 = conv2d_block(p3, n_filters = params.n_filters * 8, kernel_size = 3)
     p4 = MaxPooling2D(pool_size = (2, 2))(c4)
+    p4 = Dropout(params.dropout)(p4)
 
     c7 = conv2d_block(p4, n_filters = params.n_filters * 8, kernel_size = 3)
 
@@ -37,7 +38,15 @@ def unet(params):
     u11 = concatenate([u11, c1])
     c12 = conv2d_block(u11, n_filters = params.n_filters * 2, kernel_size = 3)
 
-    outputs = Conv2D(params.num_classes, (1, 1), activation = 'softmax')(c12)
+    c13 = Conv2D(params.num_classes, (3, 3), activation='relu', name="15_class_pre", padding="same")(c12)
+
+    c13_aa = squeeze_excite_aline_block(c13, params)
+
+    c14 = Conv2D(params.num_classes, (3, 3), activation='relu', name="15_class", padding="same")(c13_aa)
+
+    c15 = Concatenate()([c12, c14])
+
+    outputs = Conv2D(params.num_classes, (1, 1), activation='softmax', name="15_class_final")(c15)
 
     model = Model(inputs = inputs, outputs = [outputs])
     return model
