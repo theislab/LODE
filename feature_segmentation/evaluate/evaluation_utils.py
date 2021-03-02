@@ -304,8 +304,8 @@ def load_test_config(model_path):
     train_ids = pd.read_csv(os.path.join(model_path, "train_ids.csv"))["0"].tolist()
 
     save_model_path = os.path.join(model_path, "model.h5")
-    # model = load_model(save_model_path, custom_objects={'AttentionAugmentation2D': AttentionAugmentation2D})
-    model = load_model(save_model_path)
+    model = load_model(save_model_path, custom_objects={'AttentionAugmentation2D': AttentionAugmentation2D})
+    # model = load_model(save_model_path)
     return model, test_ids, validation_ids, train_ids, params
 
 
