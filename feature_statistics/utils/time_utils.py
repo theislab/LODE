@@ -162,7 +162,9 @@ class TimeUtils:
         time_line[self.time_steps[k + 1]]["time_range_before"] = None
         time_line[self.time_steps[k + 1]]["time_range_after"] = None
         time_line[self.time_steps[k + 1]]["injections"] = treatment_table.loc[candidate_idx].cumsum_injections
-        time_line[self.time_steps[k + 1]]["insertion_type"] = "match"
+
+        if item == "cur_va_rounded":
+            time_line[self.time_steps[k + 1]]["insertion_type"] = "match"
         return time_line
 
     def carry_over_last(self, treatment_table, stamp, deltas, time_line, item, k):
@@ -272,8 +274,17 @@ class TimeUtils:
             treatment_table = self.treatment_table()
         else:
             treatment_table = deepcopy(self.table)
+
             # reset index to start from 1
             treatment_table.index = treatment_table.index - treatment_table.index[0] + 1
+
+        # if va is zero at time zero, then hand over next value if time delta less than 60
+        if item == 'cur_va_rounded':
+            if treatment_table.iloc[0][[item]].isna().values[0]:
+                for i in range(2, treatment_table.shape[0] - 1):
+                    if (treatment_table.delta_t[i-1] < 60) and not treatment_table.iloc[i - 1][[item]].isna().values[0]:
+                        treatment_table.loc[i - 1, item] = treatment_table.iloc[i - 1][[item]].values[0]
+                        break
 
         # set up time stamp for structured time series
         first_treatment_date = pd.to_datetime(treatment_table.iloc[0].study_date)
@@ -295,7 +306,7 @@ class TimeUtils:
             candidate_idx = np.argmin(np.array(np.abs(deltas))) + 1
 
             # check for -15 / 15 day match
-            if abs(deltas[candidate_idx].days) <= TimeUtils.DAYS / 2:
+            if (abs(deltas[candidate_idx].days) <= TimeUtils.DAYS / 2) & ~treatment_table[[item]].loc[candidate_idx].isna().values[0]:
                 time_line = self.set_exact_match(treatment_table, stamp, candidate_idx, time_line, item, k)
 
             # no match but date before and after, interpolate

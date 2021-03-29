@@ -9,18 +9,18 @@ def color_mappings():
     color_palett = np.array([[148., 158., 167.],
                              [11., 151., 199.],
                              [30., 122., 57.],
-                             [135., 191., 234.],
-                             [37., 111., 182.],
-                             [156., 99., 84.],
-                             [226., 148., 60.],
-                             [203., 54., 68.],
-                             [192., 194., 149.],
-                             [105., 194., 185.],
-                             [205., 205., 205.],
+                             [135., 191., 234.], # IRF
+                             [37., 111., 182.], # SRF
+                             [156., 99., 84.], # SRHM
+                             [226., 148., 60.], # RPE
+                             [203., 54., 68.],#Fib V PED
+                             [192., 194., 149.], # DRUSEN
+                             [105., 194., 185.], # Post H Mem
+                             [205., 205., 205.], # choroid
                              [140., 204., 177.],  # Serous PED
                              [183., 186., 219.],  # other artifact
                              [114, 137, 218],  # fibrosis
-                             [209., 227., 239.],
+                             [209., 227., 239.], # vitreoud
                              [226., 233., 48.]])
 
     color_palett_norm = np.clip(color_palett, 0, 255) / 255  # (np.max(color_palett)-np.min(color_palett))
@@ -54,7 +54,7 @@ def save_segmentation_plot(out_clsv_file, cls):
     c_bar.set_ticks(tick_loc_list)
     c_bar.ax.set_yticklabels(tick_list)
 
-    plt.savefig(out_clsv_file.replace(".npy", ".png"))
+    plt.savefig(out_clsv_file.replace(".npy", ".png"), bbox_inches='tight', pad_inches=0)
     plt.close()
 
 
@@ -89,7 +89,7 @@ def plot_data_processing(record, path):
                 img = np.stack((img,) * 3, axis = -1)
             plt.imshow(img)
         plt.title(types[i - 1])
-    plt.savefig(path)
+    plt.savefig(path, bbox_inches='tight', pad_inches=0)
     plt.close()
 
 
@@ -149,7 +149,7 @@ def plot_model_run_images(records, model_dir, mode, filename):
     if not os.path.exists(os.path.join(model_dir, mode + "_records")):
         os.makedirs(os.path.join(model_dir, mode + "_records"))
 
-    plt.savefig(os.path.join(model_dir, mode + "_records", filename))
+    plt.savefig(os.path.join(model_dir, mode + "_records", filename), bbox_inches='tight', pad_inches=0)
     plt.close()
 
 
@@ -157,20 +157,22 @@ def plot_model_run_images(records, model_dir, mode, filename):
 def create_visualizations(out_clsv_file, cls):
     seg_cmap, seg_norm, bounds = color_mappings()
 
-    colorbar_im = plt.imshow(cls, interpolation = "nearest", cmap = seg_cmap, norm = seg_norm)
+    fig = plt.figure(figsize = (16, 4))
 
-    # set colorbar ticks
-    tick_loc_array = np.arange(12) + 0.5
-    tick_loc_list = tick_loc_array.tolist()
+    gs = gridspec.GridSpec(nrows = 1,
+                           ncols = 1,
+                           figure = fig,
+                           width_ratios = [1],
+                           height_ratios = [1],
+                           wspace = 0.3,
+                           hspace = 0.3)
 
-    tick_list = np.arange(12).tolist()
-    c_bar = plt.colorbar(colorbar_im, cmap = seg_cmap, norm = seg_norm, boundaries = bounds)
+    ax2 = fig.add_subplot(gs[0, 0])
+    ax2.imshow(cls, interpolation = "nearest", cmap = seg_cmap, norm = seg_norm)
+    ax2.set_xticks([])
+    ax2.set_yticks([])
 
-    # set ticks
-    c_bar.set_ticks(tick_loc_list)
-    c_bar.ax.set_yticklabels(tick_list)
-
-    plt.savefig(out_clsv_file.replace(".npy", ".png"))
+    plt.savefig(out_clsv_file.replace(".npy", ".png"), bbox_inches='tight', pad_inches=0)
     plt.close()
 
 
@@ -186,7 +188,7 @@ def plot_examples(record, path):
 
         #
         if types[i - 1] != "image":
-            colorbar_im = plt.imshow(img, cmap = seg_cmap, norm = seg_norm)
+            colorbar_im = plt.imshow(img, interpolation = "nearest", cmap = seg_cmap, norm = seg_norm)
             # set colorbar ticks
             tick_loc_array = np.arange(13) + 0.5
             tick_loc_list = tick_loc_array.tolist()
