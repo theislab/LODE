@@ -38,7 +38,7 @@ if __name__ == "__main__":
 
 def process(i):
     try:
-        etdrs = ETDRSUtils(path = os.path.join(SEG_DIR, i), dicom_path = OCT_DIR)
+        etdrs = ETDRSUtils(path = os.path.join(SEG_DIR, i))
         feature_log = etdrs.get_etdrs_stats()
         return feature_log
     except:

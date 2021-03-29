@@ -207,7 +207,6 @@ def get_pixel_2_volume_factors(dicom_path):
 
         # get resolution attribution
         y_resolution, x_resolution, slice_thickness = get_dicom_pixel_measurement(dc)
-    
     except:
         print("no dicom or resolution data available, setting to default")
         y_resolution = 0.003872
@@ -220,14 +219,12 @@ def get_pixel_2_volume_factors(dicom_path):
 
 
 class ETDRSUtils:
-    def __init__(self, path, dicom_path):
+    def __init__(self, path):
         self.path = path
         self.record = path.split("/")[-1]
         self.patient = self.record.split("_")[0]
         self.study_date = self.record.split("_")[2].replace(".npy", "")
         self.laterality = laterality_string_frormatting(self.record.split("_")[1])
-        self.dicom_path = os.path.join(dicom_path, str(self.patient), 
-                str(self.laterality), str(self.study_date))
         self.width = None
         self.height = None
         self.scans = None

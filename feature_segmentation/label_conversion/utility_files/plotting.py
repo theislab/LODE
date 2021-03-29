@@ -158,7 +158,10 @@ def create_visualizations(out_clsv_file, cls):
     seg_cmap, seg_norm, bounds = color_mappings()
 
     colorbar_im = plt.imshow(cls, interpolation = "nearest", cmap = seg_cmap, norm = seg_norm)
+<<<<<<< HEAD
 
+=======
+>>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
     # set colorbar ticks
     tick_loc_array = np.arange(12) + 0.5
     tick_loc_list = tick_loc_array.tolist()
@@ -186,17 +189,17 @@ def plot_examples(record, path):
 
         #
         if types[i - 1] != "image":
-            colorbar_im = plt.imshow(img, cmap = seg_cmap, norm = seg_norm)
+            colorbar_im = plt.imshow(img, interpolation = "nearest", cmap = seg_cmap, norm = seg_norm)
             # set colorbar ticks
             tick_loc_array = np.arange(13) + 0.5
             tick_loc_list = tick_loc_array.tolist()
 
-            tick_list = np.arange(13).tolist()
-            c_bar = plt.colorbar(colorbar_im, cmap = seg_cmap, norm = seg_norm, boundaries = bounds)
+            #tick_list = np.arange(13).tolist()
+            #c_bar = plt.colorbar(colorbar_im, cmap = seg_cmap, norm = seg_norm, boundaries = bounds)
 
             # set ticks
-            c_bar.set_ticks(tick_loc_list)
-            c_bar.ax.set_yticklabels(tick_list)
+            #c_bar.set_ticks(tick_loc_list)
+            #c_bar.ax.set_yticklabels(tick_list)
         if types[i - 1] == "image":
             if len(img.shape) < 3:
                 img = np.stack((img,) * 3, axis = -1)

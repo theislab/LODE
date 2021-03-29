@@ -527,19 +527,30 @@ def save_predicted_detections(pred, save_path, id_):
 
     """
 
+<<<<<<< HEAD
     NON_TISSUE_LABELS = [0, 12, 11, 14, 15]
 
+=======
+>>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
     detections = []
     from skimage.measure import regionprops
     for region in regionprops(pred):
+<<<<<<< HEAD
         if region.area >= 100 and (region.label not in NON_TISSUE_LABELS):
             minr, minc, maxr, maxc = region.bbox
             detections.append((region.label, 1, minr, minc, maxr, maxc))
 
     pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), sep = " ", header = None, index = None)
+=======
+        if region.area >= 100 and (region.label not in [2, 0, 14, 15]):
+            minr, minc, maxr, maxc = region.bbox
+            detections.append((region.label, 1, minr, minc, maxr, maxc))
+
+    pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), header = None, index = None)
+>>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
 
 
 def save_groundtruth_detections(lbl, save_path, id_):
@@ -554,8 +565,11 @@ def save_groundtruth_detections(lbl, save_path, id_):
 
     """
 
+<<<<<<< HEAD
     NON_TISSUE_LABELS = [0, 12, 11, 14, 15]
 
+=======
+>>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
     if len(lbl.shape) > 2:
         lbl = lbl[:, :, 0]
 
@@ -565,8 +579,16 @@ def save_groundtruth_detections(lbl, save_path, id_):
     detections = []
     from skimage.measure import regionprops
     for region in regionprops(lbl):
+<<<<<<< HEAD
         if region.area >= 100 and (region.label not in NON_TISSUE_LABELS):
             minr, minc, maxr, maxc = region.bbox
             detections.append((region.label, minr, minc, maxr, maxc))
 
     pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), sep = " ", header = None, index = None)
+=======
+        if region.area >= 100 and (region.label not in [2, 0, 14, 15]):
+            minr, minc, maxr, maxc = region.bbox
+            detections.append((region.label, minr, minc, maxr, maxc))
+
+    pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), header = None, index = None)
+>>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
