@@ -17,6 +17,14 @@ from feature_segmentation.generators.generator_utils.image_processing import rea
 from feature_segmentation.generators.generator_utils.utils import get_class_distribution, upsample
 
 
+def label_mapping(mask):
+    mapping = {11: 7, 12: 2}
+
+    for key in mapping.keys():
+        mask[mask == key] = mapping[key]
+    return mask
+
+
 class DataGenerator(keras.utils.Sequence):
     'Generates data for Keras'
 
@@ -78,6 +86,9 @@ class DataGenerator(keras.utils.Sequence):
             lbl_path = os.path.join(self.label_path, ID)
 
             im_resized, lbl_resized = read_resize_random_invert(im_path, lbl_path, self.shape)
+
+            # convert Serous PED to Fibro PED and artifact to neuro sensory retina
+            lbl_resized = label_mapping(lbl_resized)
 
             # Store sample
             X[i,] = im_resized

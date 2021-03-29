@@ -41,9 +41,6 @@ def unet(params):
     p5 = MaxPooling2D(pool_size = (2, 2))(c5)
     p5 = Dropout(params.dropout)(p5)
 
-    if params.attention:
-        p5 = augmented_conv2d(p5, params.n_filters * 8, num_heads = 1)
-
     c7 = conv2d_block(p5, n_filters = params.n_filters * 8, kernel_size = 3, batchnorm = params.batchnorm)
 
     u7 = Conv2DTranspose(params.n_filters * 8, (3, 3), strides = (2, 2), padding = 'same')(c7)
