@@ -6,6 +6,7 @@ import time
 import sys
 from pathlib import Path
 
+from feature_segmentation.generators.generator_utils.oct_augmentations import get_augmentations
 from feature_segmentation.models.networks.layers.attn_augconv import AttentionAugmentation2D
 
 path_variable = Path(os.path.dirname(__file__))
@@ -17,6 +18,8 @@ from keras import Model
 from keras.engine.saving import load_model
 from pydicom import read_file
 from sklearn.metrics import jaccard_score, classification_report
+from tta_wrapper import tta_segmentation
+
 
 from utils.utils import Params, cast_params_types
 
@@ -35,6 +38,92 @@ def timeit(method):
                   (method.__name__, (te - ts) * 1000))
         return result
     return timed
+
+
+import numpy as np
+import matplotlib.pyplot as plt
+import seaborn as sns
+
+
+
+def plot_confusion_matrix(cm,
+                          target_names,
+                          title='Confusionmatrix',
+                          cmap=None,
+                          normalize=True,
+                          save_path=None):
+    """
+    given a sklearn confusion matrix (cm), make a nice plot
+
+    Arguments
+    ---------
+    cm:           confusion matrix from sklearn.metrics.confusion_matrix
+
+    target_names: given classification classes such as [0, 1, 2]
+                  the class names, for example: ['high', 'medium', 'low']
+
+    title:        the text to display at the top of the matrix
+
+    cmap:         the gradient of the values displayed from matplotlib.pyplot.cm
+                  see http://matplotlib.org/examples/color/colormaps_reference.html
+                  plt.get_cmap('jet') or plt.cm.Blues
+
+    normalize:    If False, plot the raw numbers
+                  If True, plot the proportions
+
+    Usage
+    -----
+    plot_confusion_matrix(cm           = cm,                  # confusion matrix created by
+                                                              # sklearn.metrics.confusion_matrix
+                          normalize    = True,                # show proportions
+                          target_names = y_labels_vals,       # list of names of the classes
+                          title        = best_estimator_name) # title of graph
+
+    Citiation
+    ---------
+    http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
+
+    """
+    import matplotlib.pyplot as plt
+    import numpy as np
+    import itertools
+
+    accuracy = np.trace(cm) / float(np.sum(cm))
+    misclass = 1 - accuracy
+
+    if cmap is None:
+        cmap = plt.get_cmap('Blues')
+
+    plt.figure(figsize = (8, 6))
+    plt.imshow(cm, interpolation = 'nearest', cmap = cmap)
+    plt.title(title)
+    plt.colorbar()
+
+    if target_names is not None:
+        tick_marks = np.arange(len(target_names))
+        plt.xticks(tick_marks, target_names, rotation = 45)
+        plt.yticks(tick_marks, target_names)
+
+    if normalize:
+        cm = cm.astype('float') / cm.sum(axis = 1)[:, np.newaxis]
+
+    thresh = cm.max() / 1.5 if normalize else cm.max() / 2
+    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
+        if normalize:
+            plt.text(j, i, "{:0.4f}".format(cm[i, j]),
+                     horizontalalignment = "center",
+                     color = "white" if cm[i, j] > thresh else "black")
+        else:
+            plt.text(j, i, "{:,}".format(cm[i, j]),
+                     horizontalalignment = "center",
+                     color = "white" if cm[i, j] > thresh else "black")
+
+    plt.tight_layout()
+    plt.ylabel('True label')
+    plt.xlabel('Predicted label\naccuracy={:0.4f}; misclass={:0.4f}'.format(accuracy, misclass))
+    plt.savefig(f"{save_path}/{title}.png")
+    plt.close()
+
 
 def ensemble_vote(predictions):
     """
@@ -72,6 +161,7 @@ def ensemble_uncertainty(predictions):
 
     uq_map = np.array(uncertainty).reshape(256, 256)
     return uq_map
+
 
 def ensemble_predict(ensemble_dict, img):
     """
@@ -268,7 +358,7 @@ def get_result_report(all_labels, all_predictions, model_directory):
     """
     target_names = present_targets(all_labels, all_predictions)
 
-    ious = jaccard_score(all_labels, all_predictions, average = None)
+    ious = jaccard_score(all_labels, all_predictions, average = None, labels = target_names)
     clf_report = classification_report(all_labels, all_predictions, target_names = target_names, output_dict = 1)
 
     print(classification_report(all_labels, all_predictions, target_names = target_names))
@@ -280,7 +370,7 @@ def get_result_report(all_labels, all_predictions, model_directory):
     pd.DataFrame(clf_report).to_csv(model_directory + "/clf_report.csv")
 
 
-def load_test_config(model_path):
+def load_test_config(model_path, tta=False):
     """
     Parameters
     ----------
@@ -290,6 +380,7 @@ def load_test_config(model_path):
     -------
     keras model, test ids for the model, params object with model config
     """
+
     # load utils classes
     params = Params(os.path.join(model_path, "config.json"))
 
@@ -305,6 +396,10 @@ def load_test_config(model_path):
 
     save_model_path = os.path.join(model_path, "model.h5")
     model = load_model(save_model_path, custom_objects={'AttentionAugmentation2D': AttentionAugmentation2D})
+
+    if tta:
+        model = tta_segmentation(model, h_flip=True, rotation=(90, 270), merge='mean')
+
     # model = load_model(save_model_path)
     return model, test_ids, validation_ids, train_ids, params
 

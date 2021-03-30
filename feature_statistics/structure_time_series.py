@@ -12,7 +12,6 @@ import glob
 
 
 class MeasureSeqTimeUntilDry(SeqUtils):
-    NUM_SEGMENTATIONS = 4
     REGIONS = ["S", "N", "I", "T"]
     FLUIDS = ["3", "4"]
 
@@ -41,6 +40,18 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                    'rpe',
                    'epiretinal_membrane',
                    'fibrosis']
+
+    INJECTION_COLUMNS = ["injection_Avastin",
+                         "injection_Dexamethason",
+                         "injection_Eylea",
+                         "injection_Iluvien",
+                         "injection_Jetrea",
+                         "injection_Lucentis",
+                         "injection_Ozurdex",
+                         "injection_Triamcinolon",
+                         "injection_Unknown"]
+
+    DATA_POINTS = DATA_POINTS + ["cumsum_" + ic for ic in INJECTION_COLUMNS]
 
     META_DATA = ["patient_id", "laterality", "diagnosis"]
     SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
@@ -124,7 +135,11 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2))
 
         # create cumsum injections column
-        record_table["cumsum_injections"] = record_table.injections.cumsum()
+        record_table.loc[:, "cumsum_injections"] = record_table.injections.cumsum()
+
+        # add all injections
+        for inj_col in MeasureSeqTimeUntilDry.INJECTION_COLUMNS:
+            record_table.loc[:, f"cumsum_{inj_col}"] = record_table[inj_col].cumsum()
 
         total_number_injections = get_total_number_of_injections(table = record_table)
 
@@ -152,7 +167,8 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                                                               item = data_point,
                                                               total_number_injections = total_number_injections)
 
-            log = self.create_log(patient_id = patient_id, laterality = laterality, time_line = time_line, data_points=data_points)
+            log = self.create_log(patient_id = patient_id, laterality = laterality, time_line = time_line,
+                                  data_points = data_points)
         else:
             log = None
         return log
@@ -172,7 +188,7 @@ if __name__ == "__main__":
 
     region_resolved = True
 
-    PATIENT_ID = 516  # 2005
+    PATIENT_ID = 245854  # 1570 L
     LATERALITY = "L"
 
     mstd = MeasureSeqTimeUntilDry()
@@ -183,10 +199,15 @@ if __name__ == "__main__":
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()
 
     time_until_dry = []
+
     for patient, lat in tqdm(unique_records.itertuples(index = False)):
-        print(patient, lat)
-        record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
-        time_until_dry.append(mstd.from_record(record_pd, region_resolved))
+        try:
+            print(patient, lat)
+            record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
+            time_until_dry.append(mstd.from_record(record_pd, region_resolved))
+        except:
+            print("patient did not work", patient, lat)
+            continue
 
     time_series_log = []
 
@@ -196,20 +217,17 @@ if __name__ == "__main__":
         else:
             continue
 
-
     time_until_dry_pd = pd.DataFrame(time_series_log)
 
     # read in naive patient data
-    naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data/check_naive_patients_clean.csv"),
+    naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "naive_patients/naive_patients.csv"),
                                  sep = ",").dropna()
+
     naive_patients["patient_id"] = naive_patients["patient_id"].astype(int)
 
-    # create sequence id
-    naive_patients["sequence"] = naive_patients["patient_id"].astype(str) + "_" + naive_patients["laterality"].astype(
-        str)
-
-    time_until_dry_pd_naive = pd.merge(time_until_dry_pd, naive_patients[["sequence", "Naive"]], left_on = "sequence",
-                                       right_on = "sequence", how = "left")
+    time_until_dry_pd["patient_id"] = time_until_dry_pd.sequence.str.split("_", expand = True)[0].astype(int)
+    time_until_dry_pd_naive = pd.merge(time_until_dry_pd, naive_patients["patient_id"], left_on = "patient_id",
+                                       right_on = "patient_id", how = "inner")
 
     # remove non treated records
     time_until_dry_pd = time_until_dry_pd[time_until_dry_pd['study_date_1'].notna()]
