@@ -51,5 +51,5 @@ if __name__ == "__main__":
     print("Get the processed list", len(processed_list))
     features_pd = pd.DataFrame.from_dict(processed_list)
     features_pd.to_csv(os.path.join(WORK_SPACE, 
-        "feature_segmentation/segmentation/feature_tables/joint_export", 
-        "segmentation_statistics.csv"))
+        "feature_segmentation/segmentation/feature_tables/second_export", 
+        "segmentation_statistics_joined.csv"))
