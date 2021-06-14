@@ -95,7 +95,8 @@ class TimeUtils:
         start_feature_value = table[item].iloc[date_idx_before].values[0]
         end_feature_value = table[item].iloc[date_idx_after].values[0]
 
-        interpolated_vector = self.interpolate_numeric_field(start_ = 0, end_ = delta_days.days,
+        interpolated_vector = self.interpolate_numeric_field(start_ = 0,
+                                                             end_ = delta_days.days,
                                                              start_value = start_feature_value,
                                                              end_value = end_feature_value)
 
@@ -156,7 +157,7 @@ class TimeUtils:
 
         """
 
-        time_line[self.time_steps[k + 1]]["study_date"] = stamp
+        time_line[self.time_steps[k + 1]]["study_date"] = treatment_table.loc[candidate_idx].study_date
         time_line[self.time_steps[k + 1]][item] = treatment_table.loc[candidate_idx][item]
         time_line[self.time_steps[k + 1]]["time_range"] = None
         time_line[self.time_steps[k + 1]]["time_range_before"] = None
@@ -184,7 +185,7 @@ class TimeUtils:
         """
         last_study = treatment_table.iloc[-1]
 
-        time_line[self.time_steps[k + 1]]["study_date"] = stamp
+        time_line[self.time_steps[k + 1]]["study_date"] = last_study.study_date
         time_line[self.time_steps[k + 1]]["time_range"] = deltas.iloc[-1].days
         time_line[self.time_steps[k + 1]]["time_range_before"] = deltas.iloc[-1].days
         time_line[self.time_steps[k + 1]]["time_range_after"] = None
@@ -210,7 +211,7 @@ class TimeUtils:
         """
         time_point = self.time_steps[k + 1]
         interp_value, interp_time, days_before, days_after = self.interpolate(deltas, treatment_table, item = item)
-        time_line[time_point]["study_date"] = stamp
+        time_line[time_point]["study_date"] = treatment_table.iloc[np.argmin(abs(deltas)) - 1]["study_date"]
         time_line[time_point]["time_range"] = interp_time
         time_line[time_point]["time_range_before"] = days_before
         time_line[time_point]["time_range_after"] = days_after
@@ -245,10 +246,11 @@ class TimeUtils:
         Gets all study dates with injections and filters the first.
         Then filters table from first date.
         resets index and return the table.
+
         @return: DataFrame table filtered from first treatment date
         @rtype: DataFrame
         """
-        first_injection_idx = min(np.argwhere(np.array(self.table["injections"] > 0)))[0]
+        first_injection_idx = min(np.argwhere(np.array(self.table["injections"] > 0)))[0] - 1
         treatment_table = self.table.iloc[first_injection_idx:]
 
         # reset index to start from 1
@@ -278,14 +280,6 @@ class TimeUtils:
             # reset index to start from 1
             treatment_table.index = treatment_table.index - treatment_table.index[0] + 1
 
-        # if va is zero at time zero, then hand over next value if time delta less than 60
-        if item == 'cur_va_rounded':
-            if treatment_table.iloc[0][[item]].isna().values[0]:
-                for i in range(2, treatment_table.shape[0] - 1):
-                    if (treatment_table.delta_t[i-1] < 60) and not treatment_table.iloc[i - 1][[item]].isna().values[0]:
-                        treatment_table.loc[i - 1, item] = treatment_table.iloc[i - 1][[item]].values[0]
-                        break
-
         # set up time stamp for structured time series
         first_treatment_date = pd.to_datetime(treatment_table.iloc[0].study_date)
         self.time_line[1]["study_date"] = first_treatment_date
@@ -302,7 +296,9 @@ class TimeUtils:
         for k, stamp in enumerate(treatment_stamps, 0):
 
             # is there an exact match, then match
+            # calculate time deltas where item is not nan
             deltas = stamp - pd.to_datetime(treatment_table.study_date)
+
             candidate_idx = np.argmin(np.array(np.abs(deltas))) + 1
 
             # check for -15 / 15 day match

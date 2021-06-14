@@ -20,26 +20,27 @@ from utility_files.utils import shapes_to_label, iter_one_processing, fibrosis_c
 from utility_files.plotting import plot_examples, create_visualizations
 
 
-def img_b64_to_arr(img_b64):
-    img_data = base64.b64decode(img_b64)
-    img_arr = img_data_to_arr(img_data)
-    return img_arr
-
-
-def img_data_to_arr(img_data):
-    f = io.BytesIO()
-    f.write(img_data)
-    img_arr = np.array(PIL.Image.open(f))
-    return img_arr
-
-
-def labelfiles_to_output(label_files, out_dir, class_name_to_id, lq_records,
+def labelfiles_to_output(record_paths, out_dir, class_name_to_id, lq_records,
                          iteration="first_iteration", with_choroid=True, fibrosis_change_log=None):
-    for label_file in label_files:
+
+    for record_path in record_paths:
+        annotation_files = [path for path in glob.glob(record_path + "/*") if ".json" in path]
+
+        if len(annotation_files) == 1:
+            label_file = annotation_files[0]
+        elif len(annotation_files) == 2:
+            label_file = [path for path in annotation_files if "choroid" in path][0]
+        else:
+            raise Exception(f"Unexpected number of json files in {record_path}, stopping program")
+
+        # for label_file in label_files:
         print(label_file)
 
         with open(label_file) as f:
             base = label_file.split("/")[-1]
+
+            if len(base.split("_")) < 3:
+                base = label_file.split("/")[-2]
 
             # set iteration specific base
             if "7" in iteration:
@@ -127,7 +128,7 @@ def main():
     # test iteration
     PROJ_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation"
     annotatio_file = ".json"
-    annotator = "topcon_cirrus"
+    annotator = "j_idv"
     iteration = f"iteration_{annotator}"
     out_dir = iteration
     labels_file = "labels.txt"
@@ -148,27 +149,27 @@ def main():
 
     # iteration 4
     iter_four_dir = f"data/versions/iteration_4/{annotator}"
-    iter_four_json_files = glob.glob(os.path.join(PROJ_DIR, iter_four_dir + f"/*/*{annotatio_file}*"))
+    iter_four_json_files = glob.glob(os.path.join(PROJ_DIR, iter_four_dir + f"/*"))
 
     # iteration 5
     iter_five_dir = f"data/versions/iteration_5/{annotator}"
-    iter_five_json_files = glob.glob(os.path.join(PROJ_DIR, iter_five_dir + f"/*/*{annotatio_file}*"))
+    iter_five_json_files = glob.glob(os.path.join(PROJ_DIR, iter_five_dir + f"/*"))
 
     # iteration 6
     iter_six_dir = f"data/versions/iteration_6/{annotator}"
-    iter_six_json_files = glob.glob(os.path.join(PROJ_DIR, iter_six_dir + f"/*/*{annotatio_file}*"))
+    iter_six_json_files = glob.glob(os.path.join(PROJ_DIR, iter_six_dir + f"/*"))
 
     # iteration 7
     iter_six_dir = f"data/versions/iteration_7/{annotator}"
-    iter_seven_json_files = glob.glob(os.path.join(PROJ_DIR, iter_six_dir + f"/*/*{annotatio_file}*"))
+    iter_seven_json_files = glob.glob(os.path.join(PROJ_DIR, iter_six_dir + f"/*"))
 
     # iteration 8
     iter_eight_dir = f"data/versions/iteration_8/{annotator}"
-    iter_eight_json_files = glob.glob(os.path.join(PROJ_DIR, iter_eight_dir + f"/*/*{annotatio_file}*"))
+    iter_eight_json_files = glob.glob(os.path.join(PROJ_DIR, iter_eight_dir + f"/*"))
 
     # iteration 9
     iter_nine_dir = f"data/versions/iteration_9/{annotator}"
-    iter_nine_json_files = glob.glob(os.path.join(PROJ_DIR, iter_nine_dir + f"/*/*{annotatio_file}*"))
+    iter_nine_json_files = glob.glob(os.path.join(PROJ_DIR, iter_nine_dir + f"/*"))
 
     # test iteration
     iter_test_dir = "data/versions/inter_doctor_variance_sample_michael"

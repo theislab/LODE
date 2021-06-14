@@ -3,12 +3,13 @@ from copy import copy
 from feature_statistics.config import WORK_SPACE, SEG_DIR, OCT_DIR
 import os
 import pandas as pd
-import numpy as np
+from tqdm import tqdm
+import glob
+import re
+
 from feature_statistics.utils.time_utils import TimeUtils
 from feature_statistics.utils.pandas_utils import sum_etdrs_columns
 from feature_statistics.utils.util_functions import SeqUtils, get_total_number_of_injections
-from tqdm import tqdm
-import glob
 
 
 class MeasureSeqTimeUntilDry(SeqUtils):
@@ -23,13 +24,14 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                             "drusen": 8,
                             "rpe": 6,
                             "epiretinal_membrane": 1,
-                            "fibrosis": 13}
+                            "fibrosis": 13,
+                            "atropy_percentage": "atropy_percentage",
+                            "thickness_mean": "thickness_mean"}
 
     ETDRS_REGIONS = ["T1", "T2", "S1", "S2", "N1", "N2", "C0", "I1", "I2"]
 
     DATA_POINTS = ["total_fluid",
                    "cur_va_rounded",
-                   "next_va",
                    "cumsum_injections",
                    'intra_retinal_fluid',
                    'sub_retinal_fluid',
@@ -39,7 +41,9 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                    'drusen',
                    'rpe',
                    'epiretinal_membrane',
-                   'fibrosis']
+                   'fibrosis',
+                   'atropy_percentage',
+                   'thickness_mean']
 
     INJECTION_COLUMNS = ["injection_Avastin",
                          "injection_Dexamethason",
@@ -64,8 +68,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
               'time_range_before',
               'time_range_after',
               'insertion_type',
-              'cur_va_rounded',
-              'next_va']
+              'cur_va_rounded']
 
     def __init__(self):
         pass
@@ -126,6 +129,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
 
     def from_record(self, record_table, region_resolved):
 
+        record_table_unchanged = record_table.copy()
         # reset index of table
         record_table.reset_index(inplace = True)
 
@@ -135,7 +139,25 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2))
 
         # create cumsum injections column
-        record_table.loc[:, "cumsum_injections"] = record_table.injections.cumsum()
+        record_table = record_table.assign(cumsum_injections=record_table.injections.cumsum())
+
+        # add time delta
+        record_table.loc[:, "study_date_dt"] = pd.to_datetime(record_table.study_date, format = "%Y-%m-%d")
+        record_table.loc[:, "study_delta"] = [0] + record_table.delta_t.dropna().tolist()
+
+        # drop any OCTs without VA annotated
+        record_table = record_table.dropna(subset = ["cur_va"]).reset_index().drop("level_0", axis = 1)
+
+        # if va is zero at time zero, then hand over next value if time delta less than 60
+        if record_table.iloc[0][["cur_va"]].isna().values[0]:
+            for i in range(2, record_table.shape[0] - 1):
+                if (record_table.delta_t[i-1] < 60) and not record_table.iloc[i - 1][["cur_va"]].isna().values[0]:
+                    record_table.loc[i - 1, "cur_va"] = record_table.iloc[i - 1][["cur_va"]].values[0]
+                    break
+
+        if record_table.iloc[0][["cur_va"]].isna().values[0]:
+            print("Eye does not have VA measurement close to first OCT, ignore eye")
+            return None
 
         # add all injections
         for inj_col in MeasureSeqTimeUntilDry.INJECTION_COLUMNS:
@@ -161,16 +183,36 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         diagnosis = meta_data[MeasureSeqTimeUntilDry.META_DATA[2]]
 
         # check so patient is treated with no lens surgery
-        if (total_number_injections > 0) and (sum(record_table.lens_surgery) == 0):
+        if (total_number_injections > 0):
             for data_point in data_points:
                 time_line = time_utils.assign_to_timeline_str(time_line = time_line,
                                                               item = data_point,
                                                               total_number_injections = total_number_injections)
 
-            log = self.create_log(patient_id = patient_id, laterality = laterality, time_line = time_line,
+            log = self.create_log(patient_id = patient_id,
+                                  laterality = laterality,
+                                  time_line = time_line,
                                   data_points = data_points)
+
+            # add cataract surgery to time line
+            log_dates = [key for key in log.keys() if "study_date" in key]
+            record_table_unchanged.loc[:, "study_date"] = pd.to_datetime(record_table_unchanged.study_date)
+            for lens_surgery_date in record_table_unchanged[record_table_unchanged.lens_surgery].study_date:
+                for k, study_date in enumerate(log_dates[:-1]):
+                    if pd.to_datetime(log["study_date_1"]) >= lens_surgery_date:
+                        log[f'cataract_surgery_before_sequence'] = 1
+                    else:
+                        log[f'cataract_surgery_before_sequence'] = 0
+                    if (pd.to_datetime(log[study_date]) < lens_surgery_date) & (
+                            pd.to_datetime(log[log_dates[k + 1]]) > lens_surgery_date):
+                        time_point = int(re.search(r"\d+", log_dates[k + 1]).group())
+                        log[f'cataract_surgery_{time_point}'] = 1
+                    else:
+                        time_point = int(re.search(r"\d+", log_dates[k + 1]).group())
+                        log[f"cataract_surgery_{time_point}"] = 0
         else:
             log = None
+
         return log
 
 
@@ -184,19 +226,22 @@ if __name__ == "__main__":
     # distribution of 3 and 6 month treatment effect
     """
     # load sequences
-    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data", 'sequences.csv'))
+    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data", 'sequences.csv'))
+
+    eyes_wo_first_va = []
 
     region_resolved = True
 
-    PATIENT_ID = 245854  # 1570 L
-    LATERALITY = "L"
+    PATIENT_ID = 32179  # 1570 L
+    LATERALITY = "R"
 
     mstd = MeasureSeqTimeUntilDry()
     filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
+    #
     # seq_pd = seq_pd.loc[filter_]
-    # seq_pd = seq_pd.iloc[0:10]
+    # seq_pd = seq_pd.iloc[0:15]
 
-    unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()
+    unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates() # .iloc[0:15]
 
     time_until_dry = []
 
@@ -204,7 +249,17 @@ if __name__ == "__main__":
         try:
             print(patient, lat)
             record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
-            time_until_dry.append(mstd.from_record(record_pd, region_resolved))
+
+            #if record_pd.iloc[0:1].cur_va.dropna().size == 0:
+            #    print(f"Record {patient, lat} has not starting VA measurement, ignore")
+            #    eyes_wo_first_va.append((patient, lat))
+            #    continue
+            record_log = mstd.from_record(record_pd, region_resolved)
+
+            if record_log is None:
+                continue
+            else:
+                time_until_dry.append(record_log)
         except:
             print("patient did not work", patient, lat)
             continue
@@ -217,19 +272,24 @@ if __name__ == "__main__":
         else:
             continue
 
-    time_until_dry_pd = pd.DataFrame(time_series_log)
+    if not len(time_until_dry) == 0:
+        print("Number of eyes without eyes at first OCT time: ", len(eyes_wo_first_va))
+        time_until_dry_pd = pd.DataFrame(time_series_log)
 
-    # read in naive patient data
-    naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "naive_patients/naive_patients.csv"),
-                                 sep = ",").dropna()
+        # read in naive patient data
+        naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/dwh_tables_cleaned/naive_patients.csv"),
+                                     sep = ",").dropna(subset = ["patient_id"])
 
-    naive_patients["patient_id"] = naive_patients["patient_id"].astype(int)
+        naive_patients.loc[:, "sequence"] = naive_patients.patient_id.astype(str) + "_" + naive_patients.laterality
 
-    time_until_dry_pd["patient_id"] = time_until_dry_pd.sequence.str.split("_", expand = True)[0].astype(int)
-    time_until_dry_pd_naive = pd.merge(time_until_dry_pd, naive_patients["patient_id"], left_on = "patient_id",
-                                       right_on = "patient_id", how = "inner")
+        naive_patients["patient_id"] = naive_patients["patient_id"].astype(int)
 
-    # remove non treated records
-    time_until_dry_pd = time_until_dry_pd[time_until_dry_pd['study_date_1'].notna()]
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/longitudinal_properties.csv"))
-    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "sequence_data/longitudinal_properties_naive.csv"))
+        time_until_dry_pd["patient_id"] = time_until_dry_pd.sequence.str.split("_", expand = True)[0].astype(int)
+        time_until_dry_pd_naive = pd.merge(time_until_dry_pd, naive_patients["sequence"], on = "sequence",
+                                           how = "inner")
+
+
+        # remove non treated records
+        time_until_dry_pd = time_until_dry_pd[time_until_dry_pd['study_date_1'].notna()]
+        time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data/longitudinal_properties.csv"))
+        time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data/longitudinal_properties_naive.csv"))

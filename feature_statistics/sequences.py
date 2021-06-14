@@ -2,9 +2,10 @@ import pickle
 from datetime import datetime
 import numpy as np
 from copy import deepcopy
-from LSTM.datasets import IOVar
 from tqdm import tqdm
 import pandas as pd
+
+from feature_statistics.datasets import IOVar
 
 
 def save_sequences_to_pickle(fname, sequences):

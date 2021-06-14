@@ -3,7 +3,6 @@ from datetime import datetime
 import numpy as np
 from copy import deepcopy
 from LSTM.datasets import IOVar
-import os
 from tqdm import tqdm
 import pandas as pd
 
@@ -19,6 +18,7 @@ def save_sequences_to_dataframe(fname, sequences):
     d = [seq.to_dataframe() if isinstance(seq, MeasurementSequence) else seq for seq in sequences]
 
     main_dataframe = d[0]
+
     # create main data frame
     for i in tqdm(range(1, len(d))):
         main_dataframe = main_dataframe.append(d[i])
@@ -111,18 +111,11 @@ def split_sequences(sequences, min_len=None, max_len=None, train_frac=0.8, val_f
     return sequences_train, sequences_val, sequences_test
 
 
-def check_features(workspace_dir, longitudinal_data):
+def check_features(segmented_data, longitudinal_data):
     """
     workspace_dir: str
     longitudinal_data: DataFrame with long. data
     """
-    feature_names = None
-    segmentation_feature_path = os.path.join(workspace_dir, "sequence_data/segmentation_statistics.csv")
-
-    assert os.path.exists(segmentation_feature_path), "Features not available in work space"
-
-    # if feature stat table exists load here
-    segmented_data = pd.read_csv(segmentation_feature_path, index_col = 0)
 
     # get feature names
     feature_names = segmented_data.columns[1:]
@@ -137,7 +130,7 @@ def check_features(workspace_dir, longitudinal_data):
     # convert patient id to int
     segmented_data["patient_id"] = segmented_data["patient_id"].astype(np.int64)
 
-    longitudinal_data = pd.merge(longitudinal_data, segmented_data, left_on = keys, right_on = keys, how = "inner")
+    longitudinal_data = pd.merge(longitudinal_data, segmented_data, left_on = keys, right_on = keys, how = "left")
     return longitudinal_data, feature_names.tolist()
 
 
@@ -214,7 +207,7 @@ class Measurement:
         # evt_date = datetime.strptime(event.study_date, '%Y-%m-%d')
         # assert evt_date >= self.study_date, "event date cannot be earlier than measurement date!"
 
-        if event['iol?'] is True:
+        if event['iol?'] == True:
             self.lens_surgery = True
 
         if event['injection?'] == True:

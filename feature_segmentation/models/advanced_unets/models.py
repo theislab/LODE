@@ -11,8 +11,6 @@ from keras.layers.core import Lambda
 import keras.backend as K
 
 
-
-
 def up_and_concate(down_layer, layer, data_format='channels_first'):
     if data_format == 'channels_first':
         in_channel = down_layer.get_shape().as_list()[1]
@@ -174,8 +172,6 @@ def unet(img_w, img_h, n_label, data_format='channels_last'):
     conv6 = Conv2D(n_label, (1, 1), padding='same', data_format=data_format)(x)
     conv7 = core.Activation('sigmoid')(conv6)
     model = Model(inputs=inputs, outputs=conv7)
-
-    #model.compile(optimizer=Adam(lr=1e-5), loss=[focal_loss()], metrics=['accuracy', dice_coef])
     return model
 
 
@@ -203,11 +199,9 @@ def att_unet(params, data_format='channels_last'):
         skips.append(x)
         x = MaxPooling2D((2, 2), data_format=data_format)(x)
 
-        if i in [0, 1, 2]:
-            features = features * 2
-
+    x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
     x = Dropout(params.dropout)(x)
-    x = Conv2D(features*2, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
+    x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
 
     for i in reversed(range(depth)):
         if i in [0, 1, 2]:

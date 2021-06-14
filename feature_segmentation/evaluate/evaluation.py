@@ -1,17 +1,22 @@
 import os
+<<<<<<< HEAD
 import numpy as np
 
+=======
+>>>>>>> e7e807b474cabd32f30bf6cd3b68f09ea99b5097
 from feature_segmentation.evaluate.evaluation_utils import predict, get_result_report, load_test_config, \
     save_predicted_detections, save_groundtruth_detections
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
 from feature_segmentation.segmentation_config import WORK_SPACE, TRAIN_DATA_PATH
+
+import cv2
 from feature_segmentation.utils.plotting import plot_image_label_prediction
 
 # select model to be evaluated
-models_directory = os.path.join(WORK_SPACE, "trained_model")
-model_name = "14"
+models_directory = os.path.join(WORK_SPACE, "models")
+model_name = "20"
 
-model_path = "/home/olle/PycharmProjects/LODE/feature_segmentation/trained_model/14" # os.path.join(models_directory, model_name)
+model_path = "/home/olle/PycharmProjects/LODE/workspace/ensemble_results/58" # os.path.join(models_directory, model_name)
 
 # load test configurations
 model, test_ids, validation_ids, train_ids, params = load_test_config(model_path)
@@ -28,6 +33,13 @@ for i in range(0, len(test_ids) - 1):
 
     prediction, softmax_prediction = predict(model, img)
 
+    save_predicted_detections(pred=prediction, save_path = os.path.join(model_path, "detections", "detections"),
+                             id_=test_ids[i].replace("png", "txt"))
+
+    save_groundtruth_detections(lbl, save_path = os.path.join(model_path, "detections", "groundtruths"),
+                                id_=test_ids[i].replace("png", "txt"))
+
+    # get bboxes predictions
     all_predictions.extend(prediction.flatten().tolist())
     all_labels.extend(lbl.flatten().tolist())
 
@@ -52,7 +64,7 @@ for i in range(0, len(test_ids) - 1):
                                 test_ids[i].replace(".png", ".txt"))
 
     # plot all images and their labels/predictions
-    plot_image_label_prediction([img, lbl, prediction], model_path, mode = "test", filename = test_ids[i])
+    # plot_image_label_prediction([img, lbl, prediction], model_path, mode = "test", filename = test_ids[i])
 
 # generate results files from all prediction and labels and save to model directory
 get_result_report(all_labels, all_predictions, model_path)
