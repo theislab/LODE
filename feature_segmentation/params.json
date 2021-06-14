@@ -18,5 +18,6 @@
   "alpha":0.25,
   "gamma": 2,
   "balance_dataset": 0,
+  "dataset": "hq_examples",
   "aug_strategy": "medium",
-  "pretrained_model": "./pretrained_models"}
+   "pretrained_model": "./pretrained_models"}

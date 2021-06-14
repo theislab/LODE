@@ -199,7 +199,6 @@ def att_unet(params, data_format='channels_last'):
         skips.append(x)
         x = MaxPooling2D((2, 2), data_format=data_format)(x)
 
-
     x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
     x = Dropout(params.dropout)(x)
     x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)

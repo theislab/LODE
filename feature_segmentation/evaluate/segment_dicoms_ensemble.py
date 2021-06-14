@@ -4,12 +4,8 @@ from tqdm import tqdm
 import time
 import sys
 import glob
-<<<<<<< HEAD
 root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
-=======
 
-root_dir = "./"
->>>>>>> 29bdcc6939b36ffd6a82b2da2fa1dfa988a63a2b
 search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
 
 for sp in search_paths:

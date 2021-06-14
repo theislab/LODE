@@ -176,7 +176,52 @@ def cast_params_types(params, model_path):
 class TrainOps:
     def __init__(self, params, num_records):
         self.params = params
-        self.steps_per_epoch = (num_records // self.params.batch_size)
+
+    def lr_schedule(self, epoch):
+        """Learning Rate Schedule
+    
+        Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
+        Called automatically every epoch as part of callbacks during training.
+    
+        # Arguments
+            epoch (int): The number of epochs
+    
+        # Returns
+            lr (float32): learning rate
+        """
+        lr = self.params.learning_rate
+
+        if epoch > int(self.params.num_epochs * 0.8):
+            lr *= 1e-3
+        elif epoch > int(self.params.num_epochs * 0.6):
+            lr *= 1e-2
+        elif epoch > int(self.params.num_epochs * 0.4):
+            lr *= 1e-1
+        print('Learning rate: ', lr)
+        return lr
+
+    def step_decay(self, epoch):
+        """
+        Parameters
+        ----------
+        epoch :
+
+        Returns
+        -------
+
+        """
+        initial_lrate = self.params.learning_rate
+        drop = 0.5
+        epochs_drop = self.params.num_epochs // 8
+        lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
+        return lrate
+
+    def exp_decay(self, epoch):
+        if epoch <  self.params.num_epochs // 10:
+            return self.params.learning_rate
+        else:
+            lr = self.params.learning_rate * math.exp(-0.05 * (epoch // 2))
+            return max(lr, self.params.learning_rate*10e-3)
 
     def callbacks_(self):
 
