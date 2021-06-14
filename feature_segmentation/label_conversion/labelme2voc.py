@@ -19,8 +19,23 @@ from utility_files.utils import shapes_to_label, iter_one_processing, fibrosis_c
     clean_data_path
 from utility_files.plotting import plot_examples, create_visualizations
 
+def img_b64_to_arr(img_b64):
+    img_data = base64.b64decode(img_b64)
+    img_arr = img_data_to_arr(img_data)
+    return img_arr
 
-def labelfiles_to_output(record_paths, out_dir, class_name_to_id, lq_records,
+
+def img_data_to_arr(img_data):
+    f = io.BytesIO()
+    f.write(img_data)
+    img_arr = np.array(PIL.Image.open(f))
+    return img_arr
+
+
+
+
+
+def labelfiles_to_output(label_files, out_dir, class_name_to_id, lq_records,
                          iteration="first_iteration", with_choroid=True, fibrosis_change_log=None):
 
     for record_path in record_paths:
@@ -128,7 +143,7 @@ def main():
     # test iteration
     PROJ_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation"
     annotatio_file = ".json"
-    annotator = "j_idv"
+    annotator = "johannes"
     iteration = f"iteration_{annotator}"
     out_dir = iteration
     labels_file = "labels.txt"
@@ -172,13 +187,18 @@ def main():
     iter_nine_json_files = glob.glob(os.path.join(PROJ_DIR, iter_nine_dir + f"/*"))
 
     # test iteration
+
+    iter_test_dir = "data/versions/test_iteration/final_iteration"
+    iter_test_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*"))
+
+    iter_idv_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*/*{annotatio_file}*"))
+    iter_idv_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*"))
     iter_test_dir = "data/versions/inter_doctor_variance_sample_michael"
     iter_test_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir, f"*/*{annotatio_file}*"))
 
     # inter doctor variation
     iter_idv_dir = "data/versions/inter_doctor_variance_sample_michael"
     iter_idv_json_files = glob.glob(os.path.join(PROJ_DIR, iter_idv_dir + f"/*/*{annotatio_file}*"))
-
     # inter doctor variation
     iter_da_dir = "data/versions/topcon_cirrus"
     iter_da_json_files = glob.glob(os.path.join(PROJ_DIR, iter_da_dir + f"/*{annotatio_file}*"))

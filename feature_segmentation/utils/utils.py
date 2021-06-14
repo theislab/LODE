@@ -6,7 +6,7 @@ import pandas as pd
 import glob
 import math
 import keras
-from keras.optimizers.schedules import ExponentialDecay, PiecewiseConstantDecay
+from keras.optimizers.schedules import *
 
 root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
 search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]

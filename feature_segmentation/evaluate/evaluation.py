@@ -3,7 +3,11 @@ import os
 import numpy as np
 
 =======
+<<<<<<< HEAD
 >>>>>>> e7e807b474cabd32f30bf6cd3b68f09ea99b5097
+=======
+>>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
+>>>>>>> 595ef8eb05a51c3282dcf4ca20ae57aaac25393b
 from feature_segmentation.evaluate.evaluation_utils import predict, get_result_report, load_test_config, \
     save_predicted_detections, save_groundtruth_detections
 from feature_segmentation.generators.generator_utils.image_processing import read_resize

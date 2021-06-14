@@ -162,6 +162,7 @@ def create_visualizations(out_clsv_file, cls):
     tick_loc_array = np.arange(12) + 0.5
     tick_loc_list = tick_loc_array.tolist()
 
+    fig = plt.figure(figsize = (16, 4))
     gs = gridspec.GridSpec(nrows = 1,
                            ncols = 1,
                            figure = fig,
