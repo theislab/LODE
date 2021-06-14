@@ -45,13 +45,13 @@ def color_mappings():
                              [209., 227., 239.],
                              [226., 233., 48.]])
 
-    color_palett_norm = color_palett / 255  # (np.max(color_palett)-np.min(color_palett))
+    color_palett_norm = color_palett / 255.  # (np.max(color_palett)-np.min(color_palett))
     custom_cmap = colors.ListedColormap(
         color_palett_norm
     )
 
     # set counts and norm
-    array_bounds = np.arange(color_palett.shape[0] + 1) - 0.1
+    array_bounds = np.arange(color_palett.shape[0] + 1) - 0.5
     bounds = array_bounds.tolist()
     norm = colors.BoundaryNorm(bounds, custom_cmap.N)
     return custom_cmap, norm, bounds
@@ -134,11 +134,12 @@ def plot_image_label_prediction(records, model_dir, mode, filename):
 
     gs = gridspec.GridSpec(nrows=1,
                            ncols=3,
-                           figure=fig,
                            width_ratios=[1, 1, 1],
                            height_ratios=[1],
                            wspace=0.3,
-                           hspace=0.3)
+                           hspace=0.3,
+                           figure=fig,
+                           )
 
     # turn image to 3 channel
     ax1 = fig.add_subplot(gs[0, 0])
@@ -152,13 +153,13 @@ def plot_image_label_prediction(records, model_dir, mode, filename):
         records[1] = records[1][:, :, 0]
 
     ax2 = fig.add_subplot(gs[0, 1])
-    ax2.imshow(records[1], cmap=seg_cmap, norm=seg_norm)
+    ax2.imshow(records[1], interpolation='nearest', cmap=seg_cmap, norm=seg_norm)
     ax2.set_xticks([])
     ax2.set_yticks([])
     ax2.set_title("ground truth")
 
     ax3 = fig.add_subplot(gs[0, 2])
-    ax3.imshow(records[2], cmap=seg_cmap, norm=seg_norm)
+    ax3.imshow(records[2], interpolation='nearest', cmap=seg_cmap, norm=seg_norm)
     ax3.set_xticks([])
     ax3.set_yticks([])
     ax3.set_title("prediction")
@@ -218,7 +219,7 @@ def plot_image_predictions(records, model_dir, mode, filename):
     ax3.set_title("prediction")
 
     # set colorbar ticks
-    tick_loc_array = np.arange(len(bounds)) + 0.5
+    tick_loc_array = np.arange(len(bounds) - 1) + 0.5
     tick_loc_list = tick_loc_array.tolist()
     tick_list = np.arange(len(bounds)).tolist()
     c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
@@ -234,17 +235,21 @@ def plot_image_predictions(records, model_dir, mode, filename):
     plt.close()
 
 
-def plot_image(records, model_dir, mode, filename, save_fig=True):
+def plot_predictions(records, model_dir, mode, filename):
     """
-    :param records: list containing numpy array of image
+    :param records: list containing numpy array of image and prediction
     :param model_dir: directory of model where to save images
     :param mode: str: train or test
     :param filename: str: filename of image
     :return: save images in directory for inspection
     """
 
+    # set prediction to black if not given
+    if len(records) < 3:
+        records.append(np.zeros(records[0].shape))
+
     seg_cmap, seg_norm, bounds = color_mappings()
-    fig = plt.figure(figsize=(4, 4))
+    fig = plt.figure(figsize=(16, 4))
 
     gs = gridspec.GridSpec(nrows=1,
                            ncols=1,
@@ -254,19 +259,37 @@ def plot_image(records, model_dir, mode, filename, save_fig=True):
                            wspace=0.3,
                            hspace=0.3)
 
-    # turn image to 3 channel
-    ax3 = fig.add_subplot(gs[0])
-    ax3.imshow(records[0], cmap=seg_cmap, norm=seg_norm)
+    ax3 = fig.add_subplot(gs[0, 0])
+    colorbar_im = ax3.imshow(records[0], interpolation="nearest", cmap=seg_cmap, norm=seg_norm)
     ax3.set_xticks([])
     ax3.set_yticks([])
-    # ax3.set_title("prediction")
-    if save_fig:
-        if not os.path.exists(os.path.join(model_dir, mode + "_pred_records")):
-            os.makedirs(os.path.join(model_dir, mode + "_pred_records"))
-        plt.savefig(os.path.join(model_dir, mode + "_pred_records", filename))
-        plt.close()
-    else:
-        plt.show()
+    ax3.axis('off')
+
+    if not os.path.exists(os.path.join(model_dir, mode + "_pred_records")):
+        os.makedirs(os.path.join(model_dir, mode + "_pred_records"))
+
+    plt.savefig(os.path.join(model_dir, mode + "_pred_records", filename), bbox_inches='tight', pad_inches=0)
+    plt.close()
+
+
+def plot_image(image, model_dir, mode, filename):
+    """
+    :param records: list containing numpy array of image, label and prediction
+    :param model_dir: directory of model where to save images
+    :param mode: str: train or test
+    :param filename: str: filename of image
+    :return: save images in directory for inspection
+    """
+
+    # turn image to 3 channel
+    plt.imshow(image)
+    plt.axis('off')
+
+    if not os.path.exists(os.path.join(model_dir, mode + "_images")):
+        os.makedirs(os.path.join(model_dir, mode + "_images"))
+
+    plt.savefig(os.path.join(model_dir, mode + "_images", filename), bbox_inches='tight', pad_inches=0)
+    plt.close()
 
 
 def get_max_min_uncertainty(all_uq_maps):
@@ -371,15 +394,56 @@ def plot_uncertainty_heatmaps(all_uq_maps, ensemble_dir):
     """
     mode = "test"
     save_dir = os.path.join(ensemble_dir, mode + "_uncertainty_records")
+    save_numpy_dir = os.path.join(ensemble_dir, mode + "_uncertainty_np_records")
+
     max_value, min_value = get_max_min_uncertainty(all_uq_maps)
 
     if not os.path.exists(save_dir):
         os.makedirs(save_dir)
+        os.makedirs(save_numpy_dir)
 
     # plot uq maps
     for record in all_uq_maps.keys():
         record_uq_map = all_uq_maps[record]
+        np.save(os.path.join(save_dir, save_numpy_dir, f"{record}.npy"), record_uq_map)
+
         plt.imshow(record_uq_map, cmap='hot', interpolation='nearest', vmin=min_value, vmax=max_value)
         plt.axis('off')
-        plt.savefig(os.path.join(save_dir, record))
+        plt.savefig(os.path.join(save_dir, record), bbox_inches='tight', pad_inches=0)
         plt.close()
+
+
+def plot_label(label, model_dir, mode, filename):
+    """
+    :param records: list containing numpy array of image and prediction
+    :param model_dir: directory of model where to save images
+    :param mode: str: train or test
+    :param filename: str: filename of image
+    :return: save images in directory for inspection
+    """
+
+    if len(label.shape) > 2:
+        label = label[:, :, 0]
+
+    seg_cmap, seg_norm, bounds = color_mappings()
+    fig = plt.figure(figsize=(16, 4))
+
+    gs = gridspec.GridSpec(nrows=1,
+                           ncols=1,
+                           figure=fig,
+                           width_ratios=[1],
+                           height_ratios=[1],
+                           wspace=0.3,
+                           hspace=0.3)
+
+    ax3 = fig.add_subplot(gs[0, 0])
+    colorbar_im = ax3.imshow(label, interpolation="nearest", cmap=seg_cmap, norm=seg_norm)
+    ax3.set_xticks([])
+    ax3.set_yticks([])
+    ax3.axis('off')
+
+    if not os.path.exists(os.path.join(model_dir, mode + "_labels_records")):
+        os.makedirs(os.path.join(model_dir, mode + "_labels_records"))
+
+    plt.savefig(os.path.join(model_dir, mode + "_labels_records", filename), bbox_inches='tight', pad_inches=0)
+    plt.close()

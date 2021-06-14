@@ -5,12 +5,14 @@ from pathlib import Path
 import pandas as pd
 import glob
 import math
+import keras
+from keras.optimizers.schedules import *
 
 root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
 search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
 
 for sp in search_paths:
-        sys.path.append(sp)
+    sys.path.append(sp)
 
 path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable))
@@ -23,6 +25,7 @@ import os
 
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 from segmentation_config import DATA_SPLIT_PATH
+
 
 class Params():
     """Class that loads hyperparameters from a json file.
@@ -45,7 +48,7 @@ class Params():
     def save(self, json_path):
         """Saves parameters to json file"""
         with open(json_path, 'w') as f:
-            json.dump(self.__dict__, f, indent=4)
+            json.dump(self.__dict__, f, indent = 4)
 
     def update(self, json_path):
         """Loads parameters from json file"""
@@ -64,7 +67,6 @@ class Logging():
     def __init__(self, logging_directory, params):
         self.log_dir = logging_directory
         self.model_directory = None
-        self.tensorboard_directory = None
         self.params = params
 
     def __create_dir(self, dir):
@@ -79,17 +81,6 @@ class Logging():
             os.makedirs(self.log_dir)
         else:
             pass
-
-    def __create_tensorboard_dir(self, model_dir):
-
-        # set abs path to new dir
-        new_dir = os.path.join(model_dir, "tensorboard_dir")
-
-        # create new dir
-        self.__create_dir(new_dir)
-
-        # set object instance to new path
-        self.tensorboard_directory = new_dir
 
     def __remove_empty_directories(self):
 
@@ -126,9 +117,6 @@ class Logging():
             # make new directory
             self.__create_dir(created_dir)
 
-            # create subdir for tensorboard logs
-            self.__create_tensorboard_dir(created_dir)
-
         else:
             # determine the new model directory
             last_ = max(list(map(int, existing_)))
@@ -140,8 +128,6 @@ class Logging():
             # make new directory
             self.__create_dir(created_dir)
 
-            # create subdir for tensorboard logs
-            self.__create_tensorboard_dir(created_dir)
 
         # set class instancy to hold abs path
         self.model_directory = created_dir
@@ -155,7 +141,7 @@ class Logging():
         with open(json_path, 'w') as f:
             # We need to convert the values to float for json (it doesn't accept np.array, np.float, )
             d = {k: str(v) for k, v in self.params.dict.items()}
-            json.dump(d, f, indent=4)
+            json.dump(d, f, indent = 4)
 
 
 def cast_params_types(params, model_path):
@@ -187,54 +173,10 @@ def cast_params_types(params, model_path):
         json.dump(params, json_file)
 
 
-class TrainOps():
-    def __init__(self, params):
+class TrainOps:
+    def __init__(self, params, num_records):
         self.params = params
-
-    def lr_schedule(self, epoch):
-        """Learning Rate Schedule
-    
-        Learning rate is scheduled to be reduced after 80, 120, 160, 180 epochs.
-        Called automatically every epoch as part of callbacks during training.
-    
-        # Arguments
-            epoch (int): The number of epochs
-    
-        # Returns
-            lr (float32): learning rate
-        """
-        lr = self.params.learning_rate
-
-        if epoch > int(self.params.num_epochs * 0.8):
-            lr *= 1e-3
-        elif epoch > int(self.params.num_epochs * 0.6):
-            lr *= 1e-2
-        elif epoch > int(self.params.num_epochs * 0.4):
-            lr *= 1e-1
-        print('Learning rate: ', lr)
-        return lr
-
-    def step_decay(self, epoch):
-        """
-        Parameters
-        ----------
-        epoch :
-
-        Returns
-        -------
-
-        """
-        initial_lrate = self.params.learning_rate
-        drop = 0.5
-        epochs_drop = self.params.num_epochs // 8
-        lrate = initial_lrate * math.pow(drop, math.floor((1 + epoch) / epochs_drop))
-        return lrate
-
-    def exp_decay(self, epoch):
-        if epoch <  self.params.num_epochs // 10:
-            return self.params.learning_rate
-        else:
-            return self.params.learning_rate * math.exp(-0.05 * (epoch // 2))
+        self.steps_per_epoch = (num_records // self.params.batch_size)
 
     def callbacks_(self):
 
@@ -243,25 +185,32 @@ class TrainOps():
         assert self.params.learning_rate_scheduel in ["exponential_decay", "step_decay"], print_str
 
         if self.params.learning_rate_scheduel == "exponential_decay":
-            lr_scheduler = LearningRateScheduler(self.exp_decay, verbose = 1)
+            lr_scheduler = ExponentialDecay(
+                initial_learning_rate = self.params.learning_rate,
+                decay_steps = int(self.steps_per_epoch*self.params.num_epochs),
+                decay_rate = 0.1)
 
         elif self.params.learning_rate_scheduel == "step_decay":
-            lr_scheduler = LearningRateScheduler(self.step_decay, verbose = 1)
+            lr_scheduler = ExponentialDecay(
+                initial_learning_rate = self.params.learning_rate,
+                decay_steps = int(self.steps_per_epoch*self.params.num_epochs),
+                decay_rate = 0.1,
+                staircase = True)
 
-        checkpoint = ModelCheckpoint(filepath=self.params.model_directory + "/weights.hdf5",
-                                     monitor='val_accuracy',
-                                     save_best_only=True,
-                                     verbose=1,
-                                     mode='max',
-                                     save_weights_only=False)
+        checkpoint = ModelCheckpoint(filepath = self.params.model_directory + "/weights.hdf5",
+                                     monitor = 'val_accuracy',
+                                     save_best_only = True,
+                                     verbose = 1,
+                                     mode = 'max',
+                                     save_weights_only = False)
 
-        tb = TensorBoard(log_dir=self.params.model_directory + "/tensorboard", write_graph=False)
+        tb = TensorBoard(log_dir = self.params.model_directory + "/tensorboard", write_graph = False)
 
-        csv_logger = CSVLogger(filename=self.params.model_directory + '/history.csv',
-                               append=True,
-                               separator=",")
+        csv_logger = CSVLogger(filename = self.params.model_directory + '/history.csv',
+                               append = True,
+                               separator = ",")
 
-        es = EarlyStopping(monitor='val_accuracy', patience=300)
+        es = EarlyStopping(monitor = 'val_accuracy', patience = 300)
 
         return [lr_scheduler, checkpoint, tb, csv_logger]
 
@@ -284,13 +233,12 @@ def data_split(ids, params):
         train_ids = pd.read_csv(os.path.join(params.pretrained_model, "train_ids.csv"))["0"].tolist()
         validation_ids = pd.read_csv(os.path.join(params.pretrained_model, "validation_ids.csv"))["0"].tolist()
         test_ids = pd.read_csv(os.path.join(params.pretrained_model, "test_ids.csv"))["0"].tolist()
-    
+
     if params.load_prepared_split:
         train_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "train_ids.csv"))["0"].tolist()
         validation_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "validation_ids.csv"))["0"].tolist()
         test_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "test_ids.csv"))["0"].tolist()
 
-    
     return train_ids, validation_ids, test_ids
 
 

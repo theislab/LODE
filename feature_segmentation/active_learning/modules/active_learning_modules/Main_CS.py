@@ -5,7 +5,6 @@ from paramsDRD import *
 import DataGenerator as DG
 import tensorflow as tf
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, ReduceLROnPlateau, CSVLogger
-from keras.optimizers import SGD
 import ModelDRD as Model
 import Uncertainty as UQ
 import Evaluate as EV

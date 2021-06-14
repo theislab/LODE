@@ -96,7 +96,7 @@ def main(logging ,params, step_factor):
     '''callbacks'''
     lr_scheduler = LearningRateScheduler(step_decay)
 
-    checkpoint = tf.keras.callbacks.ModelCheckpoint(filepath=logging.model_directory +"/weights.hdf5",
+    checkpoint = keras.callbacks.ModelCheckpoint(filepath=logging.model_directory +"/weights.hdf5",
                                                     monitor='val_acc',
                                                     save_best_only=True,
                                                     verbose=1,
