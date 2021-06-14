@@ -5,8 +5,6 @@ from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, BatchNormalization,
 from keras.layers import concatenate, core, Dropout
 from keras.models import Model
 from keras.layers.merge import concatenate
-from keras.optimizers import Adam
-from keras.optimizers import SGD
 from keras.layers.core import Lambda
 import keras.backend as K
 

@@ -1,9 +1,5 @@
 import os
-<<<<<<< HEAD
-import numpy as np
 
-=======
->>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
 from feature_segmentation.evaluate.evaluation_utils import predict, get_result_report, load_test_config, \
     save_predicted_detections, save_groundtruth_detections
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
@@ -13,17 +9,10 @@ import cv2
 from feature_segmentation.utils.plotting import plot_image_label_prediction
 
 # select model to be evaluated
-<<<<<<< HEAD
-models_directory = os.path.join(WORK_SPACE, "trained_model")
-model_name = "14"
-
-model_path = "/home/olle/PycharmProjects/LODE/feature_segmentation/trained_model/14" # os.path.join(models_directory, model_name)
-=======
 models_directory = os.path.join(WORK_SPACE, "models")
 model_name = "20"
 
 model_path = "/home/olle/PycharmProjects/LODE/workspace/ensemble_results/58" # os.path.join(models_directory, model_name)
->>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
 
 # load test configurations
 model, test_ids, validation_ids, train_ids, params = load_test_config(model_path)

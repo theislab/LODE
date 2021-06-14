@@ -1,6 +1,6 @@
 {"learning_rate": 1.0,
-  "batch_size": 8,
-  "num_epochs":2000,
+  "batch_size": 1,
+  "num_epochs":200,
   "img_shape": 256,
   "n_filters": 32,
   "attention": 1,
@@ -12,7 +12,7 @@
   "dropout": 0.2,
   "batchnorm": 1,
   "learning_rate_scheduel": "exponential_decay",
-  "model": "deep_s_class_e_unet",
+  "model": "deep_unet",
   "loss": "categorical_crossentropy",
   "optimizer": "Adadelta",
   "alpha":0.25,
@@ -20,4 +20,4 @@
   "balance_dataset": 0,
   "dataset": "hq_examples",
   "aug_strategy": "medium",
-   "pretrained_model": "./pretrained_models"}
+  "pretrained_model": "./pretrained_models"}
