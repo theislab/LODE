@@ -9,22 +9,50 @@ sys.path.insert(0, os.path.join(path_variable, "networks"))
 sys.path.insert(0, str(path_variable.parent))
 sys.path.insert(0, str(path_variable.parent.parent))
 
-from keras.optimizers import Adam, SGD
-from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet, cluster_unet
-from loss_functions import focal_tversky_loss
+from .networks import standard_unet, deep_unet, SEdeep_unet, deeper_unet, volumeNet, \
+    cluster_unet, deep_se_unet, pyramid_unet, pyramid_transpose_unet, pyramid_deep_unet, \
+    deep_s_class_e_unet, deep_aline_attention_unet, deep_attention_unet_avg_pooling,standard_unet_aa
 
 
 def get_model(params):
 
-    global model
+    available_models = ["attention_unet",
+                        "deep_unet",
+                        "deep_se_unet",
+                        "deep_s_class_e_unet",
+                        "pyramid_unet",
+                        "pyramid_transpose_unet",
+                        "pyramid_deep_unet",
+                        "deep_aline_attention_unet",
+                        "standard_unet_aa",
+                        "standard_unet",
+                        "deep_attention_unet_avg_pooling"]
+
+    assert params.model in available_models, f"model not available, choose from {available_models}"
+
     if params.model == 'standard_unet':
         model = standard_unet.unet(params)
+
+    if params.model == 'standard_unet_aa':
+        model = standard_unet_aa.unet(params)
 
     if params.model == 'deep_unet':
         model = deep_unet.unet(params)
 
+    if params.model == 'deep_se_unet':
+        model = deep_se_unet.unet(params)
+
+    if params.model == 'deep_s_class_e_unet':
+        model = deep_s_class_e_unet.unet(params)
+
+    if params.model == 'deep_aline_attention_unet':
+        model = deep_aline_attention_unet.unet(params)
+
     if params.model == 'deeper_unet':
         model = deeper_unet.unet(params)
+
+    if params.model == 'deep_attention_unet_avg_pooling':
+        model = deep_attention_unet_avg_pooling.unet(params)
 
     if params.model == 'SEdeep_unet':
         model = SEdeep_unet.unet(params)
@@ -32,23 +60,20 @@ def get_model(params):
     if params.model == 'volumeNet':
         model = volumeNet.unet(params)
 
+    if params.model == 'pyramid_unet':
+        model = pyramid_unet.unet(params)
+
+    if params.model == 'pyramid_transpose_unet':
+        model = pyramid_transpose_unet.unet(params)
+
+    if params.model == 'pyramid_deep_unet':
+        model = pyramid_deep_unet.unet(params)
+
     if params.model == "cluster_unet":
         model = cluster_unet.unet(params)
 
     if params.model == "attention_unet":
         model = att_unet(params, data_format = 'channels_last')
-
-    if params.loss == "ce":
-        '''Compile model'''
-        model.compile(optimizer=Adam(lr=params.learning_rate),
-                      loss="sparse_categorical_crossentropy",
-                      metrics=['accuracy'])
-
-    if params.loss == "focal_tversky":
-        '''Compile model'''
-        model.compile(optimizer=Adam(lr=params.learning_rate),
-                      loss=focal_tversky_loss,
-                      metrics=['accuracy'])
 
     if params.continue_training:
         print("loaded already trained model")

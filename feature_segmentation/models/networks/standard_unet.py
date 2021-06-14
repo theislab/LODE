@@ -18,7 +18,6 @@ def unet(params):
 
     c4 = conv2d_block(p3, n_filters = params.n_filters * 8, kernel_size = 3)
     p4 = MaxPooling2D(pool_size = (2, 2))(c4)
-    p4 = Dropout(params.dropout)(p4)
 
     c7 = conv2d_block(p4, n_filters = params.n_filters * 8, kernel_size = 3)
 

@@ -19,6 +19,8 @@ search_paths = [i for i in glob.glob(PROJ_DIR + "/*/*") if os.path.isdir(i)]
 
 for sp in search_paths:
     sys.path.append(sp)
+
+
 def invert_camera_effect(img):
     # annotate camera artifact
     if len(img.shape) == 3:

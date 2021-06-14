@@ -5,7 +5,7 @@ from models.networks.layers.custom_layers import *
 
 
 def unet(params):
-    inputs = Input(shape=(params.img_shape, params.img_shape, 3))
+    inputs = Input(shape=(None, params.img_shape, params.img_shape, 3))
 
     # contracting path
     c1 = conv2d_block(inputs, n_filters=params.n_filters * 1, kernel_size=3)

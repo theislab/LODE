@@ -1,7 +1,7 @@
 
 
 from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, BatchNormalization, Reshape, Permute, Activation, Input, \
-    add, multiply
+    add, multiply, Conv2DTranspose
 from keras.layers import concatenate, core, Dropout
 from keras.models import Model
 from keras.layers.merge import concatenate
@@ -9,8 +9,6 @@ from keras.optimizers import Adam
 from keras.optimizers import SGD
 from keras.layers.core import Lambda
 import keras.backend as K
-
-
 
 
 def up_and_concate(down_layer, layer, data_format='channels_first'):
@@ -32,16 +30,16 @@ def up_and_concate(down_layer, layer, data_format='channels_first'):
     return concate
 
 
-def attention_up_and_concate(down_layer, layer, data_format='channels_first'):
+def attention_up_and_concate(down_layer, layer, n_features, data_format='channels_first'):
     if data_format == 'channels_first':
         in_channel = down_layer.get_shape().as_list()[1]
     else:
         in_channel = down_layer.get_shape().as_list()[3]
 
-    # up = Conv2DTranspose(out_channel, [2, 2], strides=[2, 2])(down_layer)
-    up = UpSampling2D(size=(2, 2), data_format=data_format)(down_layer)
+    up = Conv2DTranspose(n_features, [2, 2], strides=[2, 2], padding = 'same')(down_layer)
+    # up = UpSampling2D(size=(2, 2), data_format=data_format)(down_layer)
 
-    layer = attention_block_2d(x=layer, g=up, inter_channel=in_channel // 4, data_format=data_format)
+    layer = attention_block_2d(x=layer, g=up, inter_channel=in_channel // 2, data_format=data_format)
 
     if data_format == 'channels_first':
         my_concat = Lambda(lambda x: K.concatenate([x[0], x[1]], axis=1))
@@ -89,7 +87,7 @@ def res_block(input_layer, out_n_filters, batch_normalization=False, kernel_size
         input_n_filters = input_layer.get_shape().as_list()[3]
 
     layer = input_layer
-    for i in range(2):
+    for i in range(1):
         layer = Conv2D(out_n_filters // 4, [1, 1], strides=stride, padding=padding, data_format=data_format)(layer)
         if batch_normalization:
             layer = BatchNormalization()(layer)
@@ -174,43 +172,55 @@ def unet(img_w, img_h, n_label, data_format='channels_last'):
     conv6 = Conv2D(n_label, (1, 1), padding='same', data_format=data_format)(x)
     conv7 = core.Activation('sigmoid')(conv6)
     model = Model(inputs=inputs, outputs=conv7)
-
-    #model.compile(optimizer=Adam(lr=1e-5), loss=[focal_loss()], metrics=['accuracy', dice_coef])
     return model
 
 
+########################################################################################################
 ########################################################################################################
 #Attention U-Net
 def att_unet(params, data_format='channels_last'):
     inputs = Input((params.img_shape, params.img_shape, 3))
     x = inputs
-    depth = params.depth
+    depth =  params.depth
     features = params.n_filters
     skips = []
     for i in range(depth):
         x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
-        x = Dropout(0.2)(x)
+
+        if params.batchnorm:
+            x = BatchNormalization()(x)
+
+        x = Dropout(params.dropout)(x)
         x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
+
+        if params.batchnorm:
+            x = BatchNormalization()(x)
+
         skips.append(x)
         x = MaxPooling2D((2, 2), data_format=data_format)(x)
-        features = features * 2
 
     x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
-    x = Dropout(0.2)(x)
+    x = Dropout(params.dropout)(x)
     x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
 
     for i in reversed(range(depth)):
-        features = features // 2
-        x = attention_up_and_concate(x, skips[i], data_format=data_format)
+        if i in [0, 1, 2]:
+            features = features // 2
+        x = attention_up_and_concate(x, skips[i], features, data_format=data_format)
         x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
-        x = Dropout(0.2)(x)
+
+        if params.batchnorm:
+            x = BatchNormalization()(x)
+
+        x = Dropout(params.dropout)(x)
         x = Conv2D(features, (3, 3), activation='relu', padding='same', data_format=data_format)(x)
+
+        if params.batchnorm:
+            x = BatchNormalization()(x)
 
     conv6 = Conv2D(params.num_classes, (1, 1), padding='same', data_format=data_format)(x)
     conv7 = core.Activation('softmax')(conv6)
     model = Model(inputs=inputs, outputs=conv7)
-
-    #model.compile(optimizer=Adam(lr=1e-5), loss=[focal_loss()], metrics=['accuracy', dice_coef])
     return model
 
 

@@ -2,7 +2,7 @@ import numpy as np
 import keras
 import os
 import random
-import matplotlib.pyplot as plt
+import tensorflow as tf
 from generators.generator_utils.image_processing import resize, read_resize, read_resize_image
 from generators.generator_utils.oct_augmentations import get_augmentations
 from utils.plotting import save_segmentation_plot
