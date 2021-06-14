@@ -6,19 +6,18 @@ import time
 import sys
 from pathlib import Path
 
-from feature_segmentation.generators.generator_utils.oct_augmentations import get_augmentations
-from feature_segmentation.models.networks.layers.attn_augconv import AttentionAugmentation2D
-
 path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable))
 sys.path.insert(0, str(path_variable.parent))
+
+from generators.generator_utils.oct_augmentations import get_augmentations
+from models.networks.layers.attn_augconv import AttentionAugmentation2D
 
 import numpy as np
 from keras import Model
 from keras.engine.saving import load_model
 from pydicom import read_file
 from sklearn.metrics import jaccard_score, classification_report
-from tta_wrapper import tta_segmentation
 
 
 from utils.utils import Params, cast_params_types
@@ -394,11 +393,8 @@ def load_test_config(model_path, tta=False):
     validation_ids = pd.read_csv(os.path.join(model_path, "validation_ids.csv"))["0"].tolist()
     train_ids = pd.read_csv(os.path.join(model_path, "train_ids.csv"))["0"].tolist()
 
-    save_model_path = os.path.join(model_path, "model.h5")
+    save_model_path = os.path.join(model_path, "weights.hdf5")
     model = load_model(save_model_path, custom_objects={'AttentionAugmentation2D': AttentionAugmentation2D})
-
-    if tta:
-        model = tta_segmentation(model, h_flip=True, rotation=(90, 270), merge='mean')
 
     # model = load_model(save_model_path)
     return model, test_ids, validation_ids, train_ids, params
@@ -421,7 +417,7 @@ def get_ensemble_dict(ensemble_models, models_directory):
         model_path = os.path.join(models_directory, ensemble_model)
 
         # load test configurations
-        model, test_ids, params = load_test_config(model_path)
+        model, test_ids, validation_ids, train_ids, params = load_test_config(model_path)
 
         ensemble_dict[ensemble_model] = {"model": model, "test_ids": test_ids, "params": params}
     return ensemble_dict
@@ -622,30 +618,19 @@ def save_predicted_detections(pred, save_path, id_):
 
     """
 
-<<<<<<< HEAD
     NON_TISSUE_LABELS = [0, 12, 11, 14, 15]
 
-=======
->>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 
     detections = []
     from skimage.measure import regionprops
     for region in regionprops(pred):
-<<<<<<< HEAD
         if region.area >= 100 and (region.label not in NON_TISSUE_LABELS):
             minr, minc, maxr, maxc = region.bbox
             detections.append((region.label, 1, minr, minc, maxr, maxc))
 
     pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), sep = " ", header = None, index = None)
-=======
-        if region.area >= 100 and (region.label not in [2, 0, 14, 15]):
-            minr, minc, maxr, maxc = region.bbox
-            detections.append((region.label, 1, minr, minc, maxr, maxc))
-
-    pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), header = None, index = None)
->>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
 
 
 def save_groundtruth_detections(lbl, save_path, id_):
@@ -660,11 +645,8 @@ def save_groundtruth_detections(lbl, save_path, id_):
 
     """
 
-<<<<<<< HEAD
     NON_TISSUE_LABELS = [0, 12, 11, 14, 15]
 
-=======
->>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
     if len(lbl.shape) > 2:
         lbl = lbl[:, :, 0]
 
@@ -674,16 +656,8 @@ def save_groundtruth_detections(lbl, save_path, id_):
     detections = []
     from skimage.measure import regionprops
     for region in regionprops(lbl):
-<<<<<<< HEAD
         if region.area >= 100 and (region.label not in NON_TISSUE_LABELS):
             minr, minc, maxr, maxc = region.bbox
             detections.append((region.label, minr, minc, maxr, maxc))
 
     pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), sep = " ", header = None, index = None)
-=======
-        if region.area >= 100 and (region.label not in [2, 0, 14, 15]):
-            minr, minc, maxr, maxc = region.bbox
-            detections.append((region.label, minr, minc, maxr, maxc))
-
-    pd.DataFrame(detections).to_csv(os.path.join(save_path, id_), header = None, index = None)
->>>>>>> 55e63958c061e5f47dc66d48fd6a8799bddbd1b5
