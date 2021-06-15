@@ -87,7 +87,7 @@ for epoch in range(params.num_epochs):
         # Update val metrics
         model_metrics.update_metric_states(y_batch_val, val_logits, mode="val")
 
-    print("validation loss is: ", np.round(val_loss.numpy(), 2))
+    print(f"validation loss is: f'{val_loss.numpy():.2f}'")
 
     val_result_dict = model_metrics.result_metrics(mode="val")
 
