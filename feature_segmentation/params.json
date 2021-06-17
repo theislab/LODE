@@ -1,4 +1,4 @@
-{"learning_rate": 1.0,
+{"learning_rate": 0.001,
   "batch_size": 8,
   "num_epochs":2000,
   "img_shape": 256,
@@ -14,10 +14,11 @@
   "learning_rate_scheduel": "exponential_decay",
   "model": "deep_unet",
   "loss": "categorical_crossentropy",
-  "optimizer": "Adadelta",
-  "alpha":0.1,
+  "optimizer": "Adam",
+  "alpha":0.25,
   "gamma": 2,
   "balance_dataset": 0,
   "dataset": "hq_examples",
-  "aug_strategy": "light",
-  "pretrained_model": "./pretrained_models"}
+  "aug_strategy": "medium",
+  "pretrained_model": "./pretrained_models",
+  "cv_iteration":  0}

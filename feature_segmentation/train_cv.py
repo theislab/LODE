@@ -15,6 +15,8 @@ sys.path.append(str(path.parent))
 for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
     sys.path.append(str(child_dir))
 
+import random
+
 from custom_metrics import ModelMetrics
 from model_logging import ModelCheckpointCustom
 from print_stats import PrintStats
@@ -34,6 +36,22 @@ logging = Logging("./logs", params)
 
 ids = os.listdir(os.path.join(params.data_path, "images"))
 train_ids, validation_ids, test_ids = data_split(ids, params)
+
+test_id = [test_ids[params.cv_iteration]]
+
+# log test id
+params.test_id = test_id[0]
+
+test_ids = [id_ for id_ in test_ids if id_ not in test_id]
+all_ids = train_ids + validation_ids + test_ids
+random.shuffle(all_ids)
+
+train_ids = all_ids[0: int(len(all_ids) * 0.75)]
+validation_ids = all_ids[int(len(all_ids) * 0.75):]
+
+print(f"Number of training samples: {len(train_ids)}, "
+      f"number of validation samples: {len(validation_ids)}, "
+      f"number of test sample: {len(test_id)}")
 
 logging.create_model_directory()
 params.model_directory = logging.model_directory
@@ -64,12 +82,13 @@ for epoch in range(params.num_epochs):
         with tf.GradientTape() as tape:
             logits = model(x_batch_train, training=True)
             loss = loss_fn(y_batch_train, logits)
+
         grads = tape.gradient(loss, model.trainable_weights)
         optimizer.apply_gradients(zip(grads, model.trainable_weights))
         current_lr = optimizer._decayed_lr(tf.float32).numpy()
         current_loss = np.round(loss.numpy(), 2)
         print(f"\nOpt Iteration: {optimizer.__dict__['_iterations'].numpy()} "
-              f"learning rate: {current_lr} loss: {np.round(loss.numpy(), 2)}")
+              f"learning rate: {current_lr} loss: {np.round(loss.numpy(), 2):.2f}")
 
         # Update training metric.
         model_metrics.update_metric_states(y_batch_train, logits, mode="train")
