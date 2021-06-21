@@ -70,7 +70,7 @@ class Logging():
         self.params = params
 
     def __create_dir(self, dir):
-        os.makedirs(dir)
+        os.makedirs(dir, exist_ok = True)
 
     def __create_main_directory(self):
         '''
@@ -89,11 +89,11 @@ class Logging():
 
         # check for each dir, if weight.hdf5 file is contained
         for current_directory in current_directories:
-            if not os.path.isfile(os.path.join(current_directory, "weights.hdf5")):
+            if not os.path.isfile(os.path.join(current_directory, "model.h5")):
                 # remove directory
                 shutil.rmtree(current_directory)
 
-    def create_model_directory(self):
+    def create_model_directory(self, model_dir):
         '''
         :param logging_directory: string, gen directory for logging
         :return: None
@@ -102,35 +102,11 @@ class Logging():
         # create main dir if not exist
         self.__create_main_directory()
 
-        # remove emtpy directories
-        # self.__remove_empty_directories()
-
-        # get allready created directories
-        existing_ = os.listdir(self.log_dir)
-
-        # if first model iteration, set to zero
-        if existing_ == []:
-            new = 0
-            # save abs path of created dir
-            created_dir = os.path.join(self.log_dir, str(new))
-
-            # make new directory
-            self.__create_dir(created_dir)
-
-        else:
-            # determine the new model directory
-            last_ = max(list(map(int, existing_)))
-            new = int(last_) + 1
-
-            # save abs path of created dir
-            created_dir = os.path.join(self.log_dir, str(new))
-
-            # make new directory
-            self.__create_dir(created_dir)
-
+        # make new directory
+        self.__create_dir(model_dir)
 
         # set class instancy to hold abs path
-        self.model_directory = created_dir
+        self.model_directory = model_dir
 
     def save_dict_to_json(self, json_path):
         """Saves dict of floats in json file

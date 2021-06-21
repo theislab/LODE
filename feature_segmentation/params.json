@@ -1,6 +1,6 @@
 {"learning_rate": 0.001,
   "batch_size": 1,
-  "num_epochs":1500,
+  "num_epochs":1,
   "img_shape": 256,
   "n_filters": 32,
   "attention": 1,
@@ -21,4 +21,4 @@
   "dataset": "hq_examples",
   "aug_strategy": "medium",
   "pretrained_model": "./pretrained_models",
-  "cv_iteration":  0}
+  "cv_iteration":  2}
