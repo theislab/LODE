@@ -14,7 +14,7 @@ from keras.models import Model
 from custom_layers import *
 from utils.utils import Params
 
-from segmentation_config import PROJ_DIR
+from config import PROJ_DIR
 
 
 def unet(params):

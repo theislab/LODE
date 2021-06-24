@@ -23,7 +23,7 @@ from losses import get_loss
 from optimizers import get_optimizer
 
 from models.model import get_model
-from segmentation_config import TRAIN_DATA_PATH
+from config import TRAIN_DATA_PATH
 from utils.utils import Params, TrainOps, Logging, data_split
 from generator_2d import DataGenerator
 

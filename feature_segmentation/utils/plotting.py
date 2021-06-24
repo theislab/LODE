@@ -23,7 +23,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 from matplotlib import colors, gridspec
 
-from segmentation_config import TRAIN_DATA_PATH
+from config import TRAIN_DATA_PATH
 from generators.generator_utils.image_processing import read_resize
 
 

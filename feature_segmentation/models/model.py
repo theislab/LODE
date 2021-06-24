@@ -1,6 +1,7 @@
 import os
 import sys
 from pathlib import Path
+import keras
 
 from .advanced_unets.models import att_unet
 
@@ -77,7 +78,7 @@ def get_model(params):
 
     if params.continue_training:
         print("loaded already trained model")
-        model.load_weights(params.pretrained_model + "/weights.hdf5", by_name=True, skip_mismatch=True)
+        model = keras.models.load_model(params.pretrained_model + "/weights.hdf5")
 
     model.summary()
     return model

@@ -12,7 +12,7 @@ from keras.layers import BatchNormalization, Activation, UpSampling2D, \
     Dropout, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Input
 from custom_layers import *
 from utils.utils import Params
-from segmentation_config import PROJ_DIR
+from config import PROJ_DIR
 
 
 def unet(params):

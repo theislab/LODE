@@ -12,7 +12,7 @@ path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable))
 sys.path.insert(0, str(path_variable.parent))
 
-from segmentation_config import PROJ_DIR
+from config import PROJ_DIR
 
 search_paths = [i for i in glob.glob(PROJ_DIR + "/*/*") if os.path.isdir(i)]
 
@@ -26,7 +26,7 @@ from utils.plotting import save_segmentation_plot, plot_image_predictions, \
 from evaluate.evaluation_utils import check_enseble_test_ids, get_ensemble_dict, \
     SEGMENTED_CLASSES, ensemble_predict, segmentation_to_vector, save_segmentation, initialize_volume_feature_dict, oct_segmentation_to_vector
 from generators.generator_utils.image_processing import read_oct_from_dicom, read_resize_image
-from segmentation_config import WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
+from config import WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
 
 def remove_image_suffix(record_string):
     suffixes = [".tif", ".tiff", ".TIFF", ".TIF", ".jpeg", ".png", ".jpg"]
