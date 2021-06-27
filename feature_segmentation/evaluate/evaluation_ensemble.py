@@ -8,7 +8,7 @@ from feature_segmentation.evaluate.evaluation_utils import get_result_report, lo
     ensemble_predict, check_enseble_test_ids
 from feature_segmentation.generators.generator_2d import label_mapping
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
-from feature_segmentation.segmentation_config import TRAIN_DATA_PATH
+from feature_segmentation.config import TRAIN_DATA_PATH
 from feature_segmentation.utils.plotting import plot_image_label_prediction, plot_uncertainty_heatmaps, \
     plot_uncertainty_statistics, plot_image, plot_label, plot_predictions
 

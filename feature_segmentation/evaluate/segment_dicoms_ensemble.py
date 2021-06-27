@@ -14,7 +14,7 @@ for sp in search_paths:
 from evaluation_utils import check_enseble_test_ids, get_ensemble_dict, \
     segment_volume, get_feature_dict, SEGMENTED_CLASSES, save_volume, get_embedding_model, embedd_volume, save_embedding
 from generators.generator_utils.image_processing import read_oct_from_dicom
-from segmentation_config import DATA_DIR, WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
+from config import DATA_DIR, WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
 
 
 if __name__ == "__main__":

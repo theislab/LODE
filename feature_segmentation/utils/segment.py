@@ -6,7 +6,7 @@ from keras import Model
 from pydicom import read_file
 import matplotlib
 from tqdm import tqdm
-from segmentation_config import EXPORT_DIR, WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
+from config import EXPORT_DIR, WORK_SPACE, VOL_SAVE_PATH, EMBEDD_SAVE_PATH
 from segmentation.utils import EvalVolume, load_config
 import argparse
 #matplotlib.use('Agg')

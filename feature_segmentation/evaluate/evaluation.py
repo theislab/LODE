@@ -3,7 +3,7 @@ import os
 from feature_segmentation.evaluate.evaluation_utils import predict, get_result_report, load_test_config, \
     save_predicted_detections, save_groundtruth_detections
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
-from feature_segmentation.segmentation_config import WORK_SPACE, TRAIN_DATA_PATH
+from feature_segmentation.config import WORK_SPACE, TRAIN_DATA_PATH
 
 import cv2
 from feature_segmentation.utils.plotting import plot_image_label_prediction

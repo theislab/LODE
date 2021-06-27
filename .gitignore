@@ -8,7 +8,8 @@ workspace
 **/label_conversion
 **/*config*
 eye_clinic_general
-segmentation_config.py
+config.py
+config.py
 **/results
 pretrained_models
 

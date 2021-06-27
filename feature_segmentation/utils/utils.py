@@ -24,7 +24,7 @@ import shutil
 import os
 
 from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
-from segmentation_config import DATA_SPLIT_PATH
+from config import DATA_SPLIT_PATH
 
 
 class Params():
