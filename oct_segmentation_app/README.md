@@ -8,5 +8,8 @@ Follow below steps to set up the segmentation.
 
 Then run the segmentation_demo.ipynb notebook with the set anaconda environment as the kernel.
 
+### Note on evailable segmentation models
+
+Currrently there are 5 models available to be used in an segmentation ensemble. This number could be increased to imporove performance further. In the notebook, set the "number of models" parameter to 5 in order to use all the available models for segmentating the OCT images.
 
 
