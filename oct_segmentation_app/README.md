@@ -1,4 +1,4 @@
-## This repository contains an exmaple notebook to segment and visualize OCT images. 
+## This repository contains an example notebook to segment and visualize OCT images. 
 
 Follow below steps to set up the segmentation.
 
