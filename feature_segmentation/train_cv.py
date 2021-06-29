@@ -133,5 +133,5 @@ if __name__ == "__main__":
     for j in range(NUM_ENSEMBLES):
         for i in range(NUM_OCTS):
             flags.cfs_cv_iteration = i
-            flags.save_model_dir = f"/media/olle/3DCPC/oct_segmentation/cross_validation_runs/logs_{j}"
+            flags.save_model_dir = f"./cv_logs2/logs_{j}"
             main(flags)
