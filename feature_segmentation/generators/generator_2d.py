@@ -3,18 +3,10 @@ from copy import deepcopy
 import numpy as np
 import keras
 import os
-import random
-from PIL import Image
-import glob
-from collections import Counter
-import itertools
-import pandas as pd
-
-from generators.generator_utils.image_processing import resize, read_resize
 from generators.generator_utils.oct_augmentations import get_augmentations
 
-from feature_segmentation.generators.generator_utils.image_processing import read_resize_random_invert
-from feature_segmentation.generators.generator_utils.utils import get_class_distribution, upsample
+from generators.generator_utils.image_processing import read_resize_random_invert
+from generators.generator_utils.utils import get_class_distribution, upsample
 
 
 def label_mapping(mask):
