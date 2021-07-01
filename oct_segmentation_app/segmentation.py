@@ -5,6 +5,8 @@ import keras
 
 from utils import plot_segmentation
 
+from config import MODEL_DIRECTORY
+
 
 class Segmentor:
     def __init__(self, model_directory, n_models):
@@ -143,7 +145,7 @@ class Segmentor:
 
 
 if __name__ == "__main__":
-    model_directory = "/home/olle/PycharmProjects/LODE/feature_segmentation/ensembles_stratified"
+    model_directory = MODEL_DIRECTORY
 
     segmentor = Segmentor(model_directory, n_models = 1)
 
