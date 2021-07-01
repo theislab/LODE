@@ -10,12 +10,10 @@ path_variable = Path(os.path.dirname(__file__))
 sys.path.insert(0, str(path_variable))
 sys.path.insert(0, str(path_variable.parent))
 
-from generators.generator_utils.oct_augmentations import get_augmentations
 from models.networks.layers.attn_augconv import AttentionAugmentation2D
 
-import numpy as np
 from keras import Model
-from keras.engine.saving import load_model
+from keras.models import load_model
 from pydicom import read_file
 from sklearn.metrics import jaccard_score, classification_report
 
@@ -40,9 +38,6 @@ def timeit(method):
 
 
 import numpy as np
-import matplotlib.pyplot as plt
-import seaborn as sns
-
 
 
 def plot_confusion_matrix(cm,

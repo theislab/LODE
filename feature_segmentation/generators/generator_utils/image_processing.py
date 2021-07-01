@@ -15,7 +15,7 @@ sys.path.insert(0, str(path_variable.parent))
 
 from config import PROJ_DIR
 
-search_paths = [i for i in glob.glob(PROJ_DIR + "/*/*") if os.path.isdir(i)]
+search_paths = [i for i in glob.glob(str(PROJ_DIR) + "/*/*") if os.path.isdir(i)]
 
 for sp in search_paths:
     sys.path.append(sp)

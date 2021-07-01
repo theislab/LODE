@@ -124,7 +124,7 @@ def main(flags):
 
 if __name__ == "__main__":
     NUM_ENSEMBLES = 5
-    NUM_OCTS = 30
+    NUM_OCTS = 35
 
     class FLAGS:
         pass
