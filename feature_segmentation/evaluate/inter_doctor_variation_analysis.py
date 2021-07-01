@@ -16,7 +16,7 @@ from feature_segmentation.config import TRAIN_DATA_PATH, DATA_SPLIT_PATH
 
 tf.compat.v1.disable_eager_execution()
 
-NUMBER_OF_MODELS = 100
+NUMBER_OF_MODELS = 50
 
 cv_model_path = "/media/olle/3DCPC/oct_segmentation/cross_validation_runs"
 idv_path = "/home/olle/PycharmProjects/LODE/workspace/inter_doctor_variation"
