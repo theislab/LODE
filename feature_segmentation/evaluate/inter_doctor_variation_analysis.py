@@ -9,10 +9,9 @@ import glob
 import json
 from tqdm import tqdm
 
-from feature_segmentation.evaluate.evaluation_utils import ensemble_predict
+from feature_segmentation.evaluate.evaluation_utils.utils import ensemble_predict
 from feature_segmentation.generators.generator_2d import label_mapping
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
-from feature_segmentation.config import TRAIN_DATA_PATH, DATA_SPLIT_PATH
 
 tf.compat.v1.disable_eager_execution()
 

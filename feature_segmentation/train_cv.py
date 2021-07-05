@@ -1,30 +1,20 @@
 import os
 import tensorflow as tf
 from tqdm import tqdm
-from pathlib import Path
-import sys
 import numpy as np
-
-path = Path(os.getcwd())
-sys.path.append(str(path.parent))
-
-# add children paths
-for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
-    sys.path.append(str(child_dir))
-
 import random
 
-from custom_metrics import ModelMetrics
-from model_logging import ModelCheckpointCustom
-from print_stats import PrintStats
-from tensorboard_callback import TensorboardCallback
-from losses import get_loss
-from optimizers import get_optimizer
+from models.callbacks.custom_metrics import ModelMetrics
+from models.callbacks.model_logging import ModelCheckpointCustom
+from models.callbacks.print_stats import PrintStats
+from models.callbacks.tensorboard_callback import TensorboardCallback
+from models.losses import get_loss
+from models.optimizers import get_optimizer
 
 from models.model import get_model
 from config import TRAIN_DATA_PATH
-from utils.utils import Params, TrainOps, Logging, data_split
-from generator_2d import DataGenerator
+from utils.utils import Params, TrainOps, Logging
+from generator import DataGenerator
 
 
 def main(flags):
@@ -36,7 +26,7 @@ def main(flags):
     logging = Logging(flags.save_model_dir, params)
 
     ids = os.listdir(os.path.join(params.data_path, "images"))
-    train_ids, validation_ids, test_ids = data_split(ids, params)
+    train_ids, validation_ids, test_ids = None, None, None
 
     test_id = [test_ids[params.cv_iteration]]
 

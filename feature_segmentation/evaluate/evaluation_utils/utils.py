@@ -1,8 +1,6 @@
 import os
-from pprint import pprint
 import pandas as pd
-import time
-
+import numpy as np
 import sys
 from pathlib import Path
 
@@ -15,108 +13,18 @@ from models.networks.layers.attn_augconv import AttentionAugmentation2D
 from keras import Model
 from keras.models import load_model
 from pydicom import read_file
-from sklearn.metrics import jaccard_score, classification_report
 
 
 from utils.utils import Params, cast_params_types
 
 SEGMENTED_CLASSES = [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15]
 
-def timeit(method):
-    def timed(*args, **kw):
-        ts = time.time()
-        result = method(*args, **kw)
-        te = time.time()
-        if 'log_time' in kw:
-            name = kw.get('log_name', method.__name__.upper())
-            kw['log_time'][name] = int((te - ts) * 1000)
-        else:
-            print('%r  %2.2f ms' % \
-                  (method.__name__, (te - ts) * 1000))
-        return result
-    return timed
-
-
-import numpy as np
-
-
-def plot_confusion_matrix(cm,
-                          target_names,
-                          title='Confusionmatrix',
-                          cmap=None,
-                          normalize=True,
-                          save_path=None):
-    """
-    given a sklearn confusion matrix (cm), make a nice plot
-
-    Arguments
-    ---------
-    cm:           confusion matrix from sklearn.metrics.confusion_matrix
-
-    target_names: given classification classes such as [0, 1, 2]
-                  the class names, for example: ['high', 'medium', 'low']
-
-    title:        the text to display at the top of the matrix
-
-    cmap:         the gradient of the values displayed from matplotlib.pyplot.cm
-                  see http://matplotlib.org/examples/color/colormaps_reference.html
-                  plt.get_cmap('jet') or plt.cm.Blues
-
-    normalize:    If False, plot the raw numbers
-                  If True, plot the proportions
-
-    Usage
-    -----
-    plot_confusion_matrix(cm           = cm,                  # confusion matrix created by
-                                                              # sklearn.metrics.confusion_matrix
-                          normalize    = True,                # show proportions
-                          target_names = y_labels_vals,       # list of names of the classes
-                          title        = best_estimator_name) # title of graph
-
-    Citiation
-    ---------
-    http://scikit-learn.org/stable/auto_examples/model_selection/plot_confusion_matrix.html
-
-    """
-    import matplotlib.pyplot as plt
-    import numpy as np
-    import itertools
-
-    accuracy = np.trace(cm) / float(np.sum(cm))
-    misclass = 1 - accuracy
-
-    if cmap is None:
-        cmap = plt.get_cmap('Blues')
-
-    plt.figure(figsize = (8, 6))
-    plt.imshow(cm, interpolation = 'nearest', cmap = cmap)
-    plt.title(title)
-    plt.colorbar()
-
-    if target_names is not None:
-        tick_marks = np.arange(len(target_names))
-        plt.xticks(tick_marks, target_names, rotation = 45)
-        plt.yticks(tick_marks, target_names)
-
-    if normalize:
-        cm = cm.astype('float') / cm.sum(axis = 1)[:, np.newaxis]
-
-    thresh = cm.max() / 1.5 if normalize else cm.max() / 2
-    for i, j in itertools.product(range(cm.shape[0]), range(cm.shape[1])):
-        if normalize:
-            plt.text(j, i, "{:0.4f}".format(cm[i, j]),
-                     horizontalalignment = "center",
-                     color = "white" if cm[i, j] > thresh else "black")
-        else:
-            plt.text(j, i, "{:,}".format(cm[i, j]),
-                     horizontalalignment = "center",
-                     color = "white" if cm[i, j] > thresh else "black")
-
-    plt.tight_layout()
-    plt.ylabel('True label')
-    plt.xlabel('Predicted label\naccuracy={:0.4f}; misclass={:0.4f}'.format(accuracy, misclass))
-    plt.savefig(f"{save_path}/{title}.png")
-    plt.close()
+target_dict = {0: 'class 0', 1: 'class 1', 2: 'class 2',
+               3: 'class 3', 4: 'class 4', 5: 'class 5',
+               6: 'class 6', 7: 'class 7', 8: 'class 8',
+               9: 'class 9', 10: 'class 10', 11: 'class 11',
+               12: 'class 12', 13: 'class 13', 14: 'class 14',
+               15: 'class 15'}
 
 
 def ensemble_vote(predictions):
@@ -131,6 +39,7 @@ def ensemble_vote(predictions):
     """
     ensemble_prediction = np.mean(np.array(predictions), 0)
     return np.argmax(ensemble_prediction, -1)[0, :, :].astype(int)
+
 
 def ensemble_uncertainty(predictions):
     """
@@ -217,6 +126,7 @@ def check_enseble_test_ids(ensemble_dict):
 
         assert sum(not_same_ids) == 0, "models in ensemble not trained on the same ids, stop evaluation"
 
+
 def predict_on_batch(model, img):
     """
     Parameters
@@ -239,6 +149,7 @@ def predict_on_batch(model, img):
     # get probability map
     pred = model.predict_on_batch(img)
     return np.argmax(pred, -1).astype(np.uint8), pred
+
 
 def predict(model, img):
     """
@@ -264,107 +175,7 @@ def predict(model, img):
     return np.argmax(pred, -1)[0, :, :].astype(int), pred
 
 
-def embedd(model, img):
-    """
-    Parameters
-    ----------
-    model : keras model for segmentation
-    img : array, numpy array with preprocessed image to predict on
-
-    Returns
-    -------
-    flattened embedding vector from bottle neck of segmenter
-    """
-
-    # check so shape is 4 channel
-    if len(img.shape) == 3:
-        img = img.reshape((1, img.shape[0], img.shape[1], img.shape[-1]))
-
-    # pre process (255. divide) as when training
-    img = img / 255.
-
-    return model.predict(img).flatten()
-
-
-def embedd_volume(model, volume):
-    """
-    Parameters
-    ----------
-    model : keras model for embedding
-    volume : volume of oct images
-
-    Returns
-    -------
-    array of embeddings
-    """
-
-    embeddings = []
-    for i in range(volume.shape[0]):
-        img = volume[i]
-
-        # check so shape is 4 channel
-        if len(img.shape) == 3:
-            img = img.reshape((1, img.shape[0], img.shape[1], img.shape[-1]))
-
-        embedding = embedd(model, img)
-        embeddings.append(embedding)
-    return np.array(embeddings)
-
-
-target_dict = {0: 'class 0', 1: 'class 1', 2: 'class 2',
-               3: 'class 3', 4: 'class 4', 5: 'class 5',
-               6: 'class 6', 7: 'class 7', 8: 'class 8',
-               9: 'class 9', 10: 'class 10', 11: 'class 11',
-               12: 'class 12', 13: 'class 13', 14: 'class 14',
-               15: 'class 15'}
-
-
-def present_targets(all_labels, all_predictions):
-    """
-    Parameters
-    ----------
-    all_labels : flatten list with all noted labels
-    all_predictions : flatten list with a noten predictions
-
-    Returns
-    -------
-    all the targets in dict to use for sklearn classification report
-    """
-    target_names = []
-    labels_present = np.unique(np.unique(all_labels).tolist() + np.unique(all_predictions).tolist())
-    for lp in labels_present:
-        target_names.append(target_dict[lp])
-    return target_names
-
-
-def get_result_report(all_labels, all_predictions, model_directory):
-    """
-    Save the classification report and iou's for the model in its directory
-    Parameters
-    ----------
-    all_labels : flatten list with all noted labels
-    all_predictions : flatten list with a noten predictions
-    model_directory : path to model
-
-    Returns
-    -------
-    None
-    """
-    target_names = present_targets(all_labels, all_predictions)
-
-    ious = jaccard_score(all_labels, all_predictions, average = None, labels = target_names)
-    clf_report = classification_report(all_labels, all_predictions, target_names = target_names, output_dict = 1)
-
-    print(classification_report(all_labels, all_predictions, target_names = target_names))
-
-    pprint(f"The class ious are: {ious}")
-    pprint(f"The mIOU is {np.mean(ious)}")
-
-    np.savetxt(model_directory + "/ious.txt", ious)
-    pd.DataFrame(clf_report).to_csv(model_directory + "/clf_report.csv")
-
-
-def load_test_config(model_path, tta=False):
+def load_test_config(model_path):
     """
     Parameters
     ----------
@@ -450,7 +261,6 @@ def save_segmentation(segmentation, save_path, record_name):
 
     if not os.path.exists(save_path):
         os.makedirs(save_path)
-
     np.save(save_path + f"/{record_name}.npy", segmentation)
 
 
@@ -469,6 +279,28 @@ def save_embedding(embeding, save_path, record_name):
         os.makedirs(save_path)
 
     np.save(save_path + f"/{record_name}.npy", embeding)
+
+
+def embedd(model, img):
+    """
+    Parameters
+    ----------
+    model : keras model for segmentation
+    img : array, numpy array with preprocessed image to predict on
+
+    Returns
+    -------
+    flattened embedding vector from bottle neck of segmenter
+    """
+
+    # check so shape is 4 channel
+    if len(img.shape) == 3:
+        img = img.reshape((1, img.shape[0], img.shape[1], img.shape[-1]))
+
+    # pre process (255. divide) as when training
+    img = img / 255.
+
+    return model.predict(img).flatten()
 
 
 def segment_volume(oct_volume, ensemble_dict):

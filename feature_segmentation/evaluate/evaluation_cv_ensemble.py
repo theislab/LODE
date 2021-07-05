@@ -7,9 +7,8 @@ from keras.models import load_model
 import glob
 import json
 from tqdm import tqdm
-from keras import backend as K
 
-from feature_segmentation.evaluate.evaluation_utils import ensemble_predict
+from feature_segmentation.evaluate.evaluation_utils.utils import ensemble_predict
 from feature_segmentation.generators.generator_2d import label_mapping
 from feature_segmentation.generators.generator_utils.image_processing import read_resize
 from feature_segmentation.config import TRAIN_DATA_PATH, DATA_SPLIT_PATH

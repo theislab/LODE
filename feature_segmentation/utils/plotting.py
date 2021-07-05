@@ -1,30 +1,12 @@
 from __future__ import print_function
 
 import os
-import sys
-from pathlib import Path
-import pandas as pd
-import glob
-
-root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
-search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
-
-for sp in search_paths:
-    sys.path.append(sp)
-
-path_variable = Path(os.path.dirname(__file__))
-sys.path.insert(0, str(path_variable))
-sys.path.insert(0, str(path_variable.parent))
-
 import numpy as np
-import matplotlib
 
-#matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib import colors, gridspec
 
-from config import TRAIN_DATA_PATH
-from generators.generator_utils.image_processing import read_resize
+from utils.image_processing import read_resize
 
 
 def color_mappings():
@@ -340,7 +322,7 @@ def get_feature_uncertainty_distribution(lbl, record_uq_map):
     return uncertainty_log
 
 
-def plot_uncertainty_statistics(all_uq_maps, ensemble_dir):
+def plot_uncertainty_statistics(all_uq_maps, ensemble_dir, TRAIN_DATA_PATH):
     """
     Plots the uncertainty box plot for the prediction
     Parameters
