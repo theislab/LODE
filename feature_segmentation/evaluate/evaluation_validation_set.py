@@ -6,6 +6,9 @@ import json
 import numpy as np
 import tensorflow as tf
 import pandas as pd
+import glob
+import random
+from tqdm import tqdm
 
 from keras.models import load_model
 
@@ -16,7 +19,7 @@ from config import TRAIN_DATA_PATH, DATA_SPLIT_PATH
 tf.compat.v1.disable_eager_execution()
 
 
-def main(model_path, validation_ids):
+def main(model_path, validation_ids, jsons_save_dir):
     """
     :param model_path:
     :type model_path:
@@ -26,7 +29,8 @@ def main(model_path, validation_ids):
     :rtype:
     """
     # load test configurations
-    model = load_model(model_path + "/model.h5", compile = False)
+    model = load_model(model_path, compile = False)
+    save_dir = os.path.join(jsons_save_dir, f"{random.randint(0, 1000000)}")
 
     for img_id in validation_ids:
         img_path = os.path.join(TRAIN_DATA_PATH, "images", img_id)
@@ -52,16 +56,22 @@ def main(model_path, validation_ids):
                             "label": lbl.tolist(),
                             "prediction": segmentation.tolist()}
 
-        if not os.path.exists(f'{model_path}/validation_results'):
-            os.makedirs(f'{model_path}/validation_results', exist_ok = True)
+        if not os.path.exists(f'{save_dir}'):
+            os.makedirs(save_dir, exist_ok = True)
 
-        with open(f'{model_path}/validation_results/{img_id.replace("png", "json")}', 'w', encoding = 'utf-8') as f:
+        with open(f'{save_dir}/{img_id.replace("png", "json")}', 'w', encoding = 'utf-8') as f:
             json.dump(json_result_file, f)
+
+    with open(f'{save_dir}/model.json', 'w') as f:
+        json.dump({"model_path": model_path}, f)
 
 
 if __name__ == "__main__":
-    model_path = "/home/olle/PycharmProjects/LODE/workspace/validation_model_selection/135590_L_20171201_586379001_17"
+    model_directory = "/home/olle/PycharmProjects/LODE/workspace/validation_model_selection"
+    jsons_save_dir = "/home/olle/PycharmProjects/LODE/workspace/validation_model_results"
 
-    # get all cv runs
-    validation_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "validation_ids.csv"))["0"].tolist()
-    main(model_path, validation_ids)
+    model_paths = glob.glob(model_directory + "/*/*.h5")
+
+    for model_path in tqdm(model_paths):
+        validation_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "validation_ids.csv"))["0"].tolist()
+        main(model_path, validation_ids, jsons_save_dir)
