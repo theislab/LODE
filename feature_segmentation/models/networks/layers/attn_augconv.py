@@ -1,10 +1,10 @@
 import tensorflow as tf
-from tensorflow.tensorflow.keras.layers import Layer
-from tensorflow.tensorflow.keras.layers import Conv2D
-from tensorflow.tensorflow.keras.layers import BatchNormalization
-from tensorflow.tensorflow.keras.layers import concatenate
-from tensorflow.tensorflow.keras import initializers
-import tensorflow.tensorflow.keras.backend as K
+from tensorflow.keras.layers import Layer
+from tensorflow.keras.layers import Conv2D
+from tensorflow.keras.layers import BatchNormalization
+from tensorflow.keras.layers import concatenate
+from tensorflow.keras import initializers
+import tensorflow.keras.backend as K
 
 
 def _conv_layer(filters, kernel_size, strides=(1, 1), padding='same', name=None):

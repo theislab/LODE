@@ -70,7 +70,7 @@ if __name__ == "__main__":
     model_directory = "/media/olle/3DCPC/oct_segmentation/cv_runs"
     jsons_save_dir = "/media/olle/3DCPC/oct_segmentation/cv_runs/validation_model_results"
 
-    model_paths = glob.glob(model_directory + "/*/*/*/*.h5")[133:]
+    model_paths = glob.glob(model_directory + "/*/*/*/*.h5")[175:]
 
     for model_path in tqdm(model_paths):
         validation_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "validation_ids.csv"))["0"].tolist()

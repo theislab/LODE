@@ -146,15 +146,78 @@ def plot_image_label_prediction(records, model_dir, mode, filename):
     ax3.set_yticks([])
     ax3.set_title("prediction")
 
-    # set colorbar ticks
-    # tick_loc_array = np.arange(len(bounds)) + 0.5
-    # tick_loc_list = tick_loc_array.tolist()
-    # tick_list = np.arange(len(bounds)).tolist()
-    # c_bar = plt.colorbar(colorbar_im, cmap=seg_cmap, norm=seg_norm, boundaries=bounds)
+    if not os.path.exists(os.path.join(model_dir, mode + "_records")):
+        os.makedirs(os.path.join(model_dir, mode + "_records"))
 
-    # set ticks
-    # c_bar.set_ticks(tick_loc_list)
-    # c_bar.ax.set_yticklabels(tick_list)
+    plt.savefig(os.path.join(model_dir, mode + "_records", filename))
+    plt.close()
+
+
+def plot_idv_records(records, model_dir, mode, filename):
+    """
+    :param records: list containing numpy array of image, label1, label2, label3 and prediction
+    :param model_dir: directory of model where to save images
+    :param mode: str: train or test
+    :param filename: str: filename of image
+    :return: save images in directory for inspection
+    """
+
+    # set prediction to black if not given
+    if len(records) < 3:
+        records.append(np.zeros(records[0].shape))
+
+    seg_cmap, seg_norm, bounds = color_mappings()
+    fig = plt.figure(figsize=(20, 4))
+
+    gs = gridspec.GridSpec(nrows=1,
+                           ncols=6,
+                           width_ratios=[1, 1, 1, 1, 1, 1],
+                           height_ratios=[1],
+                           wspace=0.3,
+                           hspace=0.3,
+                           figure=fig,
+                           )
+
+    # turn image to 3 channel
+    ax1 = fig.add_subplot(gs[0, 0])
+    ax1.imshow(records[0])
+    ax1.set_xticks([])
+    ax1.set_yticks([])
+    ax1.set_title("oct")
+
+    # check label shape
+    if len(records[1].shape) == 3:
+        records[1] = records[1][:, :, 0]
+
+    ax2 = fig.add_subplot(gs[0, 1])
+    ax2.imshow(records[1], interpolation='nearest', cmap=seg_cmap, norm=seg_norm)
+    ax2.set_xticks([])
+    ax2.set_yticks([])
+    ax2.set_title("concensus")
+
+    ax3 = fig.add_subplot(gs[0, 2])
+    ax3.imshow(records[2], interpolation='nearest', cmap=seg_cmap, norm=seg_norm)
+    ax3.set_xticks([])
+    ax3.set_yticks([])
+    ax3.set_title("label 1")
+
+    ax4 = fig.add_subplot(gs[0, 3])
+    ax4.imshow(records[3], interpolation='nearest', cmap=seg_cmap, norm=seg_norm)
+    ax4.set_xticks([])
+    ax4.set_yticks([])
+    ax4.set_title("label 2")
+
+    ax5 = fig.add_subplot(gs[0, 4])
+    ax5.imshow(records[4], interpolation='nearest', cmap=seg_cmap, norm=seg_norm)
+    ax5.set_xticks([])
+    ax5.set_yticks([])
+    ax5.set_title("label 3")
+
+    ax6 = fig.add_subplot(gs[0, 5])
+    ax6.imshow(records[5], interpolation='nearest', cmap=seg_cmap, norm=seg_norm)
+    ax6.set_xticks([])
+    ax6.set_yticks([])
+    ax6.set_title("prediction")
 
     if not os.path.exists(os.path.join(model_dir, mode + "_records")):
         os.makedirs(os.path.join(model_dir, mode + "_records"))
