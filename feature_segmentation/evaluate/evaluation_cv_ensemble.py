@@ -18,7 +18,7 @@ from config import TRAIN_DATA_PATH, DATA_SPLIT_PATH
 tf.compat.v1.disable_eager_execution()
 
 cv_model_path = "/media/olle/3DCPC/oct_segmentation/opt_ensemble"
-result_save_dir = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/opt_ensemble"
+result_save_dir = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/opt_ensemble2"
 
 # get all cv runs
 test_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "test_ids.csv"))["0"].tolist()
@@ -26,15 +26,35 @@ cv_runs = [id.replace(".png", "") for id in test_ids]
 
 model_paths = [
     '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/1745_L_20180706_640469001_46/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/1745_L_20180706_640469001_46/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/338917_L_20160927_492116001_32/model.h5',
     '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/338917_L_20160927_492116001_32/model.h5',
     '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_3/24844_R_20170502/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_3/24844_R_20170502/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_0/43106_R_20141111/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/333295_R_20170517/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_0/135590_L_20171201_586379001_17/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_0/295655_L_20170822_563504001_40/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_1/9637_Left_20131010_294096001/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_2/76510_Right_20160406_16/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_0/76510_Right_20160406_16/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_1/36093_L_20150326_386300001_28/model.h5',
     '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_2/90356_R_20160122/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_2/90356_R_20160122/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/24844_R_20170502/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/24844_R_20170502/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_0/272050_L_20150130/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_0/295655_L_20170822_563504001_40/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_0/41172_R_20170607_545473001_2/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_0/338917_L_20160927_492116001_32/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_0/1745_L_20180706_640469001_46/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_0/76510_Right_20160715_26/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_2/47407_R_20140929/model.h5',
     '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/42510_L_20130722_281489001_22/model.h5',
-    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_2/22757_L_20130307_260204001_11/model.h5',
-    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/7561_R_20160202_443734001_17/model.h5',
-    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_3/61989_R_20170914_569274001_15/model.h5',
-    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_2/48221_L_20150914_418501001_42/model.h5',
-    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/90356_R_20160122/model.h5']
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs0/logs_1/42510_L_20130722_281489001_22/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_0/9637_Left_20131010_294096001/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_1/48221_L_20150914_418501001_42/model.h5',
+    '/media/olle/3DCPC/oct_segmentation/cv_runs/cross_validation_runs/logs_0/86737_R_20171128/model.h5']
 
 ensemble_dict = {}
 
