@@ -10,8 +10,8 @@ sys.path.insert(0, str(path_variable.parent))
 
 from models.networks.layers.attn_augconv import AttentionAugmentation2D
 
-from keras import Model
-from keras.models import load_model
+from tensorflow.keras import Model
+from tensorflow.keras.models import load_model
 from pydicom import read_file
 
 
@@ -131,7 +131,7 @@ def predict_on_batch(model, img):
     """
     Parameters
     ----------
-    model : keras model for segmentation
+    model : tensorflow.keras model for segmentation
     img : array, numpy array with preprocessed image to predict on
 
     Returns
@@ -155,7 +155,7 @@ def predict(model, img):
     """
     Parameters
     ----------
-    model : keras model for segmentation
+    model : tensorflow.keras model for segmentation
     img : array, numpy array with preprocessed image to predict on
 
     Returns
@@ -183,7 +183,7 @@ def load_test_config(model_path):
 
     Returns
     -------
-    keras model, test ids for the model, params object with model config
+    tensorflow.keras model, test ids for the model, params object with model config
     """
 
     # load utils classes
@@ -285,7 +285,7 @@ def embedd(model, img):
     """
     Parameters
     ----------
-    model : keras model for segmentation
+    model : tensorflow.keras model for segmentation
     img : array, numpy array with preprocessed image to predict on
 
     Returns
@@ -419,7 +419,7 @@ def get_embedding_model(model_directory):
 
     Returns
     -------
-    keras model to use for embedding the octs
+    tensorflow.keras model to use for embedding the octs
     """
     save_model_path = os.path.join(model_directory, "weights.hdf5")
     model = load_model(save_model_path)

@@ -3,9 +3,9 @@ from params import *
 mpl.rcParams['axes.grid'] = False
 mpl.rcParams['figure.figsize'] = (12, 12)
 
-import keras.backend as K
+import tensorflow.keras.backend as K
 import tensorflow as tf
-from tensorflow.python.keras import losses
+from tensorflow.python.tensorflow.keras import losses
 def dice_coeff(y_true, y_pred):
     smooth = 1.
     # Flatten

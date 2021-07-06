@@ -4,7 +4,7 @@ import numpy as np
 import shutil
 
 import random
-train_ = "/media/olle/Seagate/kaggle/keras_format/pre_proc/512_3/train"
+train_ = "/media/olle/Seagate/kaggle/tensorflow.keras_format/pre_proc/512_3/train"
 
 classes = ["0/*","1/*","2/*","3/*","4/*"]
 

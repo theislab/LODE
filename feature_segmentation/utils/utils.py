@@ -5,14 +5,13 @@ from pathlib import Path
 import pandas as pd
 import glob
 import math
-import keras
 import json
 import glob
 import shutil
 import os
 
-from keras.optimizers.schedules import *
-from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
+from tensorflow.keras.optimizers.schedules import *
+from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 
 
 class Params:

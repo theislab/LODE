@@ -1,5 +1,5 @@
-from keras.models import Model
-from keras.layers import BatchNormalization, Activation, UpSampling2D, \
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import BatchNormalization, Activation, UpSampling2D, \
     Dropout, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Input, GlobalAveragePooling2D, Reshape, Convolution2D, \
     AveragePooling2D
 from models.networks.layers.custom_layers import *

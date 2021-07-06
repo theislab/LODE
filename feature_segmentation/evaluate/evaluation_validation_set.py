@@ -1,22 +1,20 @@
 import os
 
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
 
 import json
 import numpy as np
-import tensorflow as tf
 import pandas as pd
 import glob
 import random
 from tqdm import tqdm
 
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 
 from utils.utils import label_mapping
 from utils.image_processing import read_resize
 from config import TRAIN_DATA_PATH, DATA_SPLIT_PATH
-
-tf.compat.v1.disable_eager_execution()
 
 
 def main(model_path, validation_ids, jsons_save_dir):
@@ -29,7 +27,7 @@ def main(model_path, validation_ids, jsons_save_dir):
     :rtype:
     """
     # load test configurations
-    model = load_model(model_path, compile = False)
+    model = load_model(model_path)#, compile=False)
     save_dir = os.path.join(jsons_save_dir, f"{random.randint(0, 1000000)}")
 
     for img_id in validation_ids:
@@ -65,12 +63,14 @@ def main(model_path, validation_ids, jsons_save_dir):
     with open(f'{save_dir}/model.json', 'w') as f:
         json.dump({"model_path": model_path}, f)
 
+    del model
+
 
 if __name__ == "__main__":
-    model_directory = "/home/olle/PycharmProjects/LODE/workspace/validation_model_selection"
-    jsons_save_dir = "/home/olle/PycharmProjects/LODE/workspace/validation_model_results"
+    model_directory = "/media/olle/3DCPC/oct_segmentation/cv_runs"
+    jsons_save_dir = "/media/olle/3DCPC/oct_segmentation/cv_runs/validation_model_results"
 
-    model_paths = glob.glob(model_directory + "/*/*.h5")
+    model_paths = glob.glob(model_directory + "/*/*/*/*.h5")[133:]
 
     for model_path in tqdm(model_paths):
         validation_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "validation_ids.csv"))["0"].tolist()

@@ -1,5 +1,5 @@
 import numpy as np
-import keras
+import tensorflow.keras
 import cv2
 import os
 import random
@@ -10,8 +10,8 @@ from PIL import Image
 from skimage.transform import AffineTransform, warp
 
 
-class DataGenerator(keras.utils.Sequence):
-    'Generates data for Keras'
+class DataGenerator(tensorflow.keras.utils.Sequence):
+    'Generates data for tensorflow.keras'
     def __init__(self, list_IDs, image_path, label_path, is_training, batch_size, dim, brightness_factor,
                  contrast_factor, n_channels=1, shuffle=True):
         'Initialization'

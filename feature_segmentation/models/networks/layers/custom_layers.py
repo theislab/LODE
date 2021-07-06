@@ -1,7 +1,7 @@
-from keras.layers import BatchNormalization, Activation, Conv2D, Conv3D, GlobalAveragePooling2D, Reshape, Dense, \
+from tensorflow.keras.layers import BatchNormalization, Activation, Conv2D, Conv3D, GlobalAveragePooling2D, Reshape, Dense, \
     Permute, multiply, Multiply, GlobalAveragePooling1D, Concatenate, add
 
-import keras.backend as K
+import tensorflow.keras.backend as K
 
 from feature_segmentation.models.networks.layers.attn_augconv import augmented_conv2d
 
@@ -37,7 +37,7 @@ def attention_block_2d(x, g, inter_channel, data_format='channels_first'):
 def squeeze_excite_block(tensor, ratio=16):
     init = tensor
     channel_axis = 1 if K.image_data_format() == "channels_first" else -1
-    filters = init.get_shape().as_list()[-1]  # init._keras_shape[channel_axis]
+    filters = init.get_shape().as_list()[-1]  # init._tensorflow.keras_shape[channel_axis]
     se_shape = (1, 1, filters)
 
     se = GlobalAveragePooling2D()(init)
@@ -84,7 +84,7 @@ def conv2d_block(input_tensor, n_filters, kernel_size=3, batchnorm=True):
 
 def lstm_aline_block(tensor, params):
     init = tensor
-    filters = init.get_shape().as_list()[1]  # init._keras_shape[channel_axis]
+    filters = init.get_shape().as_list()[1]  # init._tensorflow.keras_shape[channel_axis]
 
     se = K.mean(init, -1)
     class_attention_vectors = []

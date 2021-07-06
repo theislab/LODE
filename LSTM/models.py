@@ -32,7 +32,7 @@ class SequenceModel():
         concatenates inputs
         """
         if len(X) > 1:
-            X = keras.layers.concatenate(X, axis=-1)
+            X = tensorflow.keras.layers.concatenate(X, axis=-1)
         else:
             X = X[0]
         return X
@@ -42,7 +42,7 @@ class SequenceModel():
         assumes an input X with shape (batch, sequence, features).
         flattens sequence and features dimensions of X, returning X with shape (batch, _)
         """
-        X = keras.layers.Flatten()(X)
+        X = tensorflow.keras.layers.Flatten()(X)
         return X
     
     def _dense_shared_layers(self, X, num_layers=1, units=32, activation='relu', log=False):
@@ -58,15 +58,15 @@ class SequenceModel():
         """
         if num_layers == 0:
             return X
-        X = keras.layers.Lambda(lambda x: tf.split(x, self.sequence_length, axis=1))(X)
+        X = tensorflow.keras.layers.Lambda(lambda x: tf.split(x, self.sequence_length, axis=1))(X)
         units = makelist(units, num_layers)
         for i in range(num_layers):
-            dense_layer = tf.keras.layers.Dense(units[i], activation=activation)
+            dense_layer = tf.tensorflow.keras.layers.Dense(units[i], activation=activation)
             X = [dense_layer(x) for x in X]
             if log:
                 self.log_layers.append(dense_layer)
         if len(X) > 1:
-            X = tf.keras.layers.concatenate(X, axis=1)
+            X = tf.tensorflow.keras.layers.concatenate(X, axis=1)
         else:
             X = X[0]
         return X
@@ -83,7 +83,7 @@ class SequenceModel():
             return X
         units = makelist(units, num_layers)
         for i in range(num_layers):
-            lstm_layer = tf.keras.layers.LSTM(units=units[i], return_sequences=True)
+            lstm_layer = tf.tensorflow.keras.layers.LSTM(units=units[i], return_sequences=True)
             X = lstm_layer(X)
             if log:
                 self.log_layers.append(lstm_layer)
@@ -102,15 +102,15 @@ class SequenceModel():
             return X
         units = makelist(units, num_layers)
         for i in range(num_layers):
-            dense_layer = tf.keras.layers.Dense(units[i], activation=activation)
+            dense_layer = tf.tensorflow.keras.layers.Dense(units[i], activation=activation)
             X = dense_layer(X)
             if log:
                 self.log_layers.append(dense_layer)
         return X
     
     def build_model(self):
-        """create keras model from self.inputs and self.outputs"""
-        self.model = tf.keras.Model(self.inputs, self.outputs)
+        """create tensorflow.keras model from self.inputs and self.outputs"""
+        self.model = tf.tensorflow.keras.Model(self.inputs, self.outputs)
         self.layers = self.model.layers
         self.summary = self.model.summary
 
@@ -153,7 +153,7 @@ class SimpleANNModel(SequenceModel):
         self.log.info(json.dumps(self.config, indent=4))
         
         # create model architecture
-        self.inputs = [tf.keras.layers.Input(io_var.get_shape(sequence_length=sequence_length)[1:]) for io_var in self.input_vars]
+        self.inputs = [tf.tensorflow.keras.layers.Input(io_var.get_shape(sequence_length=sequence_length)[1:]) for io_var in self.input_vars]
         X = self._concatenate_inputs(self.inputs)
         X = self._dense_shared_layers(X, **self.config['encoder_layers'])
         X = self._flatten(X)
@@ -162,7 +162,7 @@ class SimpleANNModel(SequenceModel):
         X = self._dense_layers(X, num_layers=1, **self.config['output_layer'])
         # reshape to output results of shape (batch, 1, output_units) 
         # - needed for easier metrics calculation and consistency with LSTM model
-        X = tf.keras.layers.Reshape((1,self.config['output_layer']['units']))(X)
+        X = tf.tensorflow.keras.layers.Reshape((1,self.config['output_layer']['units']))(X)
         self.outputs = [X]
         
         self.build_model()
@@ -208,7 +208,7 @@ class SimpleLSTMModel(SequenceModel):
         self.log.info(json.dumps(self.config, indent=4))
         
         # create model architecture
-        self.inputs = [tf.keras.layers.Input(io_var.get_shape(sequence_length=sequence_length)[1:]) for io_var in self.input_vars]
+        self.inputs = [tf.tensorflow.keras.layers.Input(io_var.get_shape(sequence_length=sequence_length)[1:]) for io_var in self.input_vars]
         X = self._concatenate_inputs(self.inputs)
         X = self._dense_shared_layers(X, **self.config['encoder_layers'])
         X = self._lstm_layers(X, **self.config['lstm_layers'])

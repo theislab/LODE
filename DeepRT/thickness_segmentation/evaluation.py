@@ -1,12 +1,12 @@
 import os
 import model as mt
 from train_eval_ops import *
-from keras.optimizers import *
+from tensorflow.keras.optimizers import *
 import tensorflow as tf
 from PIL import Image
 import cv2
 import numpy as np
-from keras.layers import Input
+from tensorflow.keras.layers import Input
 from params import params, gen_params
 import pandas as pd
 import matplotlib.pyplot as plt

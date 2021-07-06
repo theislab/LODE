@@ -1,4 +1,4 @@
-"""ResNet v1, v2, and segmentation models for Keras.
+"""ResNet v1, v2, and segmentation models for tensorflow.keras.
 # Reference
 - [Deep Residual Learning for Image Recognition](https://arxiv.org/abs/1512.03385)
 - [Identity Mappings in Deep Residual Networks](https://arxiv.org/abs/1603.05027)
@@ -8,26 +8,26 @@ Reference material for extended functionality:
 - [Deep Residual Learning for Instrument Segmentation in
    Robotic Surgery](https://arxiv.org/abs/1703.08580)
   for segmentation support.
-Implementation Adapted from: github.com/raghakot/keras-resnet
+Implementation Adapted from: github.com/raghakot/tensorflow.keras-resnet
 """  # pylint: disable=E501
 from __future__ import division
 
 import six
-from keras.models import Model
-from keras.layers import Input
-from keras.layers import Activation
-from keras.layers import Reshape
-from keras.layers import Dense
-from keras.layers import Conv2D
-from keras.layers import MaxPooling2D
-from keras.layers import GlobalMaxPooling2D
-from keras.layers import GlobalAveragePooling2D
-from keras.layers import Dropout
-from keras.layers.merge import add
-from keras.layers.normalization import BatchNormalization
-from keras.regularizers import l2
-from keras import backend as K
-from keras_applications.imagenet_utils import _obtain_input_shape
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Input
+from tensorflow.keras.layers import Activation
+from tensorflow.keras.layers import Reshape
+from tensorflow.keras.layers import Dense
+from tensorflow.keras.layers import Conv2D
+from tensorflow.keras.layers import MaxPooling2D
+from tensorflow.keras.layers import GlobalMaxPooling2D
+from tensorflow.keras.layers import GlobalAveragePooling2D
+from tensorflow.keras.layers import Dropout
+from tensorflow.keras.layers.merge import add
+from tensorflow.keras.layers.normalization import BatchNormalization
+from tensorflow.keras.regularizers import l2
+from tensorflow.keras import backend as K
+from tensorflow.keras_applications.imagenet_utils import _obtain_input_shape
 
 
 def _bn_relu(x, bn_name=None, relu_name=None):
@@ -162,7 +162,7 @@ def _block_name_base(stage, block):
     """Get the convolution name base and batch normalization name base defined by
     stage and block.
     If there are less than 26 blocks they will be labeled 'a', 'b', 'c' to match the
-    paper and keras and beyond 26 blocks they will simply be numbered.
+    paper and tensorflow.keras and beyond 26 blocks they will simply be numbered.
     """
     if block < 27:
         block = '%c' % (block + 97)  # 97 is the ascii number for lowercase 'a'
@@ -330,7 +330,7 @@ def ResNet(input_shape=None, classes=10, block='bottleneck', residual_unit='v2',
             problems like the Pascal VOC dataset, and None to exclude these layers
             entirely.
     Returns:
-        The keras `Model`.
+        The tensorflow.keras `Model`.
     """
     if activation not in ['softmax', 'sigmoid', None]:
         raise ValueError('activation must be one of "softmax", "sigmoid", or None')

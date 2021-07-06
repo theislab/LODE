@@ -1,6 +1,6 @@
 from copy import deepcopy
 import numpy as np
-import keras
+import tensorflow.keras
 import os
 
 from utils.oct_augmentations import get_augmentations
@@ -8,8 +8,8 @@ from utils.image_processing import read_resize_random_invert
 from utils.utils import get_class_distribution, upsample, label_mapping
 
 
-class DataGenerator(keras.utils.Sequence):
-    'Generates data for Keras'
+class DataGenerator(tensorflow.keras.utils.Sequence):
+    'Generates data for tensorflow.keras'
 
     def __init__(self, list_IDs, params, is_training):
         'Initialization'

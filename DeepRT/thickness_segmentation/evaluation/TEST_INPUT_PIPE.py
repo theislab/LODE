@@ -10,10 +10,10 @@ import matplotlib.pyplot as plt
 from input import batch_data_sets
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
-from tensorflow.python.keras import optimizers
-from tensorflow.python.keras import layers
-from tensorflow.python.keras import models
-from tensorflow.python.keras import callbacks
+from tensorflow.python.tensorflow.keras import optimizers
+from tensorflow.python.tensorflow.keras import layers
+from tensorflow.python.tensorflow.keras import models
+from tensorflow.python.tensorflow.keras import callbacks
 import loading_numpy_functions as lnf
 from params import params
 sess = tf.InteractiveSession()

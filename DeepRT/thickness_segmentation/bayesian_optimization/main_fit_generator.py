@@ -1,9 +1,9 @@
 import os
 import model_test as mt
 from train_eval_ops import *
-from keras.optimizers import *
+from tensorflow.keras.optimizers import *
 import tensorflow as tf
-from keras.layers import Input
+from tensorflow.keras.layers import Input
 from params import *
 import pandas as pd
 from python_generator import DataGenerator
@@ -88,7 +88,7 @@ def main(input_shape, verbose, dr, lr,shape,model_it,num_filters,bf,cf):
 
     '''train and save model'''
     save_model_path = os.path.join(params["save_path"],"weights.hdf5")
-    cp = tf.keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor="val_loss",
+    cp = tf.tensorflow.keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor="val_loss",
                                             save_best_only=True, verbose=0,save_weights_only=True)
 
     if params["continuing_training"] == True:

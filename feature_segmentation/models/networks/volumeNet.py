@@ -7,10 +7,10 @@ sys.path.insert(0, os.path.join(path_variable, "layers"))
 sys.path.insert(0, str(path_variable.parent))
 sys.path.insert(0, str(path_variable.parent.parent))
 
-from keras.backend import int_shape
-from keras.layers import Dropout, Conv2DTranspose, MaxPooling2D, \
+from tensorflow.keras.backend import int_shape
+from tensorflow.keras.layers import Dropout, Conv2DTranspose, MaxPooling2D, \
     concatenate, Input, MaxPooling3D, AveragePooling3D
-from keras.models import Model
+from tensorflow.keras.models import Model
 from custom_layers import *
 from utils.utils import Params
 

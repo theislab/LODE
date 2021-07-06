@@ -1,9 +1,9 @@
 import matplotlib as mpl
 from params import params
-import keras.backend as K
+import tensorflow.keras.backend as K
 import tensorflow as tf
-from tensorflow.python.keras import losses
-from keras.layers import Input
+from tensorflow.python.tensorflow.keras import losses
+from tensorflow.keras.layers import Input
 import model_test as mt
 import os
 

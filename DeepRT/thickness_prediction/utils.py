@@ -1,5 +1,5 @@
 """General utility functions"""
-import keras.backend as K
+import tensorflow.keras.backend as K
 import json
 import matplotlib.pyplot as plt
 from PIL import Image
@@ -9,7 +9,7 @@ import numpy as np
 import os
 import shutil
 
-from keras.utils import get_file
+from tensorflow.keras.utils import get_file
 
 class Params():
     """Class that loads hyperparameters from a json file.

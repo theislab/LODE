@@ -1,15 +1,15 @@
 import tensorflow as tf
-import keras
-from keras import backend as K
+import tensorflow.keras
+from tensorflow.keras import backend as K
 
 
-class DiceLoss(keras.losses.Loss):
+class DiceLoss(tensorflow.keras.losses.Loss):
     """
     Args:
       pos_weight: Scalar to affect the positive labels of the loss function.
       weight: Scalar to affect the entirety of the loss function.
       from_logits: Whether to compute loss from logits or the probability.
-      reduction: Type of tf.keras.losses.Reduction to apply to loss.
+      reduction: Type of tf.tensorflow.keras.losses.Reduction to apply to loss.
       name: Name of the loss function.
     """
 
@@ -40,13 +40,13 @@ class DiceLoss(keras.losses.Loss):
         return self.dice_coef_cat_loss(y_true, y_pred)
 
 
-class FocalLoss(keras.losses.Loss):
+class FocalLoss(tensorflow.keras.losses.Loss):
     """
     Args:
       pos_weight: Scalar to affect the positive labels of the loss function.
       weight: Scalar to affect the entirety of the loss function.
       from_logits: Whether to compute loss from logits or the probability.
-      reduction: Type of tf.keras.losses.Reduction to apply to loss.
+      reduction: Type of tf.tensorflow.keras.losses.Reduction to apply to loss.
       name: Name of the loss function.
     """
 
@@ -93,7 +93,7 @@ def get_loss(params):
     """
 
     if params.loss == "categorical_crossentropy":
-        loss_fn = keras.losses.SparseCategoricalCrossentropy(from_logits = False)
+        loss_fn = tensorflow.keras.losses.SparseCategoricalCrossentropy(from_logits = False)
 
     if params.loss == "dice_loss":
         loss_fn = DiceLoss(num_classes = params.num_classes)
