@@ -1,11 +1,11 @@
 from __future__ import print_function
-import keras
-from keras.layers import Dense, Conv2D, BatchNormalization, Activation
-from keras.layers import AveragePooling2D, Input, Flatten
-#from tensorflow.keras.utils.data_utils import get_file
-from keras.regularizers import l2
-#from tensorflow.python.keras import Sequential
-from keras.models import Model
+import tensorflow.keras
+from tensorflow.keras.layers import Dense, Conv2D, BatchNormalization, Activation
+from tensorflow.keras.layers import AveragePooling2D, Input, Flatten
+#from tensorflow.tensorflow.keras.utils.data_utils import get_file
+from tensorflow.keras.regularizers import l2
+#from tensorflow.python.tensorflow.keras import Sequential
+from tensorflow.keras.models import Model
 import math
 
 def resnet_layer(inputs,
@@ -108,7 +108,7 @@ def DeepRT(params, n=2, num_classes=5):
                                  strides=strides,
                                  activation=None,
                                  batch_normalization=False)
-            x = keras.layers.add([x, y])
+            x = tensorflow.keras.layers.add([x, y])
 
         num_filters_in = num_filters_out
 

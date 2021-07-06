@@ -3,7 +3,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import tensorflow as tf
 import pandas as pd
-from keras.models import load_model
+from tensorflow.keras.models import load_model
 import glob
 import json
 from tqdm import tqdm

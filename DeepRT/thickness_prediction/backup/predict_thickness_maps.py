@@ -1,15 +1,15 @@
 from train_eval_ops import *
 import tensorflow as tf
-from keras.optimizers import adam
+from tensorflow.keras.optimizers import adam
 import model as mt
 import os
 import cv2
-from keras.models import Model
-from keras.callbacks import ReduceLROnPlateau
+from tensorflow.keras.models import Model
+from tensorflow.keras.callbacks import ReduceLROnPlateau
 from params import *
 from python_generator import DataGenerator
 from train_eval_ops import *
-from keras.layers import Input
+from tensorflow.keras.layers import Input
 import sys
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -40,7 +40,7 @@ model.summary()
 save_model_path = os.path.join("/home/olle/PycharmProjects/thickness_prediction/thickness_model_weights",
                                "weights.hdf5")
 
-cp = tf.keras.callbacks.ModelCheckpoint(filepath=save_model_path,
+cp = tf.tensorflow.keras.callbacks.ModelCheckpoint(filepath=save_model_path,
                                         monitor='val_percentual_deviance',
                                         save_best_only=True, verbose=1,
                                         save_weights_only=True)

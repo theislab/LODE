@@ -7,8 +7,8 @@ import fnmatch
 import os
 from model import *
 from train_eval_ops import *
-from tensorflow.python.keras import optimizers
-from tensorflow.python.keras import models
+from tensorflow.python.tensorflow.keras import optimizers
+from tensorflow.python.tensorflow.keras import models
 import cv2
 from load_dicom_data import *
 import logging

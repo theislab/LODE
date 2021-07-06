@@ -1,12 +1,12 @@
 
 
-from keras.layers import Conv2D, MaxPooling2D, UpSampling2D, BatchNormalization, Reshape, Permute, Activation, Input, \
+from tensorflow.keras.layers import Conv2D, MaxPooling2D, UpSampling2D, BatchNormalization, Reshape, Permute, Activation, Input, \
     add, multiply, Conv2DTranspose
-from keras.layers import concatenate, core, Dropout
-from keras.models import Model
-from keras.layers.merge import concatenate
-from keras.layers.core import Lambda
-import keras.backend as K
+from tensorflow.keras.layers import concatenate, core, Dropout
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers.merge import concatenate
+from tensorflow.keras.layers.core import Lambda
+import tensorflow.keras.backend as K
 
 
 def up_and_concate(down_layer, layer, data_format='channels_first'):

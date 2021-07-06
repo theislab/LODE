@@ -1,12 +1,12 @@
-import keras
-import keras.backend as K
+import tensorflow.keras
+import tensorflow.keras.backend as K
 import tensorflow as tf
 import sys
 from pathlib import Path
 import os
 
 
-class DiceCoefficient(keras.metrics.Metric):
+class DiceCoefficient(tensorflow.keras.metrics.Metric):
 
     def __init__(self, name='dice', num_classes=None, **kwargs):
         super(DiceCoefficient, self).__init__(name=name, **kwargs)
@@ -39,10 +39,10 @@ class DiceCoefficient(keras.metrics.Metric):
 
 class ModelMetrics:
     def __init__(self, config):
-        self.train_acc = tf.keras.metrics.SparseCategoricalAccuracy()
-        self.val_acc = tf.keras.metrics.SparseCategoricalAccuracy()
-        self.train_cross_entropy = tf.keras.metrics.SparseCategoricalCrossentropy()
-        self.val_cross_entropy = tf.keras.metrics.SparseCategoricalCrossentropy()
+        self.train_acc = tf.tensorflow.keras.metrics.SparseCategoricalAccuracy()
+        self.val_acc = tf.tensorflow.keras.metrics.SparseCategoricalAccuracy()
+        self.train_cross_entropy = tf.tensorflow.keras.metrics.SparseCategoricalCrossentropy()
+        self.val_cross_entropy = tf.tensorflow.keras.metrics.SparseCategoricalCrossentropy()
         self.train_dice = DiceCoefficient(num_classes = config.num_classes)
         self.val_dice = DiceCoefficient(num_classes = config.num_classes)
 

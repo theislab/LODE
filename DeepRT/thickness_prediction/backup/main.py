@@ -1,10 +1,10 @@
 from train_eval_ops import *
 import tensorflow as tf
-from keras.optimizers import adam
+from tensorflow.keras.optimizers import adam
 import model as mt
 import os
-from keras.models import Model
-from keras.callbacks import ReduceLROnPlateau
+from tensorflow.keras.models import Model
+from tensorflow.keras.callbacks import ReduceLROnPlateau
 from params import *
 from python_generator import DataGenerator
 from train_eval_ops import *
@@ -44,10 +44,10 @@ model.summary()
 
 '''train and save model'''
 save_model_path = os.path.join(params["save_path"], "weights.hdf5")
-cp = tf.keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor='val_percentual_deviance',
+cp = tf.tensorflow.keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor='val_percentual_deviance',
                                         save_best_only=True, verbose=1, save_weights_only=True)
 
-es = tf.keras.callbacks.EarlyStopping(monitor='val_acc', mode='max', verbose=1, patience=50)
+es = tf.tensorflow.keras.callbacks.EarlyStopping(monitor='val_acc', mode='max', verbose=1, patience=50)
 
 learning_rate_reduction = ReduceLROnPlateau(factor=0.5, patience=3, min_lr=0.000001, verbose=1)
 

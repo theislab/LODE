@@ -43,20 +43,20 @@ def binary_regression_acc_last(threshold=0.15):
 
 ## for classification target
 def categorical_crossentropy_last(y_true, y_pred):
-    return tf.keras.losses.categorical_crossentropy(y_true[:,-1], y_pred[:,-1])
+    return tf.tensorflow.keras.losses.categorical_crossentropy(y_true[:,-1], y_pred[:,-1])
 
-class PrecisionLast(tf.keras.metrics.Precision):
+class PrecisionLast(tf.tensorflow.keras.metrics.Precision):
     # overwrite update_state to fix calculation to last element in sequence only
     def update_state(self, y_true, y_pred, sample_weight=None):
         super().update_state(y_true=y_true[:,-1], y_pred=y_pred[:,-1], sample_weight=sample_weight)
 
-class RecallLast(tf.keras.metrics.Recall):
+class RecallLast(tf.tensorflow.keras.metrics.Recall):
     # overwrite update_state to fix calculation to last element in sequence only
     def update_state(self, y_true, y_pred, sample_weight=None):
         super().update_state(y_true=y_true[:,-1], y_pred=y_pred[:,-1], sample_weight=sample_weight)
         
 def categorical_accuracy_last(y_true, y_pred):
-    return tf.keras.metrics.categorical_accuracy(y_true[:,-1], y_pred[:,-1])
+    return tf.tensorflow.keras.metrics.categorical_accuracy(y_true[:,-1], y_pred[:,-1])
 
 # -- numpy functions --
 ## for regression target

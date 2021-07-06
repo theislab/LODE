@@ -1,6 +1,6 @@
-import keras
-from keras.models import Model
-from keras.layers import Dropout, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Input
+import tensorflow.keras
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import Dropout, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Input
 from models.networks.layers.custom_layers import *
 
 

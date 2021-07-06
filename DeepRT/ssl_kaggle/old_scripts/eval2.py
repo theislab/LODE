@@ -2,13 +2,13 @@ from train_eval_ops import *
 import model as m
 import os
 from params import *
-from keras.models import *
+from tensorflow.keras.models import *
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 import pandas as pd
 from sklearn.metrics import confusion_matrix
 from sklearn.metrics import cohen_kappa_score
-from keras.optimizers import adam
+from tensorflow.keras.optimizers import adam
 from train_eval_ops import *
 import cv2
 from sklearn.metrics import accuracy_score

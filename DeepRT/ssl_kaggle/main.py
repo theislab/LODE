@@ -2,8 +2,8 @@ import tensorflow as tf
 from numpy.random import seed
 seed(1)
 tf.random.set_random_seed(1)
-from keras.optimizers import SGD
-from keras.callbacks import LearningRateScheduler, CSVLogger, ModelCheckpoint, TensorBoard, ReduceLROnPlateau
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.callbacks import LearningRateScheduler, CSVLogger, ModelCheckpoint, TensorBoard, ReduceLROnPlateau
 import input as i
 from utils import *
 

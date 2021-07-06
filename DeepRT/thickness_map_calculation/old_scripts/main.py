@@ -10,10 +10,10 @@ import numpy as np
 from input import batch_data_sets
 from sklearn.model_selection import train_test_split
 import tensorflow as tf
-from tensorflow.python.keras import optimizers
-from tensorflow.python.keras import layers
-from tensorflow.python.keras import models
-from tensorflow.python.keras import callbacks
+from tensorflow.python.tensorflow.keras import optimizers
+from tensorflow.python.tensorflow.keras import layers
+from tensorflow.python.tensorflow.keras import models
+from tensorflow.python.tensorflow.keras import callbacks
 import loading_numpy_functions as lnf
 from params import params
 sess = tf.InteractiveSession()
@@ -69,7 +69,7 @@ def main(params):
 
     '''train and save model'''
     save_model_path = os.path.join(params["save_path"],"weights.hdf5")
-    cp = tf.keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor='val_dice_loss',
+    cp = tf.tensorflow.keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor='val_dice_loss',
                                             save_best_only=True, verbose=1,save_weights_only=True)
 
     learning_rate_reduction = callbacks.ReduceLROnPlateau(monitor='val_dice_loss',

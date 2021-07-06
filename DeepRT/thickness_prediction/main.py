@@ -1,7 +1,7 @@
 from __future__ import print_function
-from keras.optimizers import SGD
+from tensorflow.keras.optimizers import SGD
 import model as mt
-from keras.callbacks import LearningRateScheduler, CSVLogger, TensorBoard, ModelCheckpoint
+from tensorflow.keras.callbacks import LearningRateScheduler, CSVLogger, TensorBoard, ModelCheckpoint
 import pandas as pd
 import os
 import input as i

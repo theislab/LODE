@@ -1,4 +1,4 @@
-from keras import backend as K
+from tensorflow.keras import backend as K
 import tensorflow as tf
 def categorical_focal_loss(gamma=2., alpha=.25):
     """
@@ -15,7 +15,7 @@ def categorical_focal_loss(gamma=2., alpha=.25):
       alpha -- 0.25 as mentioned in the paper
     References:
         Official paper: https://arxiv.org/pdf/1708.02002.pdf
-        https://www.tensorflow.org/api_docs/python/tf/keras/backend/categorical_crossentropy
+        https://www.tensorflow.org/api_docs/python/tf/tensorflow.keras/backend/categorical_crossentropy
     Usage:
      model.compile(loss=[categorical_focal_loss(alpha=.25, gamma=2)], metrics=["accuracy"], optimizer=adam)
     """

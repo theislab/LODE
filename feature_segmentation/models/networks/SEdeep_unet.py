@@ -1,7 +1,7 @@
-from keras.models import Model
-from keras.layers import BatchNormalization, Activation, Dropout, Conv2D, Conv2DTranspose, MaxPooling2D, \
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import BatchNormalization, Activation, Dropout, Conv2D, Conv2DTranspose, MaxPooling2D, \
     concatenate, Input, GlobalAveragePooling2D, Reshape, Dense, Permute, multiply
-import keras.backend as K
+import tensorflow.keras.backend as K
 from models.networks.layers.custom_layers import *
 
 

@@ -7,8 +7,8 @@ sys.path.insert(0, os.path.join(path_variable, "layers"))
 sys.path.insert(0, str(path_variable.parent))
 sys.path.insert(0, str(path_variable.parent.parent))
 
-from keras.models import Model
-from keras.layers import BatchNormalization, Activation, UpSampling2D, \
+from tensorflow.keras.models import Model
+from tensorflow.keras.layers import BatchNormalization, Activation, UpSampling2D, \
     Dropout, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Input
 from custom_layers import *
 from utils.utils import Params

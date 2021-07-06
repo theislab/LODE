@@ -2,20 +2,20 @@ from train_eval_ops import *
 import model_test as mt
 import os
 from params import *
-from keras.models import *
+from tensorflow.keras.models import *
 import data_generator as dg
 import pandas as pd
 import sys
-from keras.optimizers import adam
+from tensorflow.keras.optimizers import adam
 from train_eval_ops import *
 import deeplab3pluss as dl
 import cv2
 import regular_unet as ru
-from tensorflow.python.keras import models
-from tensorflow.python.keras import optimizers
+from tensorflow.python.tensorflow.keras import models
+from tensorflow.python.tensorflow.keras import optimizers
 
 
-from keras.models import Model
+from tensorflow.keras.models import Model
 import jupyter_helper_functions as jh
 
 sys.dont_write_bytecode = True
