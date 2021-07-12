@@ -10,10 +10,10 @@ import base64
 import io
 import numpy as np
 import PIL.Image
+from tqdm import tqdm
 import pandas as pd
 import matplotlib.pyplot as plt
 from utility_files.postprocessing import post_processing
-from utility_files.fibrosis_record_changes import fibrosis_swap
 import shutil
 from utility_files.utils import shapes_to_label, iter_one_processing, fibrosis_change, set_outdir, \
     clean_data_path
@@ -33,185 +33,93 @@ def img_data_to_arr(img_data):
     return img_arr
 
 
-def labelfiles_to_output(label_files, out_dir, class_name_to_id, lq_records,
-                         iteration="first_iteration", with_choroid=True, fibrosis_change_log=None):
+def labelfiles_to_output(label_file):
 
-    for record_path in record_paths:
-        annotation_files = [path for path in glob.glob(record_path + "/*") if ".json" in path]
+    fibrosis_change_log = pd.read_csv(os.path.join(MAIN_DIR, "fibrosis_change_log.csv"),
+                                      header = None).rename(columns = {0: "id", 1: "action"})
 
-        if len(annotation_files) == 1:
-            label_file = annotation_files[0]
-        elif len(annotation_files) == 2:
-            label_file = [path for path in annotation_files if "choroid" in path][0]
-        else:
-            raise Exception(f"Unexpected number of json files in {record_path}, stopping program")
+    with open(label_file) as f:
+        base = label_file.split("/")[-1]
 
-        # for label_file in label_files:
-        print(label_file)
+        out_img_file = osp.join(
+            OUT_DIR, 'images', base + '.png')
+        out_cls_file = osp.join(
+            OUT_DIR, 'masks', base + '.npy')
+        out_clsv_file_pre = osp.join(
+            OUT_DIR, 'visualizations_pre_processing', base + '.png')
+        out_clsv_file_post = osp.join(
+            OUT_DIR, 'visualizations_post_processing', base + '.png')
+        out_clsv_file_complete = osp.join(
+            OUT_DIR, 'overview', base + '.png')
+        out_json = osp.join(
+            OUT_DIR, 'json')
 
-        with open(label_file) as f:
-            base = label_file.split("/")[-1]
+        # copy json to output dir
+        shutil.copy(label_file, os.path.join(out_json, base + ".json"))
 
-            if len(base.split("_")) < 3:
-                base = label_file.split("/")[-2]
+        # load json file into data
+        data = json.load(f)
 
-            # set iteration specific base
-            if "7" in iteration:
-                base = label_file.split("/")[-1].replace(".json", "").replace(".png", "")
-            # if base in "252332_R_20180802_15":
-            if base.replace(".json", "").replace(".png", "") in lq_records:
-                print("remove low quality record")
-                continue
-            out_img_file = osp.join(
-                out_dir, 'images', base + '.png')
-            out_cls_file = osp.join(
-                out_dir, 'masks', base + '.npy')
-            out_clsv_file_pre = osp.join(
-                out_dir, 'visualizations_pre_processing', base + '.png')
-            out_clsv_file_post = osp.join(
-                out_dir, 'visualizations_post_processing', base + '.png')
-            out_clsv_file_complete = osp.join(
-                out_dir, 'overview', base + '.png')
-            out_json = osp.join(
-                out_dir, 'json')
+        # assert image path properties
+        img_path = data['imagePath']
+        img_path = clean_data_path(img_path)
+        data["imagePath"] = img_path
 
-            # copy json to output dir
-            shutil.copy(label_file, os.path.join(out_json, base + ".json"))
+        img = img_b64_to_arr(data["imageData"])
 
-            # load json file into data
-            data = json.load(f)
+        cls, ins = shapes_to_label(
+            img_shape = img.shape,
+            shapes = data['shapes'],
+            label_name_to_value = CLASS_NAME_TO_ID,
+            type = 'instance',
+            smoothen = False
+        )
 
-            # assert image path properties
-            img_path = data['imagePath']
-            img_path = clean_data_path(img_path)
-            data["imagePath"] = img_path
+        cls_preprocessing = np.copy(cls)
 
-            img = img_b64_to_arr(data["imageData"])
+        # visualize before processing
+        create_visualizations(out_clsv_file_pre, cls)
 
-            # swap segmentation file
-            data = fibrosis_swap(base, fibrosis_change_log, data)
+        # cls_smooth = postprocessing(cls_smooth)
+        cls, img = post_processing(cls, img, True)
 
-            cls, ins = shapes_to_label(
-                img_shape = img.shape,
-                shapes = data['shapes'],
-                label_name_to_value = class_name_to_id,
-                type = 'instance',
-                smoothen = False
-            )
+        # change according to fibrosis labeling
+        fibrosis_change(base, fibrosis_change_log, cls)
 
-            # if 5 in cls.flatten().tolist():
+        # visualize after processing
+        create_visualizations(out_clsv_file_post, cls)
+        # create_visualizations(out_clsv_file_smooth, cls_smooth)
 
-            if iteration == "first_iteration":
-                cls = iter_one_processing(cls)
+        ins[cls == -1] = 0  # ignore it.
 
-            if not with_choroid:
-                # set choroid to background
-                cls[cls == 10] = 0
+        # class label
+        cv2.imwrite(out_cls_file.replace(".npy", ".png").replace(".json", ""), cls)
 
-            cls_preprocessing = np.copy(cls)
+        # save image last
+        PIL.Image.fromarray(img).save(out_img_file.replace(".json", ""))
 
-            # visualize before processing
-            create_visualizations(out_clsv_file_pre, cls)
+        record = [img, cls_preprocessing, cls]
 
-            # cls_smooth = postprocessing(cls_smooth)
-            cls, img = post_processing(cls, img, with_choroid)
+        # save overview
+        plot_examples(record, out_clsv_file_complete.replace(".json", ""))
 
-            # change according to fibrosis labeling
-            fibrosis_change(base, fibrosis_change_log, cls)
 
-            # visualize after processing
-            create_visualizations(out_clsv_file_post, cls)
-            # create_visualizations(out_clsv_file_smooth, cls_smooth)
-
-            ins[cls == -1] = 0  # ignore it.
-
-            # class label
-            cv2.imwrite(out_cls_file.replace(".npy", ".png").replace(".json", ""), cls)
-
-            # save image last
-            PIL.Image.fromarray(img).save(out_img_file.replace(".json", ""))
-
-            record = [img, cls_preprocessing, cls]
-
-            # save overview
-            plot_examples(record, out_clsv_file_complete.replace(".json", ""))
+OUT_DIR = "revised"
+MAIN_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/data/versions/revised_iterations"
+CLASS_NAME_TO_ID = set_outdir(OUT_DIR, "labels.txt")
 
 
 def main():
-    # test iteration
-    PROJ_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation"
-    annotatio_file = ".json"
-    annotator = "johannes"
-    iteration = f"iteration_{annotator}"
-    out_dir = iteration
-    labels_file = "labels.txt"
-    fibrosis_log_dir = os.path.join(PROJ_DIR, "data/versions/fibrosis_corrections")
-    choroid = True
-
-    # iteration 1
-    iter_one_dir = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation/data/versions/iteration_1/json"
-    iter_one_json_files = glob.glob(os.path.join(iter_one_dir, "*.json"))
-
-    # iteration 2
-    iter_two_dir = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/segmentation/data/versions/iteration_2/final_iteration"
-    iter_two_json_files = glob.glob(os.path.join(iter_two_dir, "*.json"))
-
-    # iteration 3
-    iter_three_dir = "data/versions/iteration_3/final_iteration"
-    iter_three_json_files = glob.glob(os.path.join(PROJ_DIR, iter_three_dir + f"/*/*{annotatio_file}*"))
-
-    # iteration 4
-    iter_four_dir = f"data/versions/iteration_4/{annotator}"
-    iter_four_json_files = glob.glob(os.path.join(PROJ_DIR, iter_four_dir + f"/*"))
-
-    # iteration 5
-    iter_five_dir = f"data/versions/iteration_5/{annotator}"
-    iter_five_json_files = glob.glob(os.path.join(PROJ_DIR, iter_five_dir + f"/*"))
-
-    # iteration 6
-    iter_six_dir = f"data/versions/iteration_6/{annotator}"
-    iter_six_json_files = glob.glob(os.path.join(PROJ_DIR, iter_six_dir + f"/*"))
-
-    # iteration 7
-    iter_six_dir = f"data/versions/iteration_7/{annotator}"
-    iter_seven_json_files = glob.glob(os.path.join(PROJ_DIR, iter_six_dir + f"/*"))
-
-    # iteration 8
-    iter_eight_dir = f"data/versions/iteration_8/{annotator}"
-    iter_eight_json_files = glob.glob(os.path.join(PROJ_DIR, iter_eight_dir + f"/*"))
-
-    # iteration 9
-    iter_nine_dir = f"data/versions/iteration_9/{annotator}"
-    iter_nine_json_files = glob.glob(os.path.join(PROJ_DIR, iter_nine_dir + f"/*"))
-
-    # test iteration
-    iter_test_dir = "data/versions/test_iteration/final_iteration"
-    iter_test_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*"))
-
-    iter_idv_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*/*{annotatio_file}*"))
-    iter_idv_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir + f"/*"))
-    iter_test_dir = "data/versions/inter_doctor_variance_sample_michael"
-    iter_test_json_files = glob.glob(os.path.join(PROJ_DIR, iter_test_dir, f"*/*{annotatio_file}*"))
-
-    # inter doctor variation
-    iter_idv_dir = "data/versions/inter_doctor_variance_sample_michael"
-    iter_idv_json_files = glob.glob(os.path.join(PROJ_DIR, iter_idv_dir + f"/*/*{annotatio_file}*"))
-
-    # low quality iteration one files
-    lq_records = pd.read_csv(iter_one_dir.replace("json", "loq_quality.txt"),
-                             header = None)[0].str.replace(".json", "").str.replace(".png", "").tolist()
-
-    fibrosis_change_log = pd.read_csv(os.path.join(fibrosis_log_dir, "fibrosis_change_log.csv"),
-                                      header = None).rename(columns = {0: "id", 1: "action"})
+    files_to_process = glob.glob(os.path.join(MAIN_DIR, "jsons" + "/*"))
 
     # create out dir
-    class_name_to_id = set_outdir(out_dir, labels_file)
+    print("saving to: ", OUT_DIR)
 
-    files_to_process = iter_nine_json_files + iter_eight_json_files + iter_seven_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files
-    files_to_process = iter_idv_json_files # iter_nine_json_files + iter_eight_json_files + iter_seven_json_files + iter_six_json_files + iter_five_json_files + iter_four_json_files
-    labelfiles_to_output(files_to_process, out_dir, class_name_to_id, lq_records = lq_records, iteration = iteration,
-                         with_choroid = choroid, fibrosis_change_log = fibrosis_change_log)
+    from joblib import Parallel, delayed
+    Parallel(n_jobs = os.cpu_count())(delayed(labelfiles_to_output)(i) for i in tqdm(files_to_process))
 
+    #for fp in files_to_process:
+    #    labelfiles_to_output(fp)
 
 if __name__ == '__main__':
     main()
