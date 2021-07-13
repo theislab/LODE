@@ -6,7 +6,7 @@ The LODE/feature_segmentation repository implement the U-net architecture descri
 
 to set up environment install the environment.yml file with anaconda.
 
-## Usage
+## usage
 
 main necessary configuration required is in config.py where the 
 
@@ -16,19 +16,19 @@ main necessary configuration required is in config.py where the
 
 need to be set.
 
-## Default set up
+## default set up
 
 if working on the ICB / Helmholtz compute:
 
 TRAIN_DATA_PATH = "/storage/groups/ml01/datasets/projects/20201010_LODE_segmentation/feature_segmentation/data/records"
 DATA_SPLIT_PATH = "/storage/groups/ml01/datasets/projects/20201010_LODE_segmentation/feature_segmentation/data/data_split"
 
-## General
+## general
 
 in the /storage/groups/ml01/datasets/projects/20201010_LODE_segmentation/feature_segmentation/ directory one find the data files for the segmentation project.
 This includes unrevised and revised json file. Please use revised (by default stored in the above written TRAIN_DATA_PATH). During the annotations process standards were changed, hence the unrevised annotations sometimes contains annotation errors. 
 
-### Generating segmentation masks from json annotations files
+### generating segmentation masks from json annotations files
 
 Please see /label_conversion/labelme2voc.py file. To use, edit the python file with the correct path to the directory holding the json file and then run the files.
 
