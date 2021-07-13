@@ -2,6 +2,8 @@
 
 The LODE/feature_segmentation repository implement the U-net architecture described here: https://docs.google.com/document/d/1bnKlKsCS5NdMMDu6XD5FqIdLow3sQ_64HwDj7UaPRns/edit?usp=sharing
 
+To reproduce the results in the document please edit the params.json file with model and training config parameters as stated in the above manuscript and rerun.
+
 ## environment
 
 to set up environment install the environment.yml file with anaconda.
