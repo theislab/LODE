@@ -106,7 +106,7 @@ def labelfiles_to_output(label_file):
 
 OUT_DIR = "revised"
 MAIN_DIR = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/data/versions/revised_iterations"
-CLASS_NAME_TO_ID = set_outdir(OUT_DIR, "labels.txt")
+CLASS_NAME_TO_ID = set_outdir(OUT_DIR, "labels.txt")it
 
 
 def main():
