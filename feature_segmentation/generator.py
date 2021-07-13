@@ -25,15 +25,6 @@ class DataGenerator(tensorflow.keras.utils.Sequence):
         self.augment_box = get_augmentations(params)[params.aug_strategy]
         self.val_aug_box = get_augmentations(params)["light"]
 
-        if params.balance_dataset and is_training:
-            upsampling_factors, label_repr = get_class_distribution(self.label_path, list_IDs)
-            train_ids = deepcopy(list_IDs)
-            for label in [5, 8, 13]:
-                new_ids = upsample(train_ids, label, label_repr, upsampling_factors)
-                train_ids = deepcopy(new_ids)
-                upsampling_factors, label_repr = get_class_distribution(self.label_path, train_ids)
-
-            self.list_IDs = new_ids
 
     def __len__(self):
         'Denotes the number of batches per epoch'

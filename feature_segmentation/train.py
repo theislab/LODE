@@ -7,6 +7,7 @@ from tqdm import tqdm
 from pathlib import Path
 import sys
 import numpy as np
+import pandas as pd
 
 from models.callbacks.custom_metrics import ModelMetrics
 from models.callbacks.model_logging import ModelCheckpointCustom
@@ -16,7 +17,7 @@ from models.losses import get_loss
 from models.optimizers import get_optimizer
 
 from models.model import get_model
-from config import TRAIN_DATA_PATH
+from config import TRAIN_DATA_PATH, DATA_SPLIT_PATH
 from utils.utils import Params, TrainOps, Logging
 from generator import DataGenerator
 
@@ -27,10 +28,10 @@ def main():
 
     logging = Logging("./logs", params)
 
-    ids = os.listdir(os.path.join(params.data_path, "images"))
-    train_ids, validation_ids, test_ids = None, None, None
+    train_ids = pd.read_csv(DATA_SPLIT_PATH + "/train_ids.csv")["0"].tolist()
+    validation_ids = pd.read_csv(DATA_SPLIT_PATH + "/validation_ids.csv")["0"].tolist()
 
-    logging.create_model_directory()
+    logging.create_model_directory(params.model_directory)
     params.model_directory = logging.model_directory
 
     # saving model config file to model output dir
@@ -62,7 +63,7 @@ def main():
             grads = tape.gradient(loss, model.trainable_weights)
             optimizer.apply_gradients(zip(grads, model.trainable_weights))
             current_lr = optimizer._decayed_lr(tf.float32).numpy()
-            current_loss = np.round(loss.numpy(), 2)
+
             print(f"\nOpt Iteration: {optimizer.__dict__['_iterations'].numpy()} "
                   f"learning rate: {current_lr} loss: {np.round(loss.numpy(), 2)}")
 

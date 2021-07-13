@@ -41,67 +41,67 @@ def labelfiles_to_output(label_file):
     with open(label_file) as f:
         base = label_file.split("/")[-1]
 
-        out_img_file = osp.join(
-            OUT_DIR, 'images', base + '.png')
-        out_cls_file = osp.join(
-            OUT_DIR, 'masks', base + '.npy')
-        out_clsv_file_pre = osp.join(
-            OUT_DIR, 'visualizations_pre_processing', base + '.png')
-        out_clsv_file_post = osp.join(
-            OUT_DIR, 'visualizations_post_processing', base + '.png')
-        out_clsv_file_complete = osp.join(
-            OUT_DIR, 'overview', base + '.png')
-        out_json = osp.join(
-            OUT_DIR, 'json')
+        if "12956_R_20140109" in base:
+            out_img_file = osp.join(
+                OUT_DIR, 'images', base + '.png')
+            out_cls_file = osp.join(
+                OUT_DIR, 'masks', base + '.npy')
+            out_clsv_file_pre = osp.join(
+                OUT_DIR, 'visualizations_pre_processing', base + '.png')
+            out_clsv_file_post = osp.join(
+                OUT_DIR, 'visualizations_post_processing', base + '.png')
+            out_clsv_file_complete = osp.join(
+                OUT_DIR, 'overview', base + '.png')
+            out_json = osp.join(
+                OUT_DIR, 'json')
 
-        # copy json to output dir
-        shutil.copy(label_file, os.path.join(out_json, base + ".json"))
+            # copy json to output dir
+            shutil.copy(label_file, os.path.join(out_json, base + ".json"))
 
-        # load json file into data
-        data = json.load(f)
+            # load json file into data
+            data = json.load(f)
 
-        # assert image path properties
-        img_path = data['imagePath']
-        img_path = clean_data_path(img_path)
-        data["imagePath"] = img_path
+            # assert image path properties
+            img_path = data['imagePath']
+            img_path = clean_data_path(img_path)
+            data["imagePath"] = img_path
 
-        img = img_b64_to_arr(data["imageData"])
+            img = img_b64_to_arr(data["imageData"])
 
-        cls, ins = shapes_to_label(
-            img_shape = img.shape,
-            shapes = data['shapes'],
-            label_name_to_value = CLASS_NAME_TO_ID,
-            type = 'instance',
-            smoothen = False
-        )
+            cls, ins = shapes_to_label(
+                img_shape = img.shape,
+                shapes = data['shapes'],
+                label_name_to_value = CLASS_NAME_TO_ID,
+                type = 'instance',
+                smoothen = False
+            )
 
-        cls_preprocessing = np.copy(cls)
+            cls_preprocessing = np.copy(cls)
 
-        # visualize before processing
-        create_visualizations(out_clsv_file_pre, cls)
+            # visualize before processing
+            create_visualizations(out_clsv_file_pre, cls)
 
-        # cls_smooth = postprocessing(cls_smooth)
-        cls, img = post_processing(cls, img, True)
+            # cls_smooth = postprocessing(cls_smooth)
+            cls, img = post_processing(cls, img, True)
 
-        # change according to fibrosis labeling
-        fibrosis_change(base, fibrosis_change_log, cls)
+            # change according to fibrosis labeling
+            fibrosis_change(base, fibrosis_change_log, cls)
 
-        # visualize after processing
-        create_visualizations(out_clsv_file_post, cls)
-        # create_visualizations(out_clsv_file_smooth, cls_smooth)
+            # visualize after processing
+            create_visualizations(out_clsv_file_post, cls)
 
-        ins[cls == -1] = 0  # ignore it.
+            ins[cls == -1] = 0  # ignore it.
 
-        # class label
-        cv2.imwrite(out_cls_file.replace(".npy", ".png").replace(".json", ""), cls)
+            # class label
+            cv2.imwrite(out_cls_file.replace(".npy", ".png").replace(".json", ""), cls)
 
-        # save image last
-        PIL.Image.fromarray(img).save(out_img_file.replace(".json", ""))
+            # save image last
+            PIL.Image.fromarray(img).save(out_img_file.replace(".json", ""))
 
-        record = [img, cls_preprocessing, cls]
+            record = [img, cls_preprocessing, cls]
 
-        # save overview
-        plot_examples(record, out_clsv_file_complete.replace(".json", ""))
+            # save overview
+            plot_examples(record, out_clsv_file_complete.replace(".json", ""))
 
 
 OUT_DIR = "revised"
@@ -120,6 +120,7 @@ def main():
 
     #for fp in files_to_process:
     #    labelfiles_to_output(fp)
+
 
 if __name__ == '__main__':
     main()

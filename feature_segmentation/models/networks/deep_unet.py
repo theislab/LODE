@@ -1,9 +1,6 @@
 from tensorflow.keras.models import Model
-from tensorflow.keras.layers import BatchNormalization, Activation, UpSampling2D, \
-    Dropout, Conv2D, Conv2DTranspose, MaxPooling2D, concatenate, Input
+from tensorflow.keras.layers import Dropout, Conv2DTranspose, MaxPooling2D, concatenate, Input
 from models.networks.layers.custom_layers import *
-
-from feature_segmentation.models.networks.layers.attn_augconv import augmented_conv2d
 
 
 def unet(params):
