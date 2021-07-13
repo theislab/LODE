@@ -1,7 +1,7 @@
-import os
 import tensorflow as tf
 from tqdm import tqdm
 import numpy as np
+import pandas as pd
 import random
 
 from models.callbacks.custom_metrics import ModelMetrics
@@ -12,7 +12,7 @@ from models.losses import get_loss
 from models.optimizers import get_optimizer
 
 from models.model import get_model
-from config import TRAIN_DATA_PATH
+from config import TRAIN_DATA_PATH, DATA_SPLIT_PATH
 from utils.utils import Params, TrainOps, Logging
 from generator import DataGenerator
 
@@ -25,8 +25,9 @@ def main(flags):
 
     logging = Logging(flags.save_model_dir, params)
 
-    ids = os.listdir(os.path.join(params.data_path, "images"))
-    train_ids, validation_ids, test_ids = None, None, None
+    train_ids = pd.read_csv(DATA_SPLIT_PATH + "/train_ids.csv")["0"].tolist()
+    validation_ids = pd.read_csv(DATA_SPLIT_PATH + "/validation_ids.csv")["0"].tolist()
+    test_ids = pd.read_csv(DATA_SPLIT_PATH + "/test_ids.csv")["0"].tolist()
 
     test_id = [test_ids[params.cv_iteration]]
 
@@ -123,5 +124,7 @@ if __name__ == "__main__":
     for j in range(NUM_ENSEMBLES):
         for i in range(NUM_OCTS):
             flags.cfs_cv_iteration = i
-            flags.save_model_dir = f"/media/olle/3DCPC/oct_segmentation/cross_validation_runs/logs_{j}"
+
+            # set model dir where much disk space is available. With CV training many models will be saved.
+            flags.save_model_dir = f"./logs_{j}"
             main(flags)

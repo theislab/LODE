@@ -9,7 +9,7 @@ class DiceLoss(tensorflow.keras.losses.Loss):
       pos_weight: Scalar to affect the positive labels of the loss function.
       weight: Scalar to affect the entirety of the loss function.
       from_logits: Whether to compute loss from logits or the probability.
-      reduction: Type of tf.tensorflow.keras.losses.Reduction to apply to loss.
+      reduction: Type of tf.keras.losses.Reduction to apply to loss.
       name: Name of the loss function.
     """
 
@@ -46,7 +46,7 @@ class FocalLoss(tensorflow.keras.losses.Loss):
       pos_weight: Scalar to affect the positive labels of the loss function.
       weight: Scalar to affect the entirety of the loss function.
       from_logits: Whether to compute loss from logits or the probability.
-      reduction: Type of tf.tensorflow.keras.losses.Reduction to apply to loss.
+      reduction: Type of tf.keras.losses.Reduction to apply to loss.
       name: Name of the loss function.
     """
 
