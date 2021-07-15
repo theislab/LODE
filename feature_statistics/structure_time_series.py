@@ -1,14 +1,12 @@
 from copy import copy
 
-from feature_statistics.config import WORK_SPACE, SEG_DIR, OCT_DIR
+from config import WORK_SPACE
 import os
 import pandas as pd
-import numpy as np
-from feature_statistics.utils.time_utils import TimeUtils
-from feature_statistics.utils.pandas_utils import sum_etdrs_columns
-from feature_statistics.utils.util_functions import SeqUtils, get_total_number_of_injections
+from utils.time_utils import TimeUtils
+from utils.pandas_utils import sum_etdrs_columns
+from utils.util_functions import SeqUtils, get_total_number_of_injections
 from tqdm import tqdm
-import glob
 
 
 class MeasureSeqTimeUntilDry(SeqUtils):
@@ -54,8 +52,6 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     DATA_POINTS = DATA_POINTS + ["cumsum_" + ic for ic in INJECTION_COLUMNS]
 
     META_DATA = ["patient_id", "laterality", "diagnosis"]
-    SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
-    DICOM_PATHS = glob.glob(os.path.join(OCT_DIR, "*/*/*/*.dcm"))
     TIME_POINTS = [1, 3, 6, 12, 24]
 
     FIELDS = ['study_date',
@@ -184,17 +180,11 @@ if __name__ == "__main__":
     # distribution of 3 and 6 month treatment effect
     """
     # load sequences
-    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data", 'sequences.csv'))
+    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data", 'sequences.csv'))
 
     region_resolved = True
 
-    PATIENT_ID = 245854  # 1570 L
-    LATERALITY = "L"
-
     mstd = MeasureSeqTimeUntilDry()
-    filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
-    # seq_pd = seq_pd.loc[filter_]
-    # seq_pd = seq_pd.iloc[0:10]
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()
 
@@ -220,7 +210,7 @@ if __name__ == "__main__":
     time_until_dry_pd = pd.DataFrame(time_series_log)
 
     # read in naive patient data
-    naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "naive_patients/naive_patients.csv"),
+    naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/dwh_tables_cleaned/naive_patients.csv"),
                                  sep = ",").dropna()
 
     naive_patients["patient_id"] = naive_patients["patient_id"].astype(int)
@@ -231,5 +221,5 @@ if __name__ == "__main__":
 
     # remove non treated records
     time_until_dry_pd = time_until_dry_pd[time_until_dry_pd['study_date_1'].notna()]
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/longitudinal_properties.csv"))
-    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "sequence_data/longitudinal_properties_naive.csv"))
+    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data/longitudinal_properties.csv"))
+    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data/longitudinal_properties_naive.csv"))
