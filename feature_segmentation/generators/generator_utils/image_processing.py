@@ -57,8 +57,8 @@ def resize(im, shape):
 
 def read_resize_random_invert(img_path, label_path, shape):
     # load samples
-    im = Image.open(img_path)
-    lbl = Image.open(label_path)
+    im = Image.open(str(img_path))
+    lbl = Image.open(str(label_path))
 
     # convert to numpy
     im = np.array(im)
