@@ -1,9 +1,11 @@
 from pathlib import Path
 import numpy as np
 import cv2
-import keras
+import tensorflow.keras
 
 from utils import plot_segmentation
+
+from config import MODEL_DIRECTORY
 
 
 class Segmentor:
@@ -38,7 +40,7 @@ class Segmentor:
         all model paths in ensemble directory
         """
 
-        # currently keras models in .hdf5 file format are used, could be changes in future
+        # currently tensorflow.keras models in .hdf5 file format are used, could be changes in future
         if not [i for i in Path(self.model_directory).glob("*/*hdf5")]:
             raise Exception("no models are in directory")
         else:
@@ -74,17 +76,17 @@ class Segmentor:
         img_reshaped = img_normalized.reshape(1, self.size, self.size, 3)
         return img_reshaped
 
-    def load_keras_model(self, path):
+    def load_tensorflow.keras_model(self, path):
         """
         Parameters
         ----------
-        path : str; path to keras model
+        path : str; path to tensorflow.keras model
 
         Returns
         -------
 
         """
-        return keras.models.load_model(path)
+        return tensorflow.keras.models.load_model(path)
 
     def load_model(self):
         """
@@ -94,7 +96,7 @@ class Segmentor:
 
         """
         for k, model_path in enumerate(self.model_paths):
-            self.model_dict[k] = self.load_keras_model(model_path)
+            self.model_dict[k] = self.load_tensorflow.keras_model(model_path)
 
     def predict(self, img):
         """
@@ -143,7 +145,7 @@ class Segmentor:
 
 
 if __name__ == "__main__":
-    model_directory = "/home/olle/PycharmProjects/LODE/feature_segmentation/ensembles_stratified"
+    model_directory = MODEL_DIRECTORY
 
     segmentor = Segmentor(model_directory, n_models = 1)
 

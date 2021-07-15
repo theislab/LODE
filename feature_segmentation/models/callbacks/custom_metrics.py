@@ -1,21 +1,12 @@
-import keras
-import keras.backend as K
+import tensorflow.keras
+import tensorflow.keras.backend as K
 import tensorflow as tf
 import sys
 from pathlib import Path
 import os
 
-from feature_segmentation.models.losses import FocalLoss
 
-path = Path(os.getcwd())
-sys.path.append(str(path.parent))
-
-# add children paths
-for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
-    sys.path.append(str(child_dir))
-
-
-class DiceCoefficient(keras.metrics.Metric):
+class DiceCoefficient(tensorflow.keras.metrics.Metric):
 
     def __init__(self, name='dice', num_classes=None, **kwargs):
         super(DiceCoefficient, self).__init__(name=name, **kwargs)
@@ -71,3 +62,7 @@ class ModelMetrics:
             if mode in key:
                 result_dict[key] = metric.result()
         return result_dict
+
+
+if __name__ == "__main__":
+    print("import works")

@@ -1,11 +1,11 @@
 from __future__ import print_function
-import keras
-from keras.layers import Dense, Conv2D, BatchNormalization, Activation
-from keras.layers import AveragePooling2D, Input, Flatten
-from keras.utils.data_utils import get_file
-from keras.regularizers import l2
-#from tensorflow.python.keras import Sequential
-from keras.models import Model
+import tensorflow.keras
+from tensorflow.keras.layers import Dense, Conv2D, BatchNormalization, Activation
+from tensorflow.keras.layers import AveragePooling2D, Input, Flatten
+from tensorflow.keras.utils.data_utils import get_file
+from tensorflow.keras.regularizers import l2
+#from tensorflow.python.tensorflow.keras import Sequential
+from tensorflow.keras.models import Model
 import math
 
 def resnet_layer(inputs,
@@ -76,7 +76,7 @@ def resnet_v2(params, input_shape, n, num_classes=5):
         num_classes (int): number of classes (CIFAR10 has 10)
 
     # Returns
-        model (Model): Keras model instance
+        model (Model): tensorflow.keras model instance
     """
     depth = n * 9 + 2
 
@@ -133,7 +133,7 @@ def resnet_v2(params, input_shape, n, num_classes=5):
                                  strides=strides,
                                  activation=None,
                                  batch_normalization=False)
-            x = keras.layers.add([x, y])
+            x = tensorflow.keras.layers.add([x, y])
 
         num_filters_in = num_filters_out
 
@@ -159,7 +159,7 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     inputs = Input(shape=(input_shape,input_shape,3))
     # v2 performs Conv2D with BN-ReLU on input before splitting into 2 paths
 
-    conv1 = keras.layers.Conv2D(32, (7,7), strides=(2, 2), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv1 = tensorflow.keras.layers.Conv2D(32, (7,7), strides=(2, 2), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(inputs)
@@ -167,9 +167,9 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b1 = BatchNormalization()(conv1)
     r1 = Activation('relu')(b1)
 
-    max1 = keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r1)
+    max1 = tensorflow.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r1)
 
-    conv2 = keras.layers.Conv2D(32, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv2 = tensorflow.keras.layers.Conv2D(32, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(max1)
@@ -177,7 +177,7 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b2 = BatchNormalization()(conv2)
     r2 = Activation('relu')(b2)
 
-    conv3 = keras.layers.Conv2D(32, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv3 = tensorflow.keras.layers.Conv2D(32, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(r2)
@@ -185,9 +185,9 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b3 = BatchNormalization()(conv3)
     r3 = Activation('relu')(b3)
 
-    max2 = keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r3)
+    max2 = tensorflow.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r3)
 
-    conv4 = keras.layers.Conv2D(64, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv4 = tensorflow.keras.layers.Conv2D(64, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(max2)
@@ -195,7 +195,7 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b4 = BatchNormalization()(conv4)
     r4 = Activation('relu')(b4)
 
-    conv5 = keras.layers.Conv2D(64, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv5 = tensorflow.keras.layers.Conv2D(64, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(r4)
@@ -203,9 +203,9 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b5 = BatchNormalization()(conv5)
     r5 = Activation('relu')(b5)
 
-    max3 = keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r5)
+    max3 = tensorflow.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r5)
 
-    conv6 = keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv6 = tensorflow.keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(max3)
@@ -213,7 +213,7 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b6 = BatchNormalization()(conv6)
     r6 = Activation('relu')(b6)
 
-    conv7 = keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv7 = tensorflow.keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(r6)
@@ -221,7 +221,7 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b7 = BatchNormalization()(conv7)
     r7 = Activation('relu')(b7)
 
-    conv8 = keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv8 = tensorflow.keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(r7)
@@ -229,7 +229,7 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b8 = BatchNormalization()(conv8)
     r8 = Activation('relu')(b8)
 
-    conv9 = keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv9 = tensorflow.keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(r8)
@@ -237,9 +237,9 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b9 = BatchNormalization()(conv9)
     r9 = Activation('relu')(b9)
 
-    max4 = keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r9)
+    max4 = tensorflow.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r9)
 
-    conv10 = keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv10 = tensorflow.keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(max4)
@@ -247,7 +247,7 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b10 = BatchNormalization()(conv10)
     r10 = Activation('relu')(b10)
 
-    conv11 = keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv11 = tensorflow.keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(r10)
@@ -255,7 +255,7 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b11 = BatchNormalization()(conv11)
     r11 = Activation('relu')(b11)
 
-    conv12 = keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv12 = tensorflow.keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(r11)
@@ -263,7 +263,7 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b12 = BatchNormalization()(conv12)
     r12 = Activation('relu')(b12)
 
-    conv13 = keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv13 = tensorflow.keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(r12)
@@ -271,11 +271,11 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b13 = BatchNormalization()(conv13)
     r13 = Activation('relu')(b13)
 
-    max4 = keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r13)
+    max4 = tensorflow.keras.layers.MaxPooling2D(pool_size=(2, 2), strides=(2,2), padding='same', data_format=None)(r13)
 
-    drop1 = keras.layers.Dropout(0.5, noise_shape=None, seed=None)(max4)
+    drop1 = tensorflow.keras.layers.Dropout(0.5, noise_shape=None, seed=None)(max4)
 
-    conv14 = keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv14 = tensorflow.keras.layers.Conv2D(256, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(drop1)
@@ -283,9 +283,9 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b14 = BatchNormalization()(conv14)
     r14 = Activation('relu')(b14)
 
-    drop2 = keras.layers.Dropout(0.5, noise_shape=None, seed=None)(r14)
+    drop2 = tensorflow.keras.layers.Dropout(0.5, noise_shape=None, seed=None)(r14)
 
-    conv15 = keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv15 = tensorflow.keras.layers.Conv2D(128, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(drop2)
@@ -293,9 +293,9 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b15 = BatchNormalization()(conv15)
     r15 = Activation('relu')(b15)
 
-    drop3 = keras.layers.Dropout(0.5, noise_shape=None, seed=None)(r15)
+    drop3 = tensorflow.keras.layers.Dropout(0.5, noise_shape=None, seed=None)(r15)
 
-    conv16 = keras.layers.Conv2D(64, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv16 = tensorflow.keras.layers.Conv2D(64, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(drop3)
@@ -304,9 +304,9 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     r16 = Activation('relu')(b16)
 
 
-    drop4 = keras.layers.Dropout(0.5, noise_shape=None, seed=None)(r16)
+    drop4 = tensorflow.keras.layers.Dropout(0.5, noise_shape=None, seed=None)(r16)
 
-    conv17 = keras.layers.Conv2D(32, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv17 = tensorflow.keras.layers.Conv2D(32, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(drop4)
@@ -314,9 +314,9 @@ def kaggle_drd(params, input_shape, depth, num_classes):
     b17 = BatchNormalization()(conv17)
     r17 = Activation('relu')(b17)
 
-    drop5 = keras.layers.Dropout(0.5, noise_shape=None, seed=None)(r17)
+    drop5 = tensorflow.keras.layers.Dropout(0.5, noise_shape=None, seed=None)(r17)
 
-    conv18 = keras.layers.Conv2D(16, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
+    conv18 = tensorflow.keras.layers.Conv2D(16, (3,3), strides=(1, 1), padding='same', data_format=None, dilation_rate=(1, 1),
                         activation=None, use_bias=True, kernel_initializer='glorot_uniform', bias_initializer='zeros',
                         kernel_regularizer=None, bias_regularizer=None, activity_regularizer=None,
                         kernel_constraint=None, bias_constraint=None)(drop5)

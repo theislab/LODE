@@ -1,7 +1,7 @@
 import numpy as np
 import os
 
-from feature_segmentation.evaluate.callbacks.callback_base import Callback
+from models.callbacks.callback_base import Callback
 
 
 class ModelCheckpointCustom(Callback):
@@ -46,3 +46,6 @@ class ModelCheckpointCustom(Callback):
             else:
                 print(f"---> Model validation {self.monitor} did not improve, continue without saving the model")
 
+
+if __name__ == "__main__":
+    print("import works")

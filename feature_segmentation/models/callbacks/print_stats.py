@@ -1,6 +1,6 @@
 import numpy as np
 
-from feature_segmentation.evaluate.callbacks.callback_base import Callback
+from models.callbacks.callback_base import Callback
 
 
 class PrintStats(Callback):
@@ -23,6 +23,12 @@ class PrintStats(Callback):
 
         Returns
         -------
+        :param lr:
+        :type lr:
+        :param validation_dict:
+        :type validation_dict:
+        :param train_dict:
+        :type train_dict:
         """
         train_dict.update(validation_dict)
         key_values = list(train_dict.keys())

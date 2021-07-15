@@ -16,9 +16,9 @@ image-classifiers==1.0.0
 imageio==2.6.1
 imgaug==0.2.6
 joblib==0.14.1
-Keras==2.3.1
-Keras-Applications==1.0.8
-Keras-Preprocessing==1.1.0
+tensorflow.keras==2.3.1
+tensorflow.keras-Applications==1.0.8
+tensorflow.keras-Preprocessing==1.1.0
 kiwisolver==1.1.0
 Mako==1.1.0
 Markdown==3.1.1

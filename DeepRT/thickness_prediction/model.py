@@ -1,15 +1,15 @@
 import tensorflow as tf
-import keras
-from keras.models import Model, load_model
-from keras.layers import Input, BatchNormalization, Activation, Dense, Dropout
-from keras.layers.core import Lambda, RepeatVector, Reshape
-from keras.layers.convolutional import Conv2D, Conv2DTranspose
-from keras.layers.merge import concatenate
-import keras
-from keras.layers import Dense, Conv2D, BatchNormalization, Activation
-from keras.layers import AveragePooling2D, Input, Flatten
-from keras.utils.data_utils import get_file
-from keras.regularizers import l2
+import tensorflow.keras
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import Input, BatchNormalization, Activation, Dense, Dropout
+from tensorflow.keras.layers.core import Lambda, RepeatVector, Reshape
+from tensorflow.keras.layers.convolutional import Conv2D, Conv2DTranspose
+from tensorflow.keras.layers.merge import concatenate
+import tensorflow.keras
+from tensorflow.keras.layers import Dense, Conv2D, BatchNormalization, Activation
+from tensorflow.keras.layers import AveragePooling2D, Input, Flatten
+from tensorflow.keras.utils.data_utils import get_file
+from tensorflow.keras.regularizers import l2
 
 
 def conv2d_block(input_tensor, n_filters, kernel_size=3, batchnorm=True):
@@ -103,7 +103,7 @@ def stage(x, num_filters_in, stage, num_res_blocks):
                              strides=strides,
                              activation=None,
                              batch_normalization=False)
-        x = keras.layers.add([x, y])
+        x = tensorflow.keras.layers.add([x, y])
 
     num_filters_in = num_filters_out
 

@@ -1,5 +1,5 @@
 import numpy as np
-import keras
+import tensorflow.keras
 import cv2
 import os
 import random
@@ -13,8 +13,8 @@ def crop_image(img,cond, tol=0):
     return img[np.ix_(mask.any(1),mask.any(0))]
 
 
-class DataGenerator(keras.utils.Sequence):
-    'Generates data for Keras'
+class DataGenerator(tensorflow.keras.utils.Sequence):
+    'Generates data for tensorflow.keras'
     def __init__(self, list_IDs, is_training, params):
         'Initialization'
         self.shape = (params.img_shape, params.img_shape)

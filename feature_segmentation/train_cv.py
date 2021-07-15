@@ -1,30 +1,20 @@
-import os
 import tensorflow as tf
 from tqdm import tqdm
-from pathlib import Path
-import sys
 import numpy as np
-
-path = Path(os.getcwd())
-sys.path.append(str(path.parent))
-
-# add children paths
-for child_dir in [p for p in path.glob("**/*") if p.is_dir()]:
-    sys.path.append(str(child_dir))
-
+import pandas as pd
 import random
 
-from custom_metrics import ModelMetrics
-from model_logging import ModelCheckpointCustom
-from print_stats import PrintStats
-from tensorboard_callback import TensorboardCallback
-from losses import get_loss
-from optimizers import get_optimizer
+from models.callbacks.custom_metrics import ModelMetrics
+from models.callbacks.model_logging import ModelCheckpointCustom
+from models.callbacks.print_stats import PrintStats
+from models.callbacks.tensorboard_callback import TensorboardCallback
+from models.losses import get_loss
+from models.optimizers import get_optimizer
 
 from models.model import get_model
-from config import TRAIN_DATA_PATH
-from utils.utils import Params, TrainOps, Logging, data_split
-from generator_2d import DataGenerator
+from config import TRAIN_DATA_PATH, DATA_SPLIT_PATH
+from utils.utils import Params, TrainOps, Logging
+from generator import DataGenerator
 
 
 def main(flags):
@@ -35,8 +25,9 @@ def main(flags):
 
     logging = Logging(flags.save_model_dir, params)
 
-    ids = os.listdir(os.path.join(params.data_path, "images"))
-    train_ids, validation_ids, test_ids = data_split(ids, params)
+    train_ids = pd.read_csv(DATA_SPLIT_PATH + "/train_ids.csv")["0"].tolist()
+    validation_ids = pd.read_csv(DATA_SPLIT_PATH + "/validation_ids.csv")["0"].tolist()
+    test_ids = pd.read_csv(DATA_SPLIT_PATH + "/test_ids.csv")["0"].tolist()
 
     test_id = [test_ids[params.cv_iteration]]
 
@@ -123,7 +114,11 @@ def main(flags):
 
 
 if __name__ == "__main__":
+<<<<<<< HEAD
     NUM_ENSEMBLES = 1
+=======
+    NUM_ENSEMBLES = 5
+>>>>>>> ef05297d95903ce7425ed5038983580209fec0fd
     NUM_OCTS = 35
 
     class FLAGS:
@@ -133,5 +128,11 @@ if __name__ == "__main__":
     for j in range(NUM_ENSEMBLES):
         for i in range(NUM_OCTS):
             flags.cfs_cv_iteration = i
+<<<<<<< HEAD
             flags.save_model_dir = f"./cv_logs1/logs_{j}"
+=======
+
+            # set model dir where much disk space is available. With CV training many models will be saved.
+            flags.save_model_dir = f"./logs_{j}"
+>>>>>>> ef05297d95903ce7425ed5038983580209fec0fd
             main(flags)

@@ -196,7 +196,7 @@ class Estimator():
         if self.model is None:
             self.create_model()
         config = self.config['training']
-        optimizer = tf.keras.optimizers.Adam(learning_rate=config['learning_rate'])
+        optimizer = tf.tensorflow.keras.optimizers.Adam(learning_rate=config['learning_rate'])
         self.model.model.compile(
             optimizer = optimizer,
             loss = config['loss'],
@@ -208,9 +208,9 @@ class Estimator():
             logdir = "{}/{}".format(config['tb_log_dir'], datetime.now().strftime("%Y%m%d-%H%M%S"))
             file_writer = tf.summary.create_file_writer(logdir + "/metrics")
             file_writer.set_as_default()
-            log_weights_callback = tf.keras.callbacks.LambdaCallback(on_epoch_end=partial(Estimator.log_variable_summaries, 
+            log_weights_callback = tf.tensorflow.keras.callbacks.LambdaCallback(on_epoch_end=partial(Estimator.log_variable_summaries, 
                                                                                       layers=self.model.log_layers))
-            tb_callback = tf.keras.callbacks.TensorBoard(log_dir=logdir)
+            tb_callback = tf.tensorflow.keras.callbacks.TensorBoard(log_dir=logdir)
             self.callbacks.append(log_weights_callback)
             self.callbacks.append(tb_callback)
         self.compiled_model = True
@@ -253,7 +253,7 @@ class Estimator():
             tf.summary.scalar(name+'/mean', data=data.numpy().mean(), step=step)
 
         for layer in layers:
-            if isinstance(layer, tf.keras.layers.LSTM):
+            if isinstance(layer, tf.tensorflow.keras.layers.LSTM):
                 units = int(layer.weights[0].shape[1]/4)
                 name = layer.name
                 for w, n in zip(layer.weights, ['W', 'U', 'b']):

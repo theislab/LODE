@@ -274,7 +274,7 @@ def augmented_conv2d(ip, filters, kernel_size=(3, 3), strides=(1, 1),
     Builds an Attention Augmented Convolution block.
 
     Args:
-        ip: keras tensor.
+        ip: tensorflow.keras tensor.
         filters: number of output filters.
         kernel_size: convolution kernel size.
         strides: strides of the convolution.
@@ -290,7 +290,7 @@ def augmented_conv2d(ip, filters, kernel_size=(3, 3), strides=(1, 1),
             encodings or not.
 
     Returns:
-        a keras tensor.
+        a tensorflow.keras tensor.
     """
     # input_shape = K.int_shape(ip)
     channel_axis = 1 if K.image_data_format() == 'channels_first' else -1
@@ -310,8 +310,8 @@ def augmented_conv2d(ip, filters, kernel_size=(3, 3), strides=(1, 1),
 
 
 if __name__ == '__main__':
-    from tensorflow.keras.layers import Input
-    from tensorflow.keras.models import Model
+    from tensorflow.tensorflow.keras.layers import Input
+    from tensorflow.tensorflow.keras.models import Model
 
     ip = Input(shape=(32, 32, 3))
     x = augmented_conv2d(ip, filters=20, kernel_size=(3, 3),

@@ -199,7 +199,7 @@ def shape_to_mask(img_shape, points, shape_type=None,
 
 
 def fibrosis_change(img_id, change_log, map_):
-    record_bool = change_log["id"] == img_id
+    record_bool = change_log["id"] == img_id.replace(".json", "")
     if np.sum(record_bool) != 0:
         action = change_log.loc[record_bool]["action"].values[0]
         if action == "change":

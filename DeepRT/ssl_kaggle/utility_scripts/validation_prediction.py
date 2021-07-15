@@ -1,15 +1,15 @@
-from keras.preprocessing.image import ImageDataGenerator
-from keras.optimizers import adam
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.optimizers import adam
 import os
-from keras.models import Model
+from tensorflow.keras.models import Model
 import resnet as re
 import multiprocessing
 import pandas as pd
-from keras.callbacks import ReduceLROnPlateau
+from tensorflow.keras.callbacks import ReduceLROnPlateau
 from python_generator_test import DataGenerator_kaggle
 from train_eval_ops import *
-from keras.utils.data_utils import get_file
-from keras.callbacks import LearningRateScheduler
+from tensorflow.keras.utils.data_utils import get_file
+from tensorflow.keras.callbacks import LearningRateScheduler
 from sklearn.metrics import precision_score
 from sklearn.metrics import recall_score
 import pandas as pd
@@ -35,7 +35,7 @@ params["sampling"] = "oversampling"
 # set path to proportion of data set to be trained on
 params["file_prop"] = "hundred"
 params["ids_path"] = "./file_splits/size_splits"
-params["data_dir"] = "/home/olle/PycharmProjects/ssl_kaggle_drd/data/keras_generator_format"
+params["data_dir"] = "/home/olle/PycharmProjects/ssl_kaggle_drd/data/tensorflow.keras_generator_format"
 
 params["validation_dir"] = os.path.join(params["data_dir"],"unbalanced","512/validation/")
 
@@ -57,7 +57,7 @@ model = Model(inputs=img_input, outputs=[res_output])
 model.summary()
 
 '''Compile model'''
-sgd = keras.optimizers.SGD(lr=params["learning_rate"], momentum=0.99, decay=0.0, nesterov=False)
+sgd = tensorflow.keras.optimizers.SGD(lr=params["learning_rate"], momentum=0.99, decay=0.0, nesterov=False)
 Adam = adam(lr=params["learning_rate"], beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
 
 model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=["accuracy"])

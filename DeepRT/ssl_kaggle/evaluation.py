@@ -1,9 +1,9 @@
 from __future__ import print_function
-from keras.optimizers import SGD
+from tensorflow.keras.optimizers import SGD
 import input as i
 from utils import *
 import pandas as pd
-import keras
+import tensorflow.keras
 
 #load utils classes
 params = Params("params.json")
@@ -22,7 +22,7 @@ model = "DeepRT"
 if model == "DeepRT":
     model = m.resnet_v2(params=params, input_shape=params.img_shape, n=2,num_classes=5)
 if model == "Resnet50":
-    model = keras.applications.ResNet50(include_top=True, weights=None, input_tensor=None,
+    model = tensorflow.keras.applications.ResNet50(include_top=True, weights=None, input_tensor=None,
                                         input_shape=(512, 512, 3), pooling=None, classes=5)
 
 # load the model

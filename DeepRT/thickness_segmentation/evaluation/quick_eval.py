@@ -4,7 +4,7 @@ import os
 import numpy as np
 import tensorflow as tf
 from model import *
-from tensorflow.python.keras import models
+from tensorflow.python.tensorflow.keras import models
 
 def quick_eval(params,save_model_path):
     img_dir = os.path.join(params["data_dir"], "test_images")
@@ -28,7 +28,7 @@ def quick_eval(params,save_model_path):
     print("Number of validation examples: {}".format(num_val_examples))
 
     # Alternatively, load the weights directly: model.load_weights(save_model_path)
-    from keras.models import load_model
+    from tensorflow.keras.models import load_model
     inputs, outputs = model_fn(params["img_shape"])
     model = models.Model(inputs=[inputs], outputs=[outputs])
     model.load_weights(save_model_path)
@@ -41,7 +41,7 @@ def quick_eval(params,save_model_path):
     # Running next element in our graph will produce a batch of images
     test_losses = []
     for i in range(12):
-        batch_of_imgs, label = tf.keras.backend.get_session().run(next_element)
+        batch_of_imgs, label = tf.tensorflow.keras.backend.get_session().run(next_element)
         img = batch_of_imgs[0]
         loss = model.evaluate(x=batch_of_imgs, y=label, batch_size=1, verbose=1, sample_weight=None, steps=None)
         test_losses.append(loss)

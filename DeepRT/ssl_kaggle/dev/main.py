@@ -1,15 +1,15 @@
-from keras.preprocessing.image import ImageDataGenerator
-from keras.optimizers import adam
+from tensorflow.keras.preprocessing.image import ImageDataGenerator
+from tensorflow.keras.optimizers import adam
 import os
-from keras.models import Model
+from tensorflow.keras.models import Model
 import resnet as re
 import multiprocessing
 import pandas as pd
-from keras.callbacks import ReduceLROnPlateau
+from tensorflow.keras.callbacks import ReduceLROnPlateau
 from python_generator_test import DataGenerator_kaggle
 from train_eval_ops import *
-from keras.utils.data_utils import get_file
-from keras.callbacks import LearningRateScheduler
+from tensorflow.keras.utils.data_utils import get_file
+from tensorflow.keras.callbacks import LearningRateScheduler
 import glob
 import math
 
@@ -30,7 +30,7 @@ params["sampling"] = "oversampling"
 #set path to proportion of data set to be trained on
 params["file_prop"] = "hundred"
 params["ids_path"] = "./file_splits/size_splits"
-params["data_dir"] = "/home/olle/PycharmProjects/ssl_kaggle_drd/data/keras_generator_format"
+params["data_dir"] = "/home/olle/PycharmProjects/ssl_kaggle_drd/data/tensorflow.keras_generator_format"
 
 def load_weights(model):
     pre_init = False
@@ -90,7 +90,7 @@ model = Model(inputs=img_input, outputs=[res_output])
 model.summary()
 
 '''Compile model'''
-sgd = keras.optimizers.SGD(lr=params["learning_rate"], momentum=0.99, decay=0.0, nesterov=False)
+sgd = tensorflow.keras.optimizers.SGD(lr=params["learning_rate"], momentum=0.99, decay=0.0, nesterov=False)
 Adam = adam(lr=params["learning_rate"], beta_1=0.9, beta_2=0.999, epsilon=None, decay=0.0, amsgrad=False)
 
 model.compile(optimizer=sgd, loss='categorical_crossentropy', metrics=["accuracy"])
@@ -147,11 +147,11 @@ def main(model):
 
     '''callbacks'''
     save_model_path = os.path.join(params["save_path"], "weights.hdf5")
-    checkpoint = keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor='val_acc',
+    checkpoint = tensorflow.keras.callbacks.ModelCheckpoint(filepath=save_model_path, monitor='val_acc',
                                                     save_best_only=True, verbose=1, save_weights_only=True)
     learning_rate_reduction = ReduceLROnPlateau(factor=0.1, patience=5, min_lr=0.000001, verbose=1)
-    es = tf.keras.callbacks.EarlyStopping(monitor="val_acc", mode="max", patience=75)
-    tb = keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0,
+    es = tf.tensorflow.keras.callbacks.EarlyStopping(monitor="val_acc", mode="max", patience=75)
+    tb = tensorflow.keras.callbacks.TensorBoard(log_dir='./Graph', histogram_freq=0,
                                 write_graph=True, write_images=True)
 
     learning_rate_ = LearningRateScheduler(step_decay, verbose=2)

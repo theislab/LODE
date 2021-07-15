@@ -1,5 +1,5 @@
 import numpy as np
-import keras
+import tensorflow.keras
 import cv2
 import pandas as pd
 import os
@@ -9,8 +9,8 @@ from skimage import transform
 import scipy
 from params import *
 
-class DataGenerator(keras.utils.Sequence):
-    'Generates data for Keras'
+class DataGenerator(tensorflow.keras.utils.Sequence):
+    'Generates data for tensorflow.keras'
     def __init__(self, list_IDs,fundus_path, is_training,label_path, batch_size, dim,
                  brightness_factor,
                  contrast_factor,

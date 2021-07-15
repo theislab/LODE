@@ -1,17 +1,17 @@
 import matplotlib as mpl
-from keras import backend as K
+from tensorflow.keras import backend as K
 mpl.rcParams['axes.grid'] = False
 mpl.rcParams['figure.figsize'] = (12, 12)
 from train_eval_ops import *
 import numpy as np
-import keras
+import tensorflow.keras
 from params import *
 import tensorflow as tf
-from tensorflow.python.keras import losses
+from tensorflow.python.tensorflow.keras import losses
 
 
 
-#keras loss functions
+#tensorflow.keras loss functions
 def recall(y_true, y_pred):
     '''Calculates the recall, a metric for multi-label classification of
     how many relevant items are selected.

@@ -1,8 +1,7 @@
-import datetime
 import os
 import tensorflow as tf
 
-from feature_segmentation.evaluate.callbacks.callback_base import Callback
+from models.callbacks.callback_base import Callback
 
 
 class TensorboardCallback(Callback):

@@ -9,17 +9,6 @@ import os
 import sys
 from pathlib import Path
 
-path_variable = Path(os.path.dirname(__file__))
-sys.path.insert(0, str(path_variable))
-sys.path.insert(0, str(path_variable.parent))
-
-from config import PROJ_DIR
-
-search_paths = [i for i in glob.glob(str(PROJ_DIR) + "/*/*") if os.path.isdir(i)]
-
-for sp in search_paths:
-    sys.path.append(sp)
-
 
 def invert_camera_effect(img):
     # annotate camera artifact

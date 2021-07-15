@@ -5,29 +5,16 @@ from pathlib import Path
 import pandas as pd
 import glob
 import math
-import keras
-from keras.optimizers.schedules import *
-
-root_dir = "/home/icb/olle.holmberg/projects/LODE/feature_segmentation"
-search_paths = [i for i in glob.glob(root_dir + "/*/*") if os.path.isdir(i)]
-
-for sp in search_paths:
-    sys.path.append(sp)
-
-path_variable = Path(os.path.dirname(__file__))
-sys.path.insert(0, str(path_variable))
-sys.path.insert(0, str(path_variable.parent))
-
 import json
 import glob
 import shutil
 import os
 
-from keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
-from config import DATA_SPLIT_PATH
+from tensorflow.keras.optimizers.schedules import *
+from tensorflow.keras.callbacks import ModelCheckpoint, LearningRateScheduler, CSVLogger, TensorBoard, EarlyStopping
 
 
-class Params():
+class Params:
     """Class that loads hyperparameters from a json file.
     Example:
     ```
@@ -62,7 +49,7 @@ class Params():
         return self.__dict__
 
 
-class Logging():
+class Logging:
 
     def __init__(self, logging_directory, params):
         self.log_dir = logging_directory
@@ -118,35 +105,6 @@ class Logging():
             # We need to convert the values to float for json (it doesn't accept np.array, np.float, )
             d = {k: str(v) for k, v in self.params.dict.items()}
             json.dump(d, f, indent = 4)
-
-
-def cast_params_types(params, model_path):
-    """
-    function takes params object and casts all numeric types to float. Then save the config file again
-    Parameters
-    ----------
-    params : loaded config file
-    model_path : directory of model
-
-    Returns
-    -------
-    None
-    """
-    # cast data types to numeric
-    params = params.dict
-    for k in params.keys():
-        try:
-            int(params[k])
-            params[k] = int(params[k])
-        except ValueError:
-            try:
-                float(params[k])
-                params[k] = float(params[k])
-            except ValueError:
-                print("Not an int or  float")
-
-    with open(os.path.join(model_path, 'params.json'), 'w') as json_file:
-        json.dump(params, json_file)
 
 
 class TrainOps:
@@ -231,37 +189,36 @@ class TrainOps:
                                append = True,
                                separator = ",")
 
-        es = EarlyStopping(monitor = 'val_accuracy', patience = 300)
-
         return [lr_scheduler, checkpoint, tb, csv_logger]
 
 
-def data_split(ids, params):
-    """
-    @param ids: list of image names
-    @type ids: list
-    @return: three lists divided into train, validation and test split
-    @rtype: list
-    """
-    if not params.load_train_records:
-        # shuffle(ids)
-        n_records = len(ids)
+def get_class_distribution(lbl_path, ids):
+    full_lbl_paths = [os.path.join(lbl_path, id) for id in ids]
+    label_repr = [np.unique(Image.open(lp)).tolist() for lp in full_lbl_paths]
+    flatten = list(itertools.chain(*label_repr))
+    class_distribution = Counter(flatten)
 
-        test_ids = ids[int(n_records * 0.9):-1]
-        validation_ids = ids[int(len(ids) * 0.8):int(len(ids) * 0.9)]
-        train_ids = ids[0:int(len(ids) * 0.8)]
-    else:
-        train_ids = pd.read_csv(os.path.join(params.pretrained_model, "train_ids.csv"))["0"].tolist()
-        validation_ids = pd.read_csv(os.path.join(params.pretrained_model, "validation_ids.csv"))["0"].tolist()
-        test_ids = pd.read_csv(os.path.join(params.pretrained_model, "test_ids.csv"))["0"].tolist()
+    upsampling_factors = {}
+    for key in class_distribution.keys():
+        upsampling_factors[key] = len(ids) // class_distribution[key]
+    return upsampling_factors, label_repr
 
-    if params.load_prepared_split:
-        train_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "train_ids.csv"))["0"].tolist()
-        validation_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "validation_ids.csv"))["0"].tolist()
-        test_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "test_ids.csv"))["0"].tolist()
 
-    return train_ids, validation_ids, test_ids
+def upsample(ids, lbl, lr, uf):
+    new_ids = []
+    for k, id in enumerate(ids):
+        if lbl in lr[k]:
+            new_ids = new_ids + [id] * uf[lbl]
+    return new_ids + ids
+
+
+def label_mapping(mask):
+    mapping = {11: 7, 12: 2}
+
+    for key in mapping.keys():
+        mask[mask == key] = mapping[key]
+    return mask
 
 
 if __name__ == "__main__":
-    print("successfully run")
+    print("import works")

@@ -8,11 +8,11 @@ import pandas as pd
 import numpy as np
 import os
 import shutil
-from keras.utils import get_file
+from tensorflow.keras.utils import get_file
 from sklearn.metrics import log_loss
 from sklearn.metrics import cohen_kappa_score
 from sklearn.metrics import balanced_accuracy_score
-import keras
+import tensorflow.keras
 from deepRT import DeepRT
 
 
@@ -567,7 +567,7 @@ class TrainOps():
 
         """load model"""
         if params.model_version == "ResNet50":
-            model = keras.applications.ResNet50(include_top = True,
+            model = tensorflow.keras.applications.ResNet50(include_top = True,
                                                 weights = None,
                                                 input_tensor = None,
                                                 input_shape = (params.img_shape, params.img_shape, 3),

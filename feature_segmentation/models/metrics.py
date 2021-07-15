@@ -1,11 +1,11 @@
 # yapf: disable
 import tensorflow as tf
-import keras
+import tensorflow.keras
 import tensorflow
-from tensorflow.keras import backend as K
+from tensorflow.tensorflow.keras import backend as K
 
 
-class DiceCoefficient(tensorflow.keras.metrics.Metric):
+class DiceCoefficient(tensorflow.tensorflow.keras.metrics.Metric):
 
     def __init__(self, name='dice', num_classes=None, **kwargs):
         super(DiceCoefficient, self).__init__(name=name, **kwargs)

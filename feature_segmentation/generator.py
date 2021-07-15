@@ -1,24 +1,15 @@
 from copy import deepcopy
-
 import numpy as np
-import keras
+import tensorflow.keras
 import os
-from generators.generator_utils.oct_augmentations import get_augmentations
 
-from generators.generator_utils.image_processing import read_resize_random_invert
-from generators.generator_utils.utils import get_class_distribution, upsample
-
-
-def label_mapping(mask):
-    mapping = {11: 7, 12: 2}
-
-    for key in mapping.keys():
-        mask[mask == key] = mapping[key]
-    return mask
+from utils.oct_augmentations import get_augmentations
+from utils.image_processing import read_resize_random_invert
+from utils.utils import get_class_distribution, upsample, label_mapping
 
 
-class DataGenerator(keras.utils.Sequence):
-    'Generates data for Keras'
+class DataGenerator(tensorflow.keras.utils.Sequence):
+    'Generates data for tensorflow.keras'
 
     def __init__(self, list_IDs, params, is_training):
         'Initialization'
@@ -34,15 +25,6 @@ class DataGenerator(keras.utils.Sequence):
         self.augment_box = get_augmentations(params)[params.aug_strategy]
         self.val_aug_box = get_augmentations(params)["light"]
 
-        if params.balance_dataset and is_training:
-            upsampling_factors, label_repr = get_class_distribution(self.label_path, list_IDs)
-            train_ids = deepcopy(list_IDs)
-            for label in [5, 8, 13]:
-                new_ids = upsample(train_ids, label, label_repr, upsampling_factors)
-                train_ids = deepcopy(new_ids)
-                upsampling_factors, label_repr = get_class_distribution(self.label_path, train_ids)
-
-            self.list_IDs = new_ids
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -83,10 +65,10 @@ class DataGenerator(keras.utils.Sequence):
             lbl_resized = label_mapping(lbl_resized)
 
             # Store sample
-            X[i,] = im_resized
-            y[i,] = lbl_resized
+            X[i, ] = im_resized
+            y[i, ] = lbl_resized
 
-            X[i,], y[i,] = self.__pre_process(X[i,], y[i,])
+            X[i, ], y[i, ] = self.__pre_process(X[i, ], y[i, ])
         return X, y.astype(np.float32)
 
     def __pre_process(self, train_im, label_im):
@@ -109,3 +91,7 @@ class DataGenerator(keras.utils.Sequence):
         return (train_im.reshape(self.shape[0], self.shape[1], 3), label_im.reshape((self.shape[0],
                                                                                      self.shape[0],
                                                                                      1)))
+
+
+if __name__ == "__main__":
+    print("imports works!")

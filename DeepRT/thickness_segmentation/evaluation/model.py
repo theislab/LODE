@@ -1,11 +1,11 @@
 import tensorflow as tf
 from params import *
-from keras.models import Model, load_model
-from keras.layers import Input, BatchNormalization, Activation, Dense, Dropout
-from keras.layers.core import Lambda, RepeatVector, Reshape
-from keras.layers.convolutional import Conv2D, Conv2DTranspose
-from keras.layers.pooling import MaxPooling2D, GlobalMaxPool2D
-from keras.layers.merge import concatenate
+from tensorflow.keras.models import Model, load_model
+from tensorflow.keras.layers import Input, BatchNormalization, Activation, Dense, Dropout
+from tensorflow.keras.layers.core import Lambda, RepeatVector, Reshape
+from tensorflow.keras.layers.convolutional import Conv2D, Conv2DTranspose
+from tensorflow.keras.layers.pooling import MaxPooling2D, GlobalMaxPool2D
+from tensorflow.keras.layers.merge import concatenate
 
 def conv2d_block(input_tensor, n_filters, kernel_size=3, batchnorm=True):
     # first layer

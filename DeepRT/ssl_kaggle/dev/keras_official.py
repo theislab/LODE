@@ -1,9 +1,9 @@
 from __future__ import print_function
-import keras
-from keras.optimizers import SGD
-from keras.callbacks import LearningRateScheduler
+import tensorflow.keras
+from tensorflow.keras.optimizers import SGD
+from tensorflow.keras.callbacks import LearningRateScheduler
 import multiprocessing
-from keras.utils.data_utils import get_file
+from tensorflow.keras.utils.data_utils import get_file
 import tensorflow as tf
 import input as i
 from utils import *
@@ -96,13 +96,13 @@ def main(logging ,params, step_factor):
     '''callbacks'''
     lr_scheduler = LearningRateScheduler(step_decay)
 
-    checkpoint = keras.callbacks.ModelCheckpoint(filepath=logging.model_directory +"/weights.hdf5",
+    checkpoint = tensorflow.keras.callbacks.ModelCheckpoint(filepath=logging.model_directory +"/weights.hdf5",
                                                     monitor='val_acc',
                                                     save_best_only=True,
                                                     verbose=1,
                                                     save_weights_only=False)
 
-    tb = keras.callbacks.TensorBoard(log_dir=logging.tensorboard_directory,
+    tb = tensorflow.keras.callbacks.TensorBoard(log_dir=logging.tensorboard_directory,
                                      histogram_freq=0,
                                      write_graph=True,
                                      write_images=True,
