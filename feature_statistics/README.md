@@ -1,5 +1,12 @@
 # feature statistics project
 
+This repository implements the feature and time series calculations used in the project. 
+
+"Changes in OCT Biomarkers of treatment naive patients in neovascular AMD using novel segmentation algorithm "
+
+It consists of 3 python scripts, detailed below, for calculating feature statistics and generating time series data. As
+well as jupyter notebooks for feature statistics calculations and visualuzation.
+
 ## segmentation statistics
 
 To calculate the segmentation statistics for the segmented OCTs provide the path to the directory where the
