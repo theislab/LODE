@@ -111,36 +111,6 @@ def split_sequences(sequences, min_len=None, max_len=None, train_frac=0.8, val_f
     return sequences_train, sequences_val, sequences_test
 
 
-def check_features(workspace_dir, longitudinal_data):
-    """
-    workspace_dir: str
-    longitudinal_data: DataFrame with long. data
-    """
-    feature_names = None
-    segmentation_feature_path = os.path.join(workspace_dir, "sequence_data/segmentation_statistics.csv")
-
-    assert os.path.exists(segmentation_feature_path), "Features not available in work space"
-
-    # if feature stat table exists load here
-    segmented_data = pd.read_csv(segmentation_feature_path, index_col = 0)
-
-    # get feature names
-    feature_names = segmented_data.columns[1:]
-
-    # join with longitudinal data table
-    keys = ["patient_id", "laterality", "study_date"]
-    segmented_data[keys] = segmented_data.record.str.split("_", expand = True)[[0, 1, 2]]
-
-    # convert keys to same format is in longitudinal_data
-    segmented_data["study_date"] = pd.to_datetime(segmented_data["study_date"]).astype(str)
-
-    # convert patient id to int
-    segmented_data["patient_id"] = segmented_data["patient_id"].astype(np.int64)
-
-    longitudinal_data = pd.merge(longitudinal_data, segmented_data, left_on = keys, right_on = keys, how = "inner")
-    return longitudinal_data, feature_names.tolist()
-
-
 class Measurement:
     MEDS = ['Avastin', 'Dexamethason', 'Eylea', 'Iluvien', 'Jetrea', 'Lucentis', 'Ozurdex', 'Triamcinolon', 'Unknown']
     FEATURES = []
