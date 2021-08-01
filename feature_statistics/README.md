@@ -45,3 +45,12 @@ requires the path to where you have saved your datasets, see overview presentati
  
  The csv files will be saved in the same directory as sequences.csv and need the same WORK_SPACE directory as the 
  generate_full_sequecnes.csv file.
+ 
+ ## generating the feature distribution and regression model results from the above linked manusript
+ 
+to generate the statistical test, feature distribution and regression coefficient results from the manuscript please see notebooks:
+
+- 0_2_time_series_1-3-6-12-24-months.ipynb
+- 07_feature_time_series_visualization
+
+Additional modeling and plotting are also done in the notebooks besides the results presented in the manuscript.
