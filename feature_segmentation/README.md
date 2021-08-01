@@ -27,8 +27,19 @@ DATA_SPLIT_PATH = "/storage/groups/ml01/datasets/projects/20201010_LODE_segmenta
 
 ## general
 
-in the /storage/groups/ml01/datasets/projects/20201010_LODE_segmentation/feature_segmentation/ directory one find the data files for the segmentation project.
-This includes unrevised and revised json file. Please use revised (by default stored in the above written TRAIN_DATA_PATH). During the annotations process standards were changed, hence the unrevised annotations sometimes contains annotation errors. 
+in the 
+
+- /storage/groups/ml01/datasets/projects/20201010_LODE_segmentation/feature_segmentation/ 
+
+directory one find the data files for the segmentation project.
+
+This includes unrevised and revised json file. Please use revised (by default stored in the above written TRAIN_DATA_PATH). During the annotations process standards were changed, hence the unrevised annotations sometimes contains annotation errors.
+
+in the directory 
+
+- /storage/groups/ml01/datasets/projects/20201010_LODE_segmentation/feature_segmentation/data/records
+
+You will find the records of the revised images and annotations.
 
 ### generating segmentation masks from json annotations files
 
