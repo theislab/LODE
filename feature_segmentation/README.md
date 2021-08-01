@@ -48,7 +48,7 @@ Please see /label_conversion/labelme2voc.py file. To use, edit the python file w
 The annotation masks as well as visualizations are saved in the same directory as the label conversion python file. 
 
 
-## reproducing the test results from the above linked manuscript
+## generating the test results from the above linked manuscript
 
 see the best perfoming models in the evaluate_cv_ensemble.py file (exchange the path to the cv_runs model directory (/storage/groups/ml01/datasets/projects/20201010_LODE_segmentation/feature_segmentation/cv_runs)).
 
@@ -56,6 +56,7 @@ to reproduce the results on the test set just reset the model path to where the 
 
 For interdoctor variation performance please run inter_doctor_variation_analysis.py with the models specified in the python file. Again you need to exchange the root directory in each model path.
 
+The above two python scripts will generate all necessary files (ground truth, image and prediction files for running the 0.0.segmentation_results.ipynb notebook in the LODE/feature_segmentation project. This notebook then yields the F1-scores and manuscript plots.
 
 
 
