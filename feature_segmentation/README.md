@@ -46,3 +46,16 @@ You will find the records of the revised images and annotations.
 Please see /label_conversion/labelme2voc.py file. To use, edit the python file with the correct path to the directory holding the json file and then run the files.
 
 The annotation masks as well as visualizations are saved in the same directory as the label conversion python file. 
+
+
+## reproducing the test results from the above linked manuscript
+
+see the best perfoming models in the evaluate_cv_ensemble.py file (exchange the path to the cv_runs model directory (/storage/groups/ml01/datasets/projects/20201010_LODE_segmentation/feature_segmentation/cv_runs)).
+
+to reproduce the results on the test set just reset the model path to where the cv_runs are stored and run the python file.
+
+For interdoctor variation performance please run inter_doctor_variation_analysis.py with the models specified in the python file. Again you need to exchange the root directory in each model path.
+
+
+
+
