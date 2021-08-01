@@ -7,7 +7,6 @@ workspace
 **/logs
 **/label_conversion
 **/*config*
-eye_clinic_general
 config.py
 config.py
 **/results
