@@ -44,10 +44,10 @@ if __name__ == "__main__":
     seqs = []
     i = 0
     for name, group in tqdm(grouped_patients):
-        # if name == (502, 'L'):
-
+        #if name == (377854, 'R'):
         # get events for this group
         group_events = None
+
         try:
             group_events = grouped_events.get_group(name)
         except KeyError as e:

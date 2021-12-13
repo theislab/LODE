@@ -157,7 +157,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         diagnosis = meta_data[MeasureSeqTimeUntilDry.META_DATA[2]]
 
         # check so patient is treated with no lens surgery
-        if (total_number_injections > 0) and (sum(record_table.lens_surgery) == 0):
+        if total_number_injections > 0:
             for data_point in data_points:
                 time_line = time_utils.assign_to_timeline_str(time_line = time_line,
                                                               item = data_point,
@@ -180,7 +180,7 @@ if __name__ == "__main__":
     # distribution of 3 and 6 month treatment effect
     """
     # load sequences
-    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data", 'sequences.csv'))
+    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export", 'sequences.csv'))
 
     region_resolved = True
 
@@ -211,7 +211,7 @@ if __name__ == "__main__":
 
     # read in naive patient data
     naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/dwh_tables_cleaned/naive_patients.csv"),
-                                 sep = ",").dropna()
+                                 sep = ",")#.dropna()
 
     naive_patients["patient_id"] = naive_patients["patient_id"].astype(int)
 
@@ -221,5 +221,5 @@ if __name__ == "__main__":
 
     # remove non treated records
     time_until_dry_pd = time_until_dry_pd[time_until_dry_pd['study_date_1'].notna()]
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data/longitudinal_properties.csv"))
-    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data/longitudinal_properties_naive.csv"))
+    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties.csv"))
+    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties_naive.csv"))
