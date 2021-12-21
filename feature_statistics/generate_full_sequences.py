@@ -44,18 +44,18 @@ if __name__ == "__main__":
     seqs = []
     i = 0
     for name, group in tqdm(grouped_patients):
-        #if name == (377854, 'R'):
-        # get events for this group
-        group_events = None
+        if name == (377854, 'R'):
+            # get events for this group
+            group_events = None
 
-        try:
-            group_events = grouped_events.get_group(name)
-        except KeyError as e:
-            pass
+            try:
+                group_events = grouped_events.get_group(name)
+            except KeyError as e:
+                pass
 
-        seq = sequences.MeasurementSequence.from_pandas(group)
-        seq.add_events_from_pandas(group_events, how = 'previous')  # IMPORTANT: ADD EVENTS TO NEXT MEASUREMENT
-        seqs.append(seq)
+            seq = sequences.MeasurementSequence.from_pandas(group)
+            seq.add_events_from_pandas(group_events, how = 'previous')  # IMPORTANT: ADD EVENTS TO NEXT MEASUREMENT
+            seqs.append(seq)
 
     # parameters for sequence generation
     # should each measurement in the sequence have an OCT and a VA?

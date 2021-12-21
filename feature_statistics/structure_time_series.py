@@ -26,6 +26,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     ETDRS_REGIONS = ["T1", "T2", "S1", "S2", "N1", "N2", "C0", "I1", "I2"]
 
     DATA_POINTS = ["total_fluid",
+                   "lens_surgery",
                    "cur_va_rounded",
                    "next_va",
                    "cumsum_injections",
@@ -131,15 +132,16 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2))
 
         # create cumsum injections column
-        record_table.loc[:, "cumsum_injections"] = record_table.injections.cumsum()
+        new_record_table = record_table.copy()
+        new_record_table.loc[:, "cumsum_injections"] = record_table.injections.cumsum()
 
         # add all injections
         for inj_col in MeasureSeqTimeUntilDry.INJECTION_COLUMNS:
-            record_table.loc[:, f"cumsum_{inj_col}"] = record_table[inj_col].cumsum()
+            new_record_table.loc[:, f"cumsum_{inj_col}"] = new_record_table[inj_col].cumsum()
 
-        total_number_injections = get_total_number_of_injections(table = record_table)
+        total_number_injections = get_total_number_of_injections(table = new_record_table)
 
-        time_utils = TimeUtils(record_table = record_table)
+        time_utils = TimeUtils(record_table = new_record_table)
         time_line = time_utils.time_line
 
         # initialize sequence class
@@ -150,13 +152,13 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         else:
             data_points = copy(MeasureSeqTimeUntilDry.DATA_POINTS)
 
-        meta_data = record_table.iloc[0]
+        meta_data = new_record_table.iloc[0]
 
         patient_id = meta_data[MeasureSeqTimeUntilDry.META_DATA[0]]
         laterality = meta_data[MeasureSeqTimeUntilDry.META_DATA[1]]
         diagnosis = meta_data[MeasureSeqTimeUntilDry.META_DATA[2]]
 
-        # check so patient is treated with no lens surgery
+        # check so patient is treated
         if total_number_injections > 0:
             for data_point in data_points:
                 time_line = time_utils.assign_to_timeline_str(time_line = time_line,
@@ -180,7 +182,7 @@ if __name__ == "__main__":
     # distribution of 3 and 6 month treatment effect
     """
     # load sequences
-    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export", 'sequences.csv'))
+    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data", 'sequences.csv'))
 
     region_resolved = True
 
@@ -190,14 +192,27 @@ if __name__ == "__main__":
 
     time_until_dry = []
 
-    for patient, lat in tqdm(unique_records.itertuples(index = False)):
+    unique_record_list = list(zip(unique_records.patient_id, unique_records.laterality))
+
+    # function to return a time log from a record patient id and laterality
+    def append_time_log(record):
+        patient, lat = record
+
         try:
-            print(patient, lat)
             record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
-            time_until_dry.append(mstd.from_record(record_pd, region_resolved))
+            return mstd.from_record(record_pd, region_resolved)
         except:
-            print("patient did not work", patient, lat)
-            continue
+            print("record did not work: ", record)
+
+    import time
+
+    from joblib import Parallel, delayed
+
+    start_ = time.time()
+    time_until_dry = Parallel(n_jobs = -1, verbose = 1, backend = "multiprocessing")(
+        map(delayed(append_time_log), unique_record_list))
+
+    print("time with parallelized loop: ", time.time() - start_)
 
     time_series_log = []
 
@@ -211,7 +226,7 @@ if __name__ == "__main__":
 
     # read in naive patient data
     naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/dwh_tables_cleaned/naive_patients.csv"),
-                                 sep = ",")#.dropna()
+                                 sep = ",")
 
     naive_patients["patient_id"] = naive_patients["patient_id"].astype(int)
 

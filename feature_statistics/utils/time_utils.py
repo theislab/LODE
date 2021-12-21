@@ -213,7 +213,12 @@ class TimeUtils:
         time_line[time_point]["time_range"] = interp_time
         time_line[time_point]["time_range_before"] = days_before
         time_line[time_point]["time_range_after"] = days_after
-        time_line[time_point][item] = interp_value
+
+        # if surgery, just insert the true false value
+        if "surgery" in item:
+            time_line[time_point][item] = np.ceil(interp_value)
+        else:
+            time_line[time_point][item] = interp_value
 
         # assign num injection from time point before
         time_line[time_point]["injections"] = treatment_table.iloc[np.argmin(abs(deltas)) - 1]["cumsum_injections"]
