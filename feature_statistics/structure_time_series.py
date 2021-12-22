@@ -38,7 +38,9 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                    'drusen',
                    'rpe',
                    'epiretinal_membrane',
-                   'fibrosis']
+                   'fibrosis',
+                   'C0_thickness_mean']
+
 
     INJECTION_COLUMNS = ["injection_Avastin",
                          "injection_Dexamethason",
@@ -197,7 +199,6 @@ if __name__ == "__main__":
     # function to return a time log from a record patient id and laterality
     def append_time_log(record):
         patient, lat = record
-
         try:
             record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
             return mstd.from_record(record_pd, region_resolved)
@@ -223,6 +224,7 @@ if __name__ == "__main__":
             continue
 
     time_until_dry_pd = pd.DataFrame(time_series_log)
+    time_until_dry_pd.loc[:, "laterality"] = time_until_dry_pd.sequence.str.split("_", expand = True)[1]
 
     # read in naive patient data
     naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/dwh_tables_cleaned/naive_patients.csv"),
@@ -231,8 +233,10 @@ if __name__ == "__main__":
     naive_patients["patient_id"] = naive_patients["patient_id"].astype(int)
 
     time_until_dry_pd["patient_id"] = time_until_dry_pd.sequence.str.split("_", expand = True)[0].astype(int)
-    time_until_dry_pd_naive = pd.merge(time_until_dry_pd, naive_patients["patient_id"], left_on = "patient_id",
-                                       right_on = "patient_id", how = "inner")
+    time_until_dry_pd_naive = pd.merge(time_until_dry_pd, naive_patients[["patient_id", "laterality"]],
+                                       left_on = ["patient_id", "laterality"],
+                                       right_on = ["patient_id", "laterality"],
+                                       how = "inner")
 
     # remove non treated records
     time_until_dry_pd = time_until_dry_pd[time_until_dry_pd['study_date_1'].notna()]

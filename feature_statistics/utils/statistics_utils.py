@@ -405,3 +405,69 @@ def preprocess_dataframe(data_pd, oct_meta_pd):
                        how = "left")
 
     return data_pd
+
+if __name__ == "__main__":
+    import os
+    import pandas as pd
+    import numpy as np
+    import matplotlib.pyplot as plt
+    from pydicom import read_file
+    import copy
+    import sys
+    import glob
+    from copy import deepcopy
+    from scipy import stats
+    from matplotlib.gridspec import GridSpec
+    import tqdm
+    import seaborn as sns
+
+    PROJ_DIR = "/home/olle/PycharmProjects/LODE"
+
+    sys.path.insert(0, os.path.join(PROJ_DIR, 'feature_statistics/utils'))
+
+    import statistics_utils as su
+
+    plt.style.use('seaborn')
+
+    WORK_SPACE = "/home/olle/PycharmProjects/LODE/workspace"
+
+    oct_meta_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/export_tables/oct_meta_information.csv"))
+
+    oct_meta_pd.loc[:, "sequence"] = oct_meta_pd.PATNR.astype(str) + "_" + oct_meta_pd.laterality
+
+    data_pd = pd.read_csv(os.path.join(WORK_SPACE,
+                                       "joint_export/longitudinal_properties_naive.csv"))
+
+    filter_1, filter_3, filter_6, filter_12 = su.filter_time_ranges(data_pd)
+
+    data_pd = su.preprocess_dataframe(data_pd, oct_meta_pd)
+
+    seg_features = ["epm", "irf", "srf", "srhm", "rpe", "fvpde", "drusen", "phm", "choroid", "fibrosis",
+                    "atropypercentage", "thicknessmean"]
+
+    seg_delta = []
+    seg_times = [1, 3, 12]
+
+    assert su.assert_times(seg_times), "Selected time points contains not allowed values"
+
+    seg_independents = su.get_seg_independents_str(seg_features, seg_delta, seg_times)
+
+    va_delta = []
+    va_times = [1, 3, 12]
+
+    assert su.assert_times(va_times), "Selected time points contains not allowed values"
+
+    va_independents = su.get_va_dependents_str(va_delta, va_times)
+
+    injection_times = [3]
+
+    assert su.assert_times(injection_times), "Selected time points contains not allowed values"
+
+    injection_independents = []
+    for it in injection_times:
+        injection_independents.append(f"n_injections_{it}")
+
+    time_filters = {1: filter_1, 3: filter_3, 6: filter_6, 12: filter_12}
+
+    abt = su.associate_time_n_factors(table = data_pd, spatial_sum = True, time_filters = time_filters,
+                                      times = [1, 3, 12])
