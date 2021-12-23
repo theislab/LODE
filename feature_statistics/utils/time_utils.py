@@ -94,13 +94,17 @@ class TimeUtils:
         start_feature_value = table[item].iloc[date_idx_before].values[0]
         end_feature_value = table[item].iloc[date_idx_after].values[0]
 
-        interpolated_vector = self.interpolate_numeric_field(start_ = 0, end_ = delta_days.days,
-                                                             start_value = start_feature_value,
-                                                             end_value = end_feature_value)
-
         days_before = abs(days[date_idx_before[0]])
         days_after = abs(days[date_idx_after[0]])
-        return interpolated_vector[days[date_idx_before[0]]], delta_days.days, days_before, days_after
+
+        if np.isnan(start_feature_value) or np.isnan(end_feature_value):
+            interpolated_value = np.nan
+        else:
+            interpolated_vector = self.interpolate_numeric_field(start_ = 0, end_ = delta_days.days,
+                                                                 start_value = start_feature_value,
+                                                                 end_value = end_feature_value)
+            interpolated_value = interpolated_vector[days[date_idx_before[0]]]
+        return interpolated_value, delta_days.days, days_before, days_after
 
     def to_interpolate(self, time_deltas):
         """

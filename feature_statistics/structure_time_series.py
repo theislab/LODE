@@ -28,7 +28,6 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     DATA_POINTS = ["total_fluid",
                    "lens_surgery",
                    "cur_va_rounded",
-                   "next_va",
                    "cumsum_injections",
                    'intra_retinal_fluid',
                    'sub_retinal_fluid',
@@ -55,7 +54,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     DATA_POINTS = DATA_POINTS + ["cumsum_" + ic for ic in INJECTION_COLUMNS]
 
     META_DATA = ["patient_id", "laterality", "diagnosis"]
-    TIME_POINTS = [1, 3, 6, 12, 24]
+    TIME_POINTS = [1, 3, 12]
 
     FIELDS = ['study_date',
               'total_fluid',
@@ -63,8 +62,8 @@ class MeasureSeqTimeUntilDry(SeqUtils):
               'time_range_before',
               'time_range_after',
               'insertion_type',
-              'cur_va_rounded',
-              'next_va']
+              'cur_va_rounded']
+
 
     def __init__(self):
         pass
@@ -184,13 +183,15 @@ if __name__ == "__main__":
     # distribution of 3 and 6 month treatment effect
     """
     # load sequences
-    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/sequence_data", 'sequences.csv'))
+    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export", 'sequences.csv'))
 
     region_resolved = True
 
     mstd = MeasureSeqTimeUntilDry()
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()
+
+    # unique_records = unique_records[(unique_records.patient_id == 27023) & (unique_records.laterality == "L")]
 
     time_until_dry = []
 
@@ -199,11 +200,11 @@ if __name__ == "__main__":
     # function to return a time log from a record patient id and laterality
     def append_time_log(record):
         patient, lat = record
-        try:
-            record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
-            return mstd.from_record(record_pd, region_resolved)
-        except:
-            print("record did not work: ", record)
+        #try:
+        record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
+        return mstd.from_record(record_pd, region_resolved)
+        #except:
+        #    print("record did not work: ", record)
 
     import time
 
