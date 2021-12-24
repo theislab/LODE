@@ -106,7 +106,7 @@ class TimeUtils:
             interpolated_value = interpolated_vector[days[date_idx_before[0]]]
         return interpolated_value, delta_days.days, days_before, days_after
 
-    def to_interpolate(self, time_deltas):
+    def to_interpolate(self, time_deltas, table):
         """
         Return true if current time stamp has a study date before and after structure time point.
         Parameters
@@ -118,6 +118,19 @@ class TimeUtils:
 
         """
         signs = np.sign(time_deltas.values.astype(int))
+
+        days = time_deltas.astype('timedelta64[D]').values.astype(int)
+        signs = np.sign(days)
+
+        date_idx_before = max(np.argwhere(signs == 1))
+        date_idx_after = min(np.argwhere(signs == -1))
+
+        days_before = abs(days[date_idx_before[0]])
+        days_after = abs(days[date_idx_after[0]])
+
+        # if interpolation will not give the right time delta, then return false to consider a carry over
+        if (days_after + days_before) > 60 and ((days_after < 60) or (days_before < 60)):
+            return False
 
         if (1 in signs) and (-1 in signs):
             return True
@@ -136,6 +149,22 @@ class TimeUtils:
 
         """
         signs = np.sign(time_deltas.values.astype(int))
+
+        days = time_deltas.astype('timedelta64[D]').values.astype(int)
+        signs = np.sign(days)
+
+        date_idx_before = max(np.argwhere(signs == 1))
+        date_idx_after = min(np.argwhere(signs == -1))
+
+        days_before = abs(days[date_idx_before[0]])
+        days_after = abs(days[date_idx_after[0]])
+
+        # if a future date exist but it is to far away for interpolation, then carry over the closest date if closer
+        # then 60 days in time
+        if (days_before < 60) and (days_after >= 60):
+            return True
+        elif (days_before >= 60) and (days_after >= 60):
+            return True
 
         if not (-1 in signs):
             return True
@@ -193,6 +222,59 @@ class TimeUtils:
         time_line[self.time_steps[k + 1]]["time_range_after"] = None
         time_line[self.time_steps[k + 1]]["injections"] = last_study.cumsum_injections
         time_line[self.time_steps[k + 1]][item] = last_study[item]
+        time_line[self.time_steps[k + 1]]["insertion_type"] = "carry_over"
+        return time_line
+
+    def carry_over_closest(self, treatment_table, stamp, deltas, time_line, item, k):
+        """
+        Parameters
+        ----------
+        time_line : dict; to assign values to
+        deltas : Series; time delta values for structured time point
+        treatment_table : DataFrame; table with meta & feature data from first injection
+        stamp : TimeStamp; structured time point for which to intepolate
+        item : str; name of numerical value to interpolate
+        k : int; counter for structured time point
+
+        Returns
+        -------
+
+        """
+
+        days = deltas.astype('timedelta64[D]').values.astype(int)
+        signs = np.sign(days)
+
+        date_idx_before = max(np.argwhere(signs == 1))
+        date_idx_after = min(np.argwhere(signs == -1))
+
+        data_before = treatment_table.iloc[date_idx_before]
+        data_after = treatment_table.iloc[date_idx_after]
+
+        date_0 = data_before.study_date.values[0]
+        date_1 = data_after.study_date.values[0]
+
+        days_before = abs(days[date_idx_before[0]])
+        days_after = abs(days[date_idx_after[0]])
+
+        start_feature_value = treatment_table[item].iloc[date_idx_before].values[0]
+        end_feature_value = treatment_table[item].iloc[date_idx_after].values[0]
+
+        # carry over closest value
+        if days_after < 60:
+            value_to_carry_over = end_feature_value
+            last_study = treatment_table.iloc[date_idx_after]
+        elif days_before <= 60:
+            value_to_carry_over = start_feature_value
+            last_study = treatment_table.iloc[date_idx_before]
+        else:
+            value_to_carry_over = None
+
+        time_line[self.time_steps[k + 1]]["study_date"] = stamp
+        time_line[self.time_steps[k + 1]]["time_range"] = days_before + days_after
+        time_line[self.time_steps[k + 1]]["time_range_before"] = days_before
+        time_line[self.time_steps[k + 1]]["time_range_after"] = days_after
+        time_line[self.time_steps[k + 1]]["injections"] = last_study.cumsum_injections
+        time_line[self.time_steps[k + 1]][item] = value_to_carry_over
         time_line[self.time_steps[k + 1]]["insertion_type"] = "carry_over"
         return time_line
 
@@ -318,10 +400,10 @@ class TimeUtils:
                 time_line = self.set_exact_match(treatment_table, stamp, candidate_idx, time_line, item, k)
 
             # no match but date before and after, interpolate
-            elif self.to_interpolate(deltas):
+            elif self.to_interpolate(deltas, treatment_table):
                 time_line = self.impute_interpolation(time_line, deltas, treatment_table, stamp, item, k)
 
             # no match but date before carry last observation forward
             elif self.to_carry_over(deltas):
-                time_line = self.carry_over_last(treatment_table, stamp, deltas, time_line, item, k)
+                time_line = self.carry_over_closest(treatment_table, stamp, deltas, time_line, item, k)
         return time_line

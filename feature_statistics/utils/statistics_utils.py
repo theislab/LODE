@@ -215,7 +215,7 @@ def get_va_dependents_str(va_delta, va_times):
     return va_dependents
 
 
-def filter_time_ranges(data_pd):
+def filter_time_ranges(data_pd, time_range):
     """
     Function looks at 3, 6, and 12 month observation and sees what time difference to the fixed interval time interval
     mark was present. If interval fulfills criteras for inclusion in the study:
@@ -232,7 +232,6 @@ def filter_time_ranges(data_pd):
     :rtype: arrays
     """
     columns = ["time_range_3", "time_range_before_3", "time_range_after_3", "insertion_type_3",
-               "time_range_6", "time_range_before_6", "time_range_after_6", "insertion_type_6",
                "time_range_12", "time_range_before_12", "time_range_after_12", "insertion_type_12"]
 
     filter_base = data_pd[columns]
@@ -245,32 +244,23 @@ def filter_time_ranges(data_pd):
     carry_over_3 = filter_base.insertion_type_3 == "carry_over"
     match_3 = filter_base.insertion_type_3 == "match"
 
-    # 6 month bools
-    interp_6 = filter_base.insertion_type_6 == "interpolation"
-    carry_over_6 = filter_base.insertion_type_6 == "carry_over"
-    match_6 = filter_base.insertion_type_6 == "match"
-
     # 12 month bools
     interp_12 = filter_base.insertion_type_12 == "interpolation"
     carry_over_12 = filter_base.insertion_type_12 == "carry_over"
     match_12 = filter_base.insertion_type_12 == "match"
 
-    DAY_FILTER = 60
+    DAY_FILTER = time_range
 
     # interpolation time filters
-    interp_time_before_3 = filter_base.time_range_before_3 < DAY_FILTER
-    interp_time_after_3 = filter_base.time_range_after_3 < DAY_FILTER
+    interp_time_before_3 = filter_base.time_range_before_3 <= DAY_FILTER
+    interp_time_after_3 = filter_base.time_range_after_3 <= DAY_FILTER
 
-    interp_time_before_6 = filter_base.time_range_before_6 < DAY_FILTER
-    interp_time_after_6 = filter_base.time_range_after_6 < DAY_FILTER
-
-    interp_time_before_12 = filter_base.time_range_before_12 < DAY_FILTER
-    interp_time_after_12 = filter_base.time_range_after_12 < DAY_FILTER
+    interp_time_before_12 = filter_base.time_range_before_12 <= DAY_FILTER
+    interp_time_after_12 = filter_base.time_range_after_12 <= DAY_FILTER
 
     # carry over time filters
-    carry_over_time_after_3 = filter_base.time_range_3 < DAY_FILTER
-    carry_over_time_after_6 = filter_base.time_range_6 < DAY_FILTER
-    carry_over_time_after_12 = filter_base.time_range_12 < DAY_FILTER
+    carry_over_time_after_3 = filter_base.time_range_3 <= DAY_FILTER
+    carry_over_time_after_12 = filter_base.time_range_12 <= DAY_FILTER
 
     # interpolation 3 months
     interp_bef = np.logical_and(interp_3.values, interp_time_before_3)
@@ -286,20 +276,6 @@ def filter_time_ranges(data_pd):
 
     print("Number of filtered sequences for 3 months are:", sum(filter_3))
 
-    # interpolation 6 months
-    interp_bef = np.logical_and(interp_6.values, interp_time_before_6)
-    interp_aft = np.logical_and(interp_6.values, interp_time_after_6)
-
-    interp_6 = np.logical_and(interp_bef, interp_aft)
-
-    # carry over 6 months
-    carry_over_6 = np.logical_and(carry_over_6.values, carry_over_time_after_6)
-
-    insertion_6_ = np.logical_or(carry_over_6, interp_6)
-    filter_6 = np.logical_or(insertion_6_, match_6)
-
-    print("Number of filtered sequences for 6 months are:", sum(filter_6))
-
     # interpolation 12 months
     interp_bef = np.logical_and(interp_12.values, interp_time_before_12)
     interp_aft = np.logical_and(interp_12.values, interp_time_after_12)
@@ -314,7 +290,7 @@ def filter_time_ranges(data_pd):
 
     print("Number of filtered sequences for 12 months are:", sum(filter_12))
 
-    return filter_1, filter_3, filter_6, filter_12
+    return filter_1, filter_3, filter_12
 
 
 def preprocess_dataframe(data_pd, oct_meta_pd):

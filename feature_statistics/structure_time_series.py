@@ -40,7 +40,6 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                    'fibrosis',
                    'C0_thickness_mean']
 
-
     INJECTION_COLUMNS = ["injection_Avastin",
                          "injection_Dexamethason",
                          "injection_Eylea",
@@ -63,7 +62,6 @@ class MeasureSeqTimeUntilDry(SeqUtils):
               'time_range_after',
               'insertion_type',
               'cur_va_rounded']
-
 
     def __init__(self):
         pass
@@ -191,27 +189,29 @@ if __name__ == "__main__":
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()
 
-    # unique_records = unique_records[(unique_records.patient_id == 27023) & (unique_records.laterality == "L")]
+    unique_records = unique_records[(unique_records.patient_id == 1764) & (unique_records.laterality == "L")]
 
     time_until_dry = []
 
     unique_record_list = list(zip(unique_records.patient_id, unique_records.laterality))
 
+
     # function to return a time log from a record patient id and laterality
     def append_time_log(record):
         patient, lat = record
-        #try:
+        # try:
         record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
         return mstd.from_record(record_pd, region_resolved)
-        #except:
+        # except:
         #    print("record did not work: ", record)
+
 
     import time
 
     from joblib import Parallel, delayed
 
     start_ = time.time()
-    time_until_dry = Parallel(n_jobs = -1, verbose = 1, backend = "multiprocessing")(
+    time_until_dry = Parallel(n_jobs = 1, verbose = 1, backend = "multiprocessing")(
         map(delayed(append_time_log), unique_record_list))
 
     print("time with parallelized loop: ", time.time() - start_)
@@ -241,5 +241,5 @@ if __name__ == "__main__":
 
     # remove non treated records
     time_until_dry_pd = time_until_dry_pd[time_until_dry_pd['study_date_1'].notna()]
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties.csv"))
-    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties_naive.csv"))
+    # time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties.csv"))
+    # time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties_naive.csv"))
