@@ -36,7 +36,11 @@ def sum_etdrs(table, time):
         if ("atropy" in feature) | ("thicknessmean" in feature):
             table_non_spatial_pd[feature] = table.iloc[:, col_to_sum].sum(1) * THICKNESS_TO_MM
         else:
-            table_non_spatial_pd[feature] = table.iloc[:, col_to_sum].sum(1) * PIXEL_TO_VOLUME
+            try:
+
+                table_non_spatial_pd[feature] = table.iloc[:, col_to_sum].astype(float).sum(1) * PIXEL_TO_VOLUME
+            except:
+                print("stop")
 
     table_non_spatial_pd = table_non_spatial_pd.rename(columns = label_mapping)
     return table_non_spatial_pd
@@ -137,7 +141,7 @@ def get_va_dict(times, table):
 
 def associate_time_n_factors(table=None, spatial_sum=False, time_filters=None, times=None):
     # filter time points
-    for tp in times:
+    for tp in time_filters:
         table = table[time_filters[tp]]
 
     seq_columns = ['patient_id', 'laterality']
@@ -236,9 +240,6 @@ def filter_time_ranges(data_pd, time_range):
 
     filter_base = data_pd[columns]
 
-    # filter for fist month where VA values are available
-    filter_1 = ~data_pd.cur_va_rounded_1.isna()
-
     # 3 month bools
     interp_3 = filter_base.insertion_type_3 == "interpolation"
     carry_over_3 = filter_base.insertion_type_3 == "carry_over"
@@ -290,7 +291,7 @@ def filter_time_ranges(data_pd, time_range):
 
     print("Number of filtered sequences for 12 months are:", sum(filter_12))
 
-    return filter_1, filter_3, filter_12
+    return filter_3, filter_12
 
 
 def preprocess_dataframe(data_pd, oct_meta_pd):
@@ -412,11 +413,13 @@ if __name__ == "__main__":
     oct_meta_pd.loc[:, "sequence"] = oct_meta_pd.PATNR.astype(str) + "_" + oct_meta_pd.laterality
 
     data_pd = pd.read_csv(os.path.join(WORK_SPACE,
-                                       "joint_export/longitudinal_properties_naive.csv"))
+                                       "joint_export/longitudinal_properties_naive_new.csv"))
 
-    filter_1, filter_3, filter_6, filter_12 = su.filter_time_ranges(data_pd)
+    data_pd = data_pd[data_pd.sequence == "61818_R"]
 
-    data_pd = su.preprocess_dataframe(data_pd, oct_meta_pd)
+    filter_3, filter_12 = filter_time_ranges(data_pd, time_range = 60)
+
+    data_pd = preprocess_dataframe(data_pd, oct_meta_pd)
 
     seg_features = ["epm", "irf", "srf", "srhm", "rpe", "fvpde", "drusen", "phm", "choroid", "fibrosis",
                     "atropypercentage", "thicknessmean"]
@@ -443,7 +446,7 @@ if __name__ == "__main__":
     for it in injection_times:
         injection_independents.append(f"n_injections_{it}")
 
-    time_filters = {1: filter_1, 3: filter_3, 6: filter_6, 12: filter_12}
+    time_filters = {3: filter_3, 12: filter_12}
 
-    abt = su.associate_time_n_factors(table = data_pd, spatial_sum = True, time_filters = time_filters,
+    abt = associate_time_n_factors(table = data_pd, spatial_sum = True, time_filters = time_filters,
                                       times = [1, 3, 12])
