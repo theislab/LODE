@@ -5,7 +5,7 @@ import pandas as pd
 from tqdm import tqdm
 from joblib import Parallel, delayed
 
-num_cores = 58
+num_cores = -1
 
 print("reading input files")
 inputs = os.listdir(SEG_DIR)#[0:200]
@@ -52,6 +52,7 @@ if __name__ == "__main__":
     features_pd = pd.DataFrame.from_dict(processed_list)
     
     save_path = os.path.join(DATA_DIR, "segmentation")
+
     if not os.path.exists(save_path):
         os.makedirs(save_path)
 

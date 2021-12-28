@@ -8,7 +8,6 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import tensorflow as tf
 import pandas as pd
 from tensorflow.keras.models import load_model
-import glob
 import json
 from tqdm import tqdm
 
@@ -17,8 +16,7 @@ from config import TRAIN_DATA_PATH, DATA_SPLIT_PATH
 
 tf.compat.v1.disable_eager_execution()
 
-cv_model_path = "/media/olle/3DCPC/oct_segmentation/opt_ensemble"
-result_save_dir = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/opt_ensemble2"
+result_save_dir = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/opt_ensemble"
 
 # get all cv runs
 test_ids = pd.read_csv(os.path.join(DATA_SPLIT_PATH, "test_ids.csv"))["0"].tolist()
@@ -68,9 +66,6 @@ if not os.path.exists(result_save_dir):
     os.makedirs(result_save_dir, exist_ok=True)
 
 for cv_run in tqdm(cv_runs):
-    # get abs paths for models to be evaluated
-    # model_paths = glob.glob(f"{cv_model_path}/*/{cv_run}/*.*h5")
-
     if len(model_paths) > 0:
         img_path = os.path.join(TRAIN_DATA_PATH, "images", cv_run + ".png")
         label_path = os.path.join(TRAIN_DATA_PATH, "masks", cv_run + ".png")

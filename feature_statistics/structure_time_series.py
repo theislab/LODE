@@ -1,14 +1,12 @@
 from copy import copy
 
-from feature_statistics.config import WORK_SPACE, SEG_DIR, OCT_DIR
+from config import WORK_SPACE
 import os
 import pandas as pd
-import numpy as np
-from feature_statistics.utils.time_utils import TimeUtils
-from feature_statistics.utils.pandas_utils import sum_etdrs_columns
-from feature_statistics.utils.util_functions import SeqUtils, get_total_number_of_injections
+from utils.time_utils import TimeUtils
+from utils.pandas_utils import sum_etdrs_columns
+from utils.util_functions import SeqUtils, get_total_number_of_injections
 from tqdm import tqdm
-import glob
 
 
 class MeasureSeqTimeUntilDry(SeqUtils):
@@ -22,24 +20,27 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                             "choroid": 10,
                             "drusen": 8,
                             "rpe": 6,
+                            "phm": 9,
                             "epiretinal_membrane": 1,
                             "fibrosis": 13}
 
     ETDRS_REGIONS = ["T1", "T2", "S1", "S2", "N1", "N2", "C0", "I1", "I2"]
 
     DATA_POINTS = ["total_fluid",
+                   "lens_surgery",
                    "cur_va_rounded",
-                   "next_va",
                    "cumsum_injections",
                    'intra_retinal_fluid',
                    'sub_retinal_fluid',
                    'srhm',
+                   'phm',
                    'fibrovascular_ped',
                    'choroid',
                    'drusen',
                    'rpe',
                    'epiretinal_membrane',
-                   'fibrosis']
+                   'fibrosis',
+                   'C0_thickness_mean']
 
     INJECTION_COLUMNS = ["injection_Avastin",
                          "injection_Dexamethason",
@@ -54,9 +55,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
     DATA_POINTS = DATA_POINTS + ["cumsum_" + ic for ic in INJECTION_COLUMNS]
 
     META_DATA = ["patient_id", "laterality", "diagnosis"]
-    SEG_PATHS = glob.glob(os.path.join(SEG_DIR, "*"))
-    DICOM_PATHS = glob.glob(os.path.join(OCT_DIR, "*/*/*/*.dcm"))
-    TIME_POINTS = [1, 3, 6, 12, 24]
+    TIME_POINTS = [1, 3, 12]
 
     FIELDS = ['study_date',
               'total_fluid',
@@ -64,8 +63,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
               'time_range_before',
               'time_range_after',
               'insertion_type',
-              'cur_va_rounded',
-              'next_va']
+              'cur_va_rounded']
 
     def __init__(self):
         pass
@@ -117,7 +115,6 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         for feature in MeasureSeqTimeUntilDry.FEATURE_MAPPING_DICT.keys():
             for region in MeasureSeqTimeUntilDry.ETDRS_REGIONS:
                 feature_label = MeasureSeqTimeUntilDry.FEATURE_MAPPING_DICT[feature]
-
                 data_points.append(region + "_" + str(feature_label))
         return data_points
 
@@ -135,15 +132,16 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         record_table.insert(loc = 10, column = "cur_va_rounded", value = record_table.cur_va.round(2))
 
         # create cumsum injections column
-        record_table.loc[:, "cumsum_injections"] = record_table.injections.cumsum()
+        new_record_table = record_table.copy()
+        new_record_table.loc[:, "cumsum_injections"] = record_table.injections.cumsum()
 
         # add all injections
         for inj_col in MeasureSeqTimeUntilDry.INJECTION_COLUMNS:
-            record_table.loc[:, f"cumsum_{inj_col}"] = record_table[inj_col].cumsum()
+            new_record_table.loc[:, f"cumsum_{inj_col}"] = new_record_table[inj_col].cumsum()
 
-        total_number_injections = get_total_number_of_injections(table = record_table)
+        total_number_injections = get_total_number_of_injections(table = new_record_table)
 
-        time_utils = TimeUtils(record_table = record_table)
+        time_utils = TimeUtils(record_table = new_record_table)
         time_line = time_utils.time_line
 
         # initialize sequence class
@@ -154,14 +152,14 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         else:
             data_points = copy(MeasureSeqTimeUntilDry.DATA_POINTS)
 
-        meta_data = record_table.iloc[0]
+        meta_data = new_record_table.iloc[0]
 
         patient_id = meta_data[MeasureSeqTimeUntilDry.META_DATA[0]]
         laterality = meta_data[MeasureSeqTimeUntilDry.META_DATA[1]]
         diagnosis = meta_data[MeasureSeqTimeUntilDry.META_DATA[2]]
 
-        # check so patient is treated with no lens surgery
-        if (total_number_injections > 0) and (sum(record_table.lens_surgery) == 0):
+        # check so patient is treated
+        if total_number_injections > 0:
             for data_point in data_points:
                 time_line = time_utils.assign_to_timeline_str(time_line = time_line,
                                                               item = data_point,
@@ -184,30 +182,34 @@ if __name__ == "__main__":
     # distribution of 3 and 6 month treatment effect
     """
     # load sequences
-    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "sequence_data", 'sequences.csv'))
+    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export", 'sequences.csv'))
 
     region_resolved = True
 
-    PATIENT_ID = 245854  # 1570 L
-    LATERALITY = "L"
-
     mstd = MeasureSeqTimeUntilDry()
-    filter_ = (seq_pd.patient_id == PATIENT_ID) & (seq_pd.laterality == LATERALITY)
-    # seq_pd = seq_pd.loc[filter_]
-    # seq_pd = seq_pd.iloc[0:10]
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()
 
+    # unique_records = unique_records[(unique_records.patient_id == 343766) & (unique_records.laterality == "L")]
+
     time_until_dry = []
 
-    for patient, lat in tqdm(unique_records.itertuples(index = False)):
-        try:
-            print(patient, lat)
-            record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
-            time_until_dry.append(mstd.from_record(record_pd, region_resolved))
-        except:
-            print("patient did not work", patient, lat)
-            continue
+    unique_record_list = list(zip(unique_records.patient_id, unique_records.laterality))
+
+    # function to return a time log from a record patient id and laterality
+    def append_time_log(record):
+        patient, lat = record
+        record_pd = seq_pd[(seq_pd.patient_id == patient) & (seq_pd.laterality == lat)]
+        return mstd.from_record(record_pd, region_resolved)
+
+    import time
+    from joblib import Parallel, delayed
+
+    start_ = time.time()
+    time_until_dry = Parallel(n_jobs = -1, verbose = 1, backend = "multiprocessing")(
+        map(delayed(append_time_log), unique_record_list))
+
+    print("time with parallelized loop: ", time.time() - start_)
 
     time_series_log = []
 
@@ -218,18 +220,21 @@ if __name__ == "__main__":
             continue
 
     time_until_dry_pd = pd.DataFrame(time_series_log)
+    time_until_dry_pd.loc[:, "laterality"] = time_until_dry_pd.sequence.str.split("_", expand = True)[1]
 
     # read in naive patient data
-    naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "naive_patients/naive_patients.csv"),
-                                 sep = ",").dropna()
+    naive_patients = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/dwh_tables_cleaned/naive_patients.csv"),
+                                 sep = ",")
 
     naive_patients["patient_id"] = naive_patients["patient_id"].astype(int)
 
     time_until_dry_pd["patient_id"] = time_until_dry_pd.sequence.str.split("_", expand = True)[0].astype(int)
-    time_until_dry_pd_naive = pd.merge(time_until_dry_pd, naive_patients["patient_id"], left_on = "patient_id",
-                                       right_on = "patient_id", how = "inner")
+    time_until_dry_pd_naive = pd.merge(time_until_dry_pd, naive_patients[["patient_id", "laterality"]],
+                                       left_on = ["patient_id", "laterality"],
+                                       right_on = ["patient_id", "laterality"],
+                                       how = "inner")
 
     # remove non treated records
     time_until_dry_pd = time_until_dry_pd[time_until_dry_pd['study_date_1'].notna()]
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "sequence_data/longitudinal_properties.csv"))
-    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "sequence_data/longitudinal_properties_naive.csv"))
+    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties_new.csv"))
+    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties_naive_new.csv"))

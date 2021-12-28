@@ -17,7 +17,7 @@ tf.compat.v1.disable_eager_execution()
 NUMBER_OF_MODELS = 50
 
 idv_path = "/home/olle/PycharmProjects/LODE/workspace/inter_doctor_variation"
-result_save_dir = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/opt_ensemble2/idv"
+result_save_dir = "/home/olle/PycharmProjects/LODE/workspace/feature_segmentation/opt_ensemble/idv"
 
 images = os.listdir(os.path.join(idv_path, "images"))
 
