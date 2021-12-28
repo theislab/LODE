@@ -20,6 +20,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                             "choroid": 10,
                             "drusen": 8,
                             "rpe": 6,
+                            "phm": 9,
                             "epiretinal_membrane": 1,
                             "fibrosis": 13}
 
@@ -32,6 +33,7 @@ class MeasureSeqTimeUntilDry(SeqUtils):
                    'intra_retinal_fluid',
                    'sub_retinal_fluid',
                    'srhm',
+                   'phm',
                    'fibrovascular_ped',
                    'choroid',
                    'drusen',
@@ -113,7 +115,6 @@ class MeasureSeqTimeUntilDry(SeqUtils):
         for feature in MeasureSeqTimeUntilDry.FEATURE_MAPPING_DICT.keys():
             for region in MeasureSeqTimeUntilDry.ETDRS_REGIONS:
                 feature_label = MeasureSeqTimeUntilDry.FEATURE_MAPPING_DICT[feature]
-
                 data_points.append(region + "_" + str(feature_label))
         return data_points
 
@@ -189,7 +190,7 @@ if __name__ == "__main__":
 
     unique_records = seq_pd[["patient_id", "laterality"]].drop_duplicates()
 
-    unique_records = unique_records[(unique_records.patient_id == 61818) & (unique_records.laterality == "R")]
+    # unique_records = unique_records[(unique_records.patient_id == 343766) & (unique_records.laterality == "L")]
 
     time_until_dry = []
 
