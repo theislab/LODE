@@ -182,7 +182,7 @@ if __name__ == "__main__":
     # distribution of 3 and 6 month treatment effect
     """
     # load sequences
-    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export", 'sequences.csv'))
+    seq_pd = pd.read_csv(os.path.join(WORK_SPACE, "joint_export/test", 'sequences.csv'))
 
     region_resolved = True
 
@@ -236,5 +236,5 @@ if __name__ == "__main__":
 
     # remove non treated records
     time_until_dry_pd = time_until_dry_pd[time_until_dry_pd['study_date_1'].notna()]
-    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties_new.csv"))
-    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "joint_export/longitudinal_properties_naive_new.csv"))
+    time_until_dry_pd.to_csv(os.path.join(WORK_SPACE, "joint_export/test/longitudinal_properties_new.csv"))
+    time_until_dry_pd_naive.to_csv(os.path.join(WORK_SPACE, "joint_export/test/longitudinal_properties_naive_new.csv"))

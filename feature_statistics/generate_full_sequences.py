@@ -11,7 +11,7 @@ if __name__ == "__main__":
     workspace_dir = WORK_SPACE
 
     # longitudinal data is a merged table from all oct measurements and the cleaned diagnosis table
-    longitudinal_data = pd.read_csv(os.path.join(workspace_dir, 'joint_export/longitudinal_data.csv'),
+    longitudinal_data = pd.read_csv(os.path.join(workspace_dir, 'joint_export/test/longitudinal_data.csv'),
                                     index_col = 0)
 
     longitudinal_data, feature_names = check_features(workspace_dir, longitudinal_data)
@@ -21,7 +21,7 @@ if __name__ == "__main__":
         sequences.Measurement.FEATURES = feature_names
 
     # events is a table containing injections and lens surgery events for each patient
-    events = pd.read_csv(os.path.join(workspace_dir, 'joint_export/longitudinal_events.csv'),
+    events = pd.read_csv(os.path.join(workspace_dir, 'joint_export/test/longitudinal_events.csv'),
                          index_col=0)
 
     events = events.sort_values('study_date')
@@ -44,18 +44,18 @@ if __name__ == "__main__":
     seqs = []
     i = 0
     for name, group in tqdm(grouped_patients):
-        if name == (253036, 'L'):
+        # if name == (253036, 'L'):
             # get events for this group
-            group_events = None
+        group_events = None
 
-            try:
-                group_events = grouped_events.get_group(name)
-            except KeyError as e:
-                pass
+        try:
+            group_events = grouped_events.get_group(name)
+        except KeyError as e:
+            pass
 
-            seq = sequences.MeasurementSequence.from_pandas(group)
-            seq.add_events_from_pandas(group_events, how = 'previous')  # IMPORTANT: ADD EVENTS TO NEXT MEASUREMENT
-            seqs.append(seq)
+        seq = sequences.MeasurementSequence.from_pandas(group)
+        seq.add_events_from_pandas(group_events, how = 'previous')  # IMPORTANT: ADD EVENTS TO NEXT MEASUREMENT
+        seqs.append(seq)
 
     # parameters for sequence generation
     # should each measurement in the sequence have an OCT and a VA?
@@ -87,5 +87,5 @@ if __name__ == "__main__":
                 sequences_checkup.append(seq_sub)
 
     # save sequences to file to avoid recomputing
-    sequences.save_sequences_to_dataframe(os.path.join(workspace_dir, 'joint_export/sequence_data/sequences.csv'),
+    sequences.save_sequences_to_dataframe(os.path.join(workspace_dir, 'joint_export/test/sequences.csv'),
                                           sequences_checkup)
